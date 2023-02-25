@@ -1,0 +1,170 @@
+﻿Gustave Eiffel University                                       Ramaroson Rakotomihamina Johan
+Request For Comments: 9384                                                        Tellier Quentin
+Category: Informational                                                              February 2023
+
+
+
+
+
+
+
+
+UGE Greed Protocol -- Greed/1.0
+
+
+Status of this Memo
+   This memo provides information about the UGE Greed Protocol.This memo does not
+   specify any details of the implementations or technologies used. 
+
+
+Summary
+   The UGEGreed Protocol is an application-level protocol which intends to create a
+   distributed computing system above the TCP protocol. The main idea is to provide an
+   effective tool for researchers who want to test conjectures on a very large number of cases
+   by distributing their computations over several machines.
+
+
+Table of contents
+
+
+
+
+
+
+1. Purpose
+
+
+   The goal of this protocol is to separate a huge computation by sharing it throughout
+   multiple servers linked to each other. Each computation server can be linked to another
+   and then assumes being a part of the distributed computation system. Since the
+   distributed system mostly depends on the number of linked servers, a limit has to be 
+   set for each application running in the system, about the number of computation that a
+   server can treat, to avoid memory leaks. 
+
+
+2. Server
+
+
+   2.1 Setup
+
+
+      You can launch a server in two different modes, in Root mode if you want to start a
+      new computing system or in listening mode if you want to connect to a server that is
+      already launched, all the servers can accept new connections. Here is the different 
+      mode :
+     
+* Root :  the root of the system, which the other servers will be linked to. 
+
+
+* Listening: A server linked to another, it becomes a part of the computing system and 
+extends the networks. 
+      
+      By specifying one port for the current listening port of the server, the application is    
+      launched in Root mode. In other way, if the application is launched giving two ports, then 
+      it becomes a listening application, listening to the first one and linking to the second one. 
+      When a server in ROOT mode is shutdown, all the servers that are connected to the 
+      networks are shut down.
+
+
+      If the server receives an identity that is being calculated, it will close the connection with 
+      the client so the pair of the address and the identity will be used to identify a calculation.
+
+
+      If we want to disconnect a server all the servers that are already connected to this server 
+      will be connected to the parent server of the server that we will disconnect, we do not 
+      take into account if the server disconnected unexpectedly.
+
+
+   2.3 Distribution
+
+
+   The server will distribute the interval that he receives, he will cut the interval according to 
+   the number of neighbors he have and himself, he will create a data-struct and memorize 
+   for each new interval the answers that he already got, when a server gets a packet like 
+   that he will memorize the server that sent him and will send his answers to this server.
+
+
+   The packet will contain:
+* code 1 as a byte
+* size of the address as a long
+* address of the client
+* identity as a long
+* start of the interval as a long
+* end of the interval as a long
+
+
+           1 byte              8 bytes         size bytes        8 bytes            8 bytes            8 bytes
+     +----------------+---------------+----------------+----------------+----------------+----------------+
+     |       code      |      size       |     address  |     identity    |       start      |        end       | 
+     +----------------+---------------+----------------+----------------+----------------+----------------+
+
+
+   The server will answer to the server that sent him the packet to calculate with a packet that
+   contains the answer of the interval: 
+* code 2 as a byte
+* size of the address of the initial client to identify him as a long
+* address of the client
+* identity of the calculation as a long
+* start of the interval calculated as a long
+* end of the interval calculated as a long
+* number of strings to read as a long
+* for each strings the size as a long and then the string encoded in UTF-8
+
+
+
+
+           1 byte              8 bytes          size bytes             8 bytes              8 bytes                8 bytes           8 bytes            8 bytes          size bytes                              8 bytes          size bytes
+     +---------------- +---------------- +---------------- +---------------- +---------------- +----------------+---------------+----------------+----------------+     …       +----------------+----------------+
+     |       code       |        size       |    address    |     identity     |       start       |        end       |        nb       |        size      |     answer    |      …       |        size      |     answer    | 
+     +---------------- +---------------- +---------------- +---------------- +---------------- +----------------+---------------+----------------+----------------+     …       +----------------+----------------+
+
+
+   When a server gets an answer he will bring up the answers to the server that receives the 
+   request from the client and this server will send it to the client, if a server doesn't get the 
+   answer he will send the interval that is missing to one of his neighbors.
+
+
+2.4 Response to the client
+
+
+   Once an application has ended his computation, he has to send back the response, 
+   depending on who sent the conjecture : 
+* In the case that the application received the conjecture by a distribution
+(i.e another application) then he has to send back the responses to him.
+* In the case that the application received the conjecture by the client, he has to
+send
+
+
+   The packet of the response will contains:
+   -        start of the interval as a long
+   -        end of the interval as a long
+   -        then end - start values that is a size of the string as a long and the string encoded in UTF-8
+
+
+            8 bytes            8 bytes          8 bytes          size bytes                      8 bytes         size bytes
+     +----------------+---------------+----------------+----------------+    …    +----------------+----------------+
+     |        start      |       end      |       size       |       string    |     …     |      size       |       string     |
+     +----------------+---------------+----------------+----------------+    …    +----------------+----------------+
+
+
+3. Client
+     
+   First of all, the client has to set up its function which will be computed by the server into a 
+   packaged jar which will contains a single class implemented by a functional interface which
+   take an int as a parameter and then return a String. The client needs to connect to a server 
+   that is part of a computing distributed system. Then he has to send a packet containing 
+   information about the conjecture to compute : The code 0 as a byte, the identity as a long, 
+   the size of the url of the jar as a long, the url of the jar encoded in UTF-8, the size of the 
+   name of the class as a long, the name of the class encoded in UTF-8, the long that 
+   represents the start of the interval and the long that represents the end of the interval.
+   Here is the detail of the packet :
+
+
+           1 byte             8 bytes            8 bytes       size_url bytes     8 bytes          size bytes         8 bytes           8 bytes
+     +----------------+---------------+----------------+----------------+----------------+----------------+----------------+----------------+
+     |       code      |    identity    |     size_url   |        url        |      size        |       class      |       start      |       end       | 
+     +----------------+---------------+----------------+----------------+----------------+----------------+----------------+----------------+
+
+
+   
+   Once the conjecture is sent, the client has to wait until he receives some responses.
