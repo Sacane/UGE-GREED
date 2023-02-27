@@ -1,6 +1,6 @@
-﻿Gustave Eiffel University                                       Ramaroson Rakotomihamina Johan
-Request For Comments: 9384                                                        Tellier Quentin
-Category: Informational                                                              February 2023
+﻿Gustave Eiffel University                         Ramaroson Rakotomihamina Johan
+Request For Comments: 9384                                       Tellier Quentin
+Category: Informational                                            February 2023
 
 
 
@@ -9,19 +9,21 @@ Category: Informational                                                         
 
 
 
-UGE Greed Protocol -- Greed/1.0
+                        Greed Protocol -- Greed/1.0
 
 
 Status of this Memo
-   This memo provides information about the UGE Greed Protocol. This memo does not
-   specify any details of the implementations or technologies used. 
+   This memo provides information about the UGE Greed Protocol. This 
+   memo does not specify any details of the implementations or 
+   technologies used. 
 
 
 Summary
-   The UGEGreed Protocol is an application-level protocol which intends to create a
-   distributed computing system above the TCP protocol. The main idea is to provide an
-   effective tool for researchers who want to test conjectures on a very large number of cases
-   by distributing their computations over several machines.
+   The UGEGreed Protocol is an application-level protocol which 
+   intends to create a distributed computing system above the TCP 
+   protocol. The main idea is to provide an effective tool for researchers
+   who want to test conjectures on a very large number of cases by 
+   distributing their computations over several machines.
 
 
 Table of contents
@@ -34,51 +36,86 @@ Table of contents
 1. Purpose
 
 
-   The goal of this protocol is to separate a huge computation by sharing it throughout
-   multiple servers linked to each other. Each computation server can be linked to another
-   and then assumes being a part of the distributed computation system. Since the
-   distributed system mostly depends on the number of linked servers, a limit has to be 
-   set for each application running in the system, about the number of computation that a
-   server can treat, to avoid memory leaks. 
+   The goal of this protocol is to separate a huge computation by sharing 
+   it throughout multiple servers linked to each other. Each computation 
+   server can be linked to another and then assumes being a part of the 
+   distributed computation system. Since the distributed system mostly
+   depends on the number of linked servers, a limit has to be set for each
+   application running in the system, about the number of computation
+   that a server can treat, to avoid memory leaks. 
 
 
-2. Server
+2. Overview
 
 
-   2.1 Setup
+   Every strings in the packet of this protocol has to be encoded in UTF8 
+   before sending, such as the result of a conjecture and the specified 
+   address of the client. 
+
+
+   The Greed Protocol is based on the TCP protocol. Therefore, a Greed
+   connection is in fact a TCP connection inside the distributed system and
+   between the client and the application receiver.
+   
+   Every packet in the Greed protocol starts with an OpCode, represented 
+   by a single byte. An OpCode gives indications about the type of packet 
+   that was sent. The detail of the meaning of each OpCode is specified in 
+   the annexe of the document.
+
+
+   Packet shared inside of the distributed system must contains the address 
+   of the client and its conjecture id. Please note that each conjecture’s
+   identity must be provided by the client as a long and this identity must be 
+   unique across all the conjectures that this client sends.
+
+
+   Greed protocol ensure that the client will always get all of the requested
+   conjectures unless he decides to cut the connection himself or the target
+   application respond with an op code error, this means that the
+   application didn’t even attempt to compute the conjecture.
+
+
+3. Server
+
+
+   3.1 Setup
 
 
       A server can be launch in two differents modes:
      
-* Root :  the root of the system, which the other servers will be linked to. 
+* Root :  the root of the system, which the other servers will be 
+linked to. 
 
 
-* Listening: A server linked to another, it becomes a part of the computing system and 
-extends the networks.
+* Listening: A server linked to another, it becomes a part of the 
+computing system and extends the networks.
 
 
-      Any server can be linked to another and any server can accept conjecture from the
-      client.
+      Any server can be linked to another and any server can accept 
+      conjecture from the client.
       
-      By specifying one port for the current listening port of the server, the application is    
-      launched in Root mode. In other way, if the application is launched giving two ports, then 
-      it becomes a listening application. When a server in ROOT mode is shut down, all the 
-      servers that are connected to the networks will be shut down.
+      By specifying one port for the current listening port of the server, the 
+      application is launched in Root mode. In other way, if the application is
+      launched giving two ports, then it becomes a listening application. 
+      When a server in ROOT mode is shut down, all the servers that are
+      connected to the networks will be shut down.
 
 
-      If the server receives two different packet from the same IP address and the 
-      conjecture ID is also the same with an on-use one, the second connection will be ignored 
-      and closed. 
+      If the server receives two different packet from the same IP address
+      and the conjecture ID is also the same with an on-use one, the second
+      connection will be ignored and closed. 
 
 
-      If we want to disconnect a server all the servers that are already connected to this server 
-      will be connected to the parent server of the server that we will disconnect, we do not 
-      take into account if the server disconnected unexpectedly.
+      If we want to disconnect a server all the servers that are already
+      connected to this server will be connected to the parent server of the
+      server that we will disconnect, we do not take into account if the server 
+      disconnected unexpectedly.
 
 
-      If we disconnect a server that has to send responses to the client, we send to the client 
-      the ip address and the port of the parent server, so the client will now be connected to 
-      this server and ask for the missing interval with the packet in 4.1.2.
+      If we disconnect a server that has to send responses to the client, we 
+      send to the client the ip address and the port of the parent server, so the
+      client will now be connected to this server and ask for the missing
+      interval with the packet in 4.1.2.
 
 
       The packet to send the address of the parent server for the client:
@@ -94,9 +131,9 @@ extends the networks.
      +----------------+---------------+----------------+----------------+
 
 
-       When a ROOT server is disconnected he will send a packet to all the servers of the 
-      network, so no servers will take new calculations from a client, the servers will end their 
-      calculation and then will be shut down.
+       When a ROOT server is disconnected he will send a packet to all the
+      servers of the network, so no servers will take new calculations from a 
+      client, the servers will end their calculation and then will be shut down.
 
 
       The packet to send when the ROOT is shut down:
@@ -111,13 +148,15 @@ extends the networks.
 
 
 
-   2.2 Distribution
+   3.2 Distribution
 
 
-      The server will distribute the interval that he receives, he will cut the interval according to 
-      the number of childrens he have and himself, he will create a data-struct and memorize 
-      for each new interval the answers that he already got, when a server gets a packet like 
-      that he will memorize the server that sent him and will send his answers to this server.
+      The server will distribute the interval that he receives, he will cut the 
+      interval according to the number of childrens he have and himself,
+      he will create a data-struct and memorize for each new interval the
+      answers that he already got, when a server gets a packet like that he
+      will memorize the server that sent him and will send his answers to this
+      server.
 
 
       The packet will contain:
@@ -135,15 +174,16 @@ extends the networks.
      +----------------+---------------+----------------+----------------+----------------+----------------+
 
 
-      The server will answer to the server that sent him the packet to calculate with a packet 
-      that contains the answer of the interval:
+      The server will answer to the server that sent him the packet to calculate 
+      with a packet that contains the answer of the interval:
 * code 2 as a byte
 * size of the address of the initial client to identify him as a long
 * address of the client
 * identity of the calculation as a long
 * start of the interval calculated as a long
 * end of the interval calculated as a long
-* for each end - start strings the size as a long and then the string encoded in UTF-8
+* for each end - start strings the size as a long and then the string 
+encoded in UTF-8
 
 
 
@@ -154,49 +194,52 @@ extends the networks.
      +---------------- +---------------- +---------------- +---------------- +---------------- +----------------+----------------+----------------+     …       +----------------+----------------+
 
 
-      When a server gets an answer he will bring up the answers to the server that receives 
-      the request from the client and this server will send it to the client, if a server doesn't get 
-      the answer he will send the interval that is missing to one of his childrens.
+      When a server gets an answer he will bring up the answers to the server
+      that receives the request from the client and this server will send it to the
+      client, if a server doesn't get the answer he will send the interval that is
+      missing one of his childrens.
 
 
-      When a server is overworked he will just distribute the computation to his childrens and 
-      will not take any part of the interval, if the server has no childrens he will send it back to 
-      his parent until a server is free to do the calculation, a server is overworked when he 
-      gets more than 2 000 000 000 values.
+      When a server is overworked he will just distribute the computation to his
+      childrens and will not take any part of the interval, if the server has no childrens
+      he will send it back to his parent until a server is free to do the calculation, a
+      server is overworked when he gets more than 2 000 000 000 values.
 
 
-   2.3 Response to the client
+   3.3 Response to the client
 
 
-      Once an application that received a conjecture received results from the other 
-      application, he has to send a packet containing those results and the range of the 
-      computation to the client.
+      Once an application that received a conjecture received results from the other
+      application, he has to send a packet containing those results and the range of
+      the computation to the client.
 
 
       The packet of the response will contains:
       -           code 3 as a byte
       -           start of the interval as a long
       -           end of the interval as a long
-      -           then end - start values that is a size of the string as a long and the string encoded 
-               in UTF-8
+      -           then end - start values that is a size of the string as a long and the string
+               encoded in UTF-8
 
 
       The description of the packet is in 4.1.1.
 
 
-3. Client
+4. Client
      
-   First of all, the client has to set up its function which will be computed by the server into a 
-   packaged jar which will contains a single class implemented by a functional interface which
-   take an int as a parameter and then return a String. The client needs to connect to a server 
-   that is part of a computing distributed system. To do so, he needs the following 
-   information such as the address and port of the target server. He also needs the name of 
-   the final generated file containing the results of the conjecture.
+   First of all, the client has to set up its function which will be computed by the
+   server into a packaged jar which will contains a single class implemented by a
+   functional interface which takes an int as a parameter and then returns a String.
+   The client needs to connect to a server that is part of a computing distributed
+   system. To do so, he needs the following information such as the address and
+   port of the target server. He also needs the name of the final generated file
+   containing the results of the conjecture.
 
 
 
 
-   Then he has to send a packet containing information about the conjecture to compute : 
+   Then he has to send a packet containing information about the conjecture to
+   compute : 
    -        code 0 as a byte
    -        identity as a long
    -        size of the url of the jar as a long
@@ -213,26 +256,27 @@ extends the networks.
 
 
    
-   Once the conjecture is sent, the client has to wait until he receives responses. The 
-   expected packet is the ‘Conjecture response packet’ precisely described at the 
-   4.1.1 section. Then, the client has several information about the response, such as,
-   the range of the treated, and each line of the computation. This protocole ensure that the 
-   computation of a conjecture will be over and complete no matter what happens inside 
-   the system. Therefore, the client can wait until every range he receives correspond to the
-   full demand. Once he finally received all the conjecture, he generate a file containing 
-   all the received results are named by the given name in the beginning or by default 
+   Once the conjecture is sent, the client has to wait until he receives 
+   responses. The expected packet is the ‘Conjecture response packet’ precisely
+   described at the 4.1.1 section. Then, the client has several information about
+   the response, such as, the range of the treated, and each line of the
+   computation. This protocole ensure that the computation of a conjecture will be
+   over and complete no matter what happens inside the system. Therefore, the
+   client can wait until every range he receives correspond to the full demand.
+   Once he finally received all the conjecture, he generate a file containing all
+   the received results are named by the given name in the beginning or by default 
    ‘result.txt’.
 
 
 
 
-4. Annex
+5. Annex
 
 
-   4.1 Packet shared between application and client
+   5.1 Packet shared between application and client
 
 
-      4.1.1 Conjecture response packet
+      5.1.1 Conjecture response packet
 
 
             1 byte             8 bytes            8 bytes          8 bytes          size bytes                       8 bytes         size bytes
@@ -243,7 +287,7 @@ extends the networks.
 
 
 
-       4.1.2 Initiation packet
+       5.1.2 Initiation packet
 
 
     1 byte             8 bytes            8 bytes       size_url bytes     8 bytes          size bytes         8 bytes           8 bytes
