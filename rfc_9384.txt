@@ -1,6 +1,6 @@
 ﻿Gustave Eiffel University                         Ramaroson Rakotomihamina Johan
-Request For Comments: 9384                                       Tellier Quentin
-Category: Informational                                            February 2023
+Request For Comments: 9384                                                  Tellier Quentin
+Category: Informational                                                            February 2023
 
 
 
@@ -29,8 +29,19 @@ Summary
 Table of contents
 
 
-
-
+1. Purpose …………………………………………………………………............. 1
+2. Overview ……………………………………………………………………………........ 1
+3. Server ……………………………………………………………………............. 2
+3.1 Setup  ...………………………………………………………………........... 2
+3.2 Distribution ……………………………………………………………......... 3
+3.3 Response to the client ……………………………………………….... 4
+3.4 Clean disconnection case ………………………………………….... 4
+4. Client ………………………………………………………………………............ 4
+5. Annex …………………………………………………………………….............. 5
+5.1 Packet shared between application and client. 5
+      5.1.1 Conjecture response packet …………………... 6
+      5.1.2 Initiation packet …………………………………………….. 6
+5.2 Op codes ……………………………………………………………............. 6
 
 
 1. Purpose
@@ -53,6 +64,12 @@ Table of contents
    address of the client. 
 
 
+   In this memo, the notion of parent and children will be mentioned. From 
+   an application’s perspective, a parent is another application to which it 
+   decides to connect. On the other hand, a child is another application 
+   that has requested to connect with it.
+
+
    The Greed Protocol is based on the TCP protocol. Therefore, a Greed
    connection is in fact a TCP connection inside the distributed system and
    between the client and the application receiver.
@@ -65,14 +82,19 @@ Table of contents
 
    Packet shared inside of the distributed system must contains the address 
    of the client and its conjecture id. Please note that each conjecture’s
-   identity must be provided by the client as a long and this identity must be 
+   identity must be provided by the client as an integer and this identity must be 
    unique across all the conjectures that this client sends.
 
 
    Greed protocol ensure that the client will always get all of the requested
-   conjectures unless he decides to cut the connection himself or the target
+   conjectures unless he decides to cut the connection himself or if the target
    application respond with an op code error, this means that the
    application didn’t even attempt to compute the conjecture.
+
+
+   This protocol also ensure that the network will remain connected even if
+   an application of a system disconnects. The detail of the instructions
+   will be mentioned later in this memo.
 
 
 3. Server
@@ -115,19 +137,19 @@ computing system and extends the networks.
       If we disconnect a server that has to send responses to the client, we 
       send to the client the ip address and the port of the parent server, so the
       client will now be connected to this server and ask for the missing
-      interval with the packet in 4.1.2.
+      interval with the packet in 5.1.2.
 
 
       The packet to send the address of the parent server for the client:
-       -        code 3 as a byte
+       -        code 4 as a byte
        -        size of the address as a long
        -        address encoded in UTF-8
        -        port as a int
 
 
-            1 byte             8 bytes         size bytes        4 bytes
+            1 byte          8 bytes       size bytes       4 bytes
      +----------------+---------------+----------------+----------------+
-     |       code      |      size       |    address   |       port       |
+     |       0x04     |      size     |    address     |       port     |
      +----------------+---------------+----------------+----------------+
 
 
@@ -137,12 +159,12 @@ computing system and extends the networks.
 
 
       The packet to send when the ROOT is shut down:
-       -        code 4 as a byte
+       -        code 5 as a byte
 
 
             1 byte
      +----------------+
-     |       code      |
+     |       0x05     |
      +----------------+
 
 
@@ -151,7 +173,7 @@ computing system and extends the networks.
    3.2 Distribution
 
 
-      The server will distribute the interval that he receives, he will cut the 
+      The server will distribute the interval that he receives, he will cut the                                 
       interval according to the number of childrens he have and himself,
       he will create a data-struct and memorize for each new interval the
       answers that he already got, when a server gets a packet like that he
@@ -170,7 +192,7 @@ computing system and extends the networks.
 
            1 byte              8 bytes         size bytes        8 bytes            8 bytes            8 bytes
      +----------------+---------------+----------------+----------------+----------------+----------------+
-     |       code      |      size       |    address   |     identity    |       start      |        end       | 
+     |       0x01     |      size     |    address     |     identity   |       start    |        end     | 
      +----------------+---------------+----------------+----------------+----------------+----------------+
 
 
@@ -186,12 +208,16 @@ computing system and extends the networks.
 encoded in UTF-8
 
 
+      1 byte            8 bytes       size bytes       8 bytes         8 bytes
++----------------+----------------+----------------+----------------+----------------+
+l        0x02    |       size     |    address     |     identity   |      start     |  …
++----------------+----------------+----------------+----------------+----------------+
 
 
-           1 byte              8 bytes           size bytes             8 bytes              8 bytes                8 bytes          8 bytes           size bytes                              8 bytes          size bytes
-     +---------------- +---------------- +---------------- +---------------- +---------------- +----------------+----------------+----------------+     …       +----------------+----------------+
-     |       code       |        size       |    address    |     identity     |       start       |        end       |       size       |      result      |      …       |        size      |      result     | 
-     +---------------- +---------------- +---------------- +---------------- +---------------- +----------------+----------------+----------------+     …       +----------------+----------------+
+          8 bytes         8 bytes          8 bytes                   8 bytes         8 bytes
+    +----------------+----------------+----------------+ ….  +----------------+----------------+
+…   |        end     |       size     |       result   |  …. |      size      |     result     |
+    +----------------+----------------+----------------+ ….  +----------------+----------------+
 
 
       When a server gets an answer he will bring up the answers to the server
@@ -201,39 +227,53 @@ encoded in UTF-8
 
 
       When a server is overworked he will just distribute the computation to his
-      childrens and will not take any part of the interval, if the server has no childrens
-      he will send it back to his parent until a server is free to do the calculation, a
-      server is overworked when he gets more than 2 000 000 000 values.
+      childrens and will not take any part of the interval, if the server has no 
+      childrens he will send it back to his parent until a server is free to do the 
+      calculation, a server is overworked when he gets more than 2 000 000 000 
+      values.
 
 
    3.3 Response to the client
 
 
-      Once an application that received a conjecture received results from the other
-      application, he has to send a packet containing those results and the range of
-      the computation to the client.
+      Once an application that received a conjecture received results from the 
+      other application, he has to send a packet containing those results and the 
+      range of the computation to the client.
 
 
       The packet of the response will contains:
       -           code 3 as a byte
       -           start of the interval as a long
       -           end of the interval as a long
-      -           then end - start values that is a size of the string as a long and the string
-               encoded in UTF-8
+      -           then end - start values that is a size of the string as a long and the 
+               string encoded in UTF-8
 
 
-      The description of the packet is in 4.1.1.
+      The description of the packet is in 5.1.1.
+
+
+   3.4 Clean disconnection case
+      
+      When an application receive a disconnected command, he will perform
+      a series of operations to ensure consistent and stable state of the system.
+      First, he will update its state from “ACCEPT” mode to “REFUSE” mode, to
+      prevent the packet asking for a computation or a connection and refusing 
+      those by sending an error response with a packet containing only the 0x06 
+      byte. After that, the application will send to each childrens a packet 
+      containing the IP address and the port of its parent, then they will try make
+      a connection to this specific parent sending the LINK packet to the given
+      parent
 
 
 4. Client
      
    First of all, the client has to set up its function which will be computed by the
-   server into a packaged jar which will contains a single class implemented by a
-   functional interface which takes an int as a parameter and then returns a String.
-   The client needs to connect to a server that is part of a computing distributed
-   system. To do so, he needs the following information such as the address and
-   port of the target server. He also needs the name of the final generated file
-   containing the results of the conjecture.
+   server into a packaged jar which will contains a single class implemented by 
+   a functional interface which takes an int as a parameter and then returns a 
+   String. The client needs to connect to a server that is part of a computing 
+   distributed system. To do so, he needs the following information such as the 
+   address and port of the target server. He also needs the name of the final 
+   generated file containing the results of the conjecture.
 
 
 
@@ -250,22 +290,23 @@ encoded in UTF-8
    -        end of the interval as a long
 
 
-   The content of the packet is detailed in the 4.1.2 section.
+   The content of the packet is detailed in the 5.1.2 section.
 
 
 
 
    
    Once the conjecture is sent, the client has to wait until he receives 
-   responses. The expected packet is the ‘Conjecture response packet’ precisely
-   described at the 4.1.1 section. Then, the client has several information about
-   the response, such as, the range of the treated, and each line of the
-   computation. This protocole ensure that the computation of a conjecture will be
-   over and complete no matter what happens inside the system. Therefore, the
-   client can wait until every range he receives correspond to the full demand.
+   responses. The expected packet is the ‘Conjecture response packet’ 
+   precisely described at the 5.1.1 section. Then, the client has several 
+   information about the response, such as, the range of the treated, and each 
+   line of the computation. This protocole ensure that the computation of a 
+   conjecture will be over and complete no matter what happens inside the 
+   system. Therefore, the client can wait until every range he receives 
+   corresponds to the full demand.
    Once he finally received all the conjecture, he generate a file containing all
-   the received results are named by the given name in the beginning or by default 
-   ‘result.txt’.
+   the received results are named by the given name in the beginning or by 
+   default ‘result.txt’.
 
 
 
@@ -276,21 +317,57 @@ encoded in UTF-8
    5.1 Packet shared between application and client
 
 
-      5.1.1 Conjecture response packet
-
-
-            1 byte             8 bytes            8 bytes          8 bytes          size bytes                       8 bytes         size bytes
-     +----------------+----------------+---------------+----------------+----------------+    …    +----------------+----------------+
-     |       code      |       start      |       end      |       size       |      string     |     …     |      size       |       string     |
-     +----------------+----------------+---------------+----------------+----------------+    …    +----------------+----------------+
+      5.1.1 CONJECTURE packet
 
 
 
 
-       5.1.2 Initiation packet
 
 
-    1 byte             8 bytes            8 bytes       size_url bytes     8 bytes          size bytes         8 bytes           8 bytes
-     +----------------+---------------+----------------+----------------+----------------+----------------+----------------+----------------+
-     |       code      |    identity   |     size_url    |        url        |        size      |       class     |       start       |       end       | 
-     +----------------+---------------+----------------+----------------+----------------+----------------+----------------+----------------+
+      1 byte         8 bytes         8 bytes        8 bytes       size bytes
++---------------+---------------+---------------+---------------+----------------+
+|       0x03    |       start   |       end     |       size    |      string    | …
++---------------+---------------+---------------+---------------+----------------+
+
+
+
+
+
+
+         8 bytes      size string
+    +---------------+---------------+
+…   |      size     |    string     |
+    +---------------+---------------+
+
+
+
+
+       5.1.2 LINK packet
+
+
+  
+        1 byte          8 bytes       8 bytes   size_url bytes  8 bytes   size bytes
++---------------+---------------+---------------+-------------+--------------+--------------+
+|      0x00     |     identity  |    size_url   |       url   |       size     |     class  | …
++---------------+---------------+---------------+-------------+--------------+--------------+
+
+
+         8 bytes        8 bytes
+    +---------------+---------------+
+…   |      start      |        end  |
+    +---------------+---------------+
+
+
+      
+
+
+   5.2. Op codes
+
+
+      There is different opcodes in the protocol:
+* 0x00: is the initial packet that the client send to the server to initiate a computation
+* 0x01 is the packet that servers will use to distribute the computation in intervals
+* 0x02 is the packet that a server will use to send the answer of an interval to another server
+* 0x03 is the packet that a server will use to send the answer of an interval to a client
+* 0x04 is the packet to specify a new address to the client when a server is shut down
+* 0x05 is the packet that the ROOT server send to all the servers when he is shut down
