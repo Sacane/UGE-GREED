@@ -103,7 +103,7 @@ public class Server {
     }
 
     public static void main(String[] args) throws NumberFormatException, IOException {
-        if (args.length != 1 || args.length != 3) {
+        if (args.length != 1 && args.length != 3) {
             usage();
             return;
         }
