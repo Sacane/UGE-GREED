@@ -17,10 +17,6 @@ public class IPPacket implements Packet {
         this.address = address;
     }
 
-    public String getAddress() {
-        return address;
-    }
-
     public void putInBuffer(ByteBuffer buffer) {
         buffer.put(size);
 
