@@ -19,7 +19,6 @@ public class Server {
     private SelectionKey serverKey;
     private SelectionKey parentKey;
     private final Selector selector;
-    private final boolean isRoot;
 
     private Server(int port) throws IOException {
         serverSocketChannel = ServerSocketChannel.open();
@@ -27,7 +26,6 @@ public class Server {
         parentSocketChannel = null;
         parentSocketAddress = null;
         selector = Selector.open();
-        isRoot = true;
     }
 
     private Server(int hostPort, String IP, int connectPort) throws IOException {
@@ -36,7 +34,6 @@ public class Server {
         parentSocketChannel = SocketChannel.open();
         parentSocketAddress = new InetSocketAddress(IP, connectPort);
         selector = Selector.open();
-        isRoot = false;
     }
 
     private static Server createROOT(int port) throws IOException {
@@ -113,7 +110,9 @@ public class Server {
             return ;
 
         var socketKey = key.interestOps(SelectionKey.OP_WRITE);
-        socketKey.attach(new Context(this, socketKey));
+        var context = new Context(this, socketKey);
+        context.queuePacket("COUCOU");
+        socketKey.attach(context);
     }
 
     private void doAccept(SelectionKey key) throws IOException {

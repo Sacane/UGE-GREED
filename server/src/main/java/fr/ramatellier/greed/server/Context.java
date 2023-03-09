@@ -1,5 +1,8 @@
 package fr.ramatellier.greed.server;
 
+import fr.ramatellier.greed.server.reader.Reader;
+import fr.ramatellier.greed.server.reader.StringReader;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
@@ -12,7 +15,8 @@ public class Context {
     private final SocketChannel sc;
     private final ByteBuffer bufferIn = ByteBuffer.allocate(BUFFER_SIZE);
     private final ByteBuffer bufferOut = ByteBuffer.allocate(BUFFER_SIZE);
-    private final ArrayDeque<Packet> queue = new ArrayDeque<>();
+    private final StringReader stringReader = new StringReader();
+    private final ArrayDeque<String> queue = new ArrayDeque<>();
     private final Server server; // we could also have Context as an instance class, which would naturally
     // give access to ServerChatInt.this
     private boolean closed = false;
@@ -24,9 +28,24 @@ public class Context {
     }
 
     private void processIn() {
+        for (;;) {
+            Reader.ProcessStatus status = stringReader.process(bufferIn);
+            switch (status) {
+                case DONE:
+                    var msg = stringReader.get();
+                    System.out.println(msg);
+                    stringReader.reset();
+                    break;
+                case REFILL:
+                    return;
+                case ERROR:
+                    silentlyClose();
+                    return;
+            }
+        }
     }
 
-    public void queuePacket(Packet packet) {
+    public void queuePacket(String packet) {
         queue.add(packet);
 
         processOut();

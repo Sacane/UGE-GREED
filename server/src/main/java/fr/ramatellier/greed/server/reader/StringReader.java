@@ -4,28 +4,30 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
-import static fr.ramatellier.greed.server.reader.Reader.ProcessStatus.DONE;
-import static fr.ramatellier.greed.server.reader.Reader.ProcessStatus.REFILL;
-
 public class StringReader implements Reader<String> {
     private enum State {
         DONE, WAITING_INT, WAITING_STRING, ERROR
-    };
+    }
     private static final Charset UTF8 = StandardCharsets.UTF_8;
     private final IntReader intReader = new IntReader();
-    private int stringBufferSize;
     private ByteBuffer stringBuffer;
     private State state = State.WAITING_INT;
     private String value;
 
     private static void fillBuffer(ByteBuffer srcBuffer, ByteBuffer dstBuffer) {
-        if (srcBuffer.remaining() <= dstBuffer.remaining()) {
-            dstBuffer.put(srcBuffer);
-        } else {
-            var oldLimit = srcBuffer.limit();
-            srcBuffer.limit(srcBuffer.position() + dstBuffer.remaining());
-            dstBuffer.put(srcBuffer);
-            srcBuffer.limit(oldLimit);
+        try {
+            srcBuffer.flip();
+
+            if (srcBuffer.remaining() <= dstBuffer.remaining()) {
+                dstBuffer.put(srcBuffer);
+            } else {
+                var oldLimit = srcBuffer.limit();
+                srcBuffer.limit(srcBuffer.position() + dstBuffer.remaining());
+                dstBuffer.put(srcBuffer);
+                srcBuffer.limit(oldLimit);
+            }
+        } finally {
+            srcBuffer.compact();
         }
     }
 
@@ -39,25 +41,20 @@ public class StringReader implements Reader<String> {
             var status = intReader.process(buffer);
 
             if(status == ProcessStatus.DONE) {
-                stringBufferSize = intReader.get();
+                var size = intReader.get();
 
-                if(stringBufferSize < 0 || stringBufferSize > 1024) {
+                if(size < 0 || size > 1024) {
                     return ProcessStatus.ERROR;
                 }
-                stringBuffer = ByteBuffer.allocate(stringBufferSize);
+                stringBuffer = ByteBuffer.allocate(size);
                 state = State.WAITING_STRING;
             }
         }
         if(state == State.WAITING_STRING) {
-            buffer.flip();
-            try {
-                fillBuffer(buffer, stringBuffer);
+            fillBuffer(buffer, stringBuffer);
 
-                if(!stringBuffer.hasRemaining()) {
-                    state = State.DONE;
-                }
-            } finally {
-                buffer.compact();
+            if(!stringBuffer.hasRemaining()) {
+                state = State.DONE;
             }
         }
 
