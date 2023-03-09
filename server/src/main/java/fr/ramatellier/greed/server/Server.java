@@ -15,11 +15,28 @@ public class Server {
     private static final Logger logger = Logger.getLogger(Server.class.getName());
     private final ServerSocketChannel serverSocketChannel;
     private final Selector selector;
+    private final boolean isRoot;
 
-    public Server(int port) throws IOException {
+    private Server(int port) throws IOException {
         serverSocketChannel = ServerSocketChannel.open();
         serverSocketChannel.bind(new InetSocketAddress(port));
         selector = Selector.open();
+        isRoot = true;
+    }
+
+    private Server(int hostPort, String IP, int connectPort) throws IOException {
+        serverSocketChannel = ServerSocketChannel.open();
+        serverSocketChannel.bind(new InetSocketAddress(hostPort));
+        selector = Selector.open();
+        isRoot = false;
+    }
+
+    private static Server createROOT(int port) throws IOException {
+        return new Server(port);
+    }
+
+    private static Server createCONNECTED(int hostPort, String IP, int connectPort) throws IOException {
+        return new Server(hostPort, IP, connectPort);
     }
 
     public void launch() throws IOException {
@@ -45,7 +62,6 @@ public class Server {
                 doAccept(key);
             }
         } catch (IOException ioe) {
-            // lambda call in select requires to tunnel IOException
             throw new UncheckedIOException(ioe);
         }
         try {
@@ -84,24 +100,24 @@ public class Server {
     }
 
     private void broadcast(Packet packet) {
-        for (var key : selector.keys()) {
-            if (key.attachment() != null) {
-                var context = (Context) key.attachment();
-                context.queuePacket(packet);
-            }
-        }
     }
 
     public static void main(String[] args) throws NumberFormatException, IOException {
-        if (args.length != 1) {
+        if (args.length != 1 || args.length != 3) {
             usage();
             return;
         }
 
-        new Server(Integer.parseInt(args[0])).launch();
+        if(args.length == 1) {
+            createROOT(Integer.parseInt(args[0])).launch();
+        }
+        else {
+            createCONNECTED(Integer.parseInt(args[0]), args[1], Integer.parseInt(args[2])).launch();
+        }
     }
 
     private static void usage() {
-        System.out.println("Usage : Server port");
+        System.out.println("Usage (ROOT MODE) : Server port");
+        System.out.println("Usage (CONNECTED MODE) : Server port IP port");
     }
 }
