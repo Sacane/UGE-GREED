@@ -111,7 +111,7 @@ public class Server {
 
         key.interestOps(SelectionKey.OP_READ);
         var context = new Context(this, parentKey);
-        context.queuePacket("COUCOU");
+        context.queuePacket(new ConnectPacket((InetSocketAddress) serverSocketChannel.getLocalAddress()));
         parentKey.attach(context);
     }
 

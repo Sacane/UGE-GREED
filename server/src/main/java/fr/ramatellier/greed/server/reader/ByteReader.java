@@ -7,7 +7,7 @@ public class ByteReader implements Reader<Byte> {
         DONE, WAITING, ERROR
     };
     private State state = State.WAITING;
-    private final ByteBuffer internalBuffer = ByteBuffer.allocate(Integer.BYTES); // write-mode
+    private final ByteBuffer internalBuffer = ByteBuffer.allocate(Byte.BYTES); // write-mode
     private byte value;
 
     @Override
@@ -34,6 +34,7 @@ public class ByteReader implements Reader<Byte> {
         state = State.DONE;
         internalBuffer.flip();
         value = internalBuffer.get();
+
         return Reader.ProcessStatus.DONE;
     }
 
@@ -42,6 +43,7 @@ public class ByteReader implements Reader<Byte> {
         if (state != State.DONE) {
             throw new IllegalStateException();
         }
+
         return value;
     }
 

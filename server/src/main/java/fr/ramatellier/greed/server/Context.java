@@ -1,5 +1,6 @@
 package fr.ramatellier.greed.server;
 
+import fr.ramatellier.greed.server.reader.PacketReader;
 import fr.ramatellier.greed.server.reader.Reader;
 import fr.ramatellier.greed.server.reader.StringReader;
 
@@ -18,8 +19,8 @@ public class Context {
     private final SocketChannel sc;
     private final ByteBuffer bufferIn = ByteBuffer.allocate(BUFFER_SIZE);
     private final ByteBuffer bufferOut = ByteBuffer.allocate(BUFFER_SIZE);
-    private final StringReader stringReader = new StringReader();
-    private final ArrayDeque<String> queue = new ArrayDeque<>();
+    private final PacketReader packetReader = new PacketReader();
+    private final ArrayDeque<Packet> queue = new ArrayDeque<>();
     private final Server server; // we could also have Context as an instance class, which would naturally
     // give access to ServerChatInt.this
     private boolean closed = false;
@@ -32,12 +33,12 @@ public class Context {
 
     private void processIn() {
         for (;;) {
-            Reader.ProcessStatus status = stringReader.process(bufferIn);
+            Reader.ProcessStatus status = packetReader.process(bufferIn);
             switch (status) {
                 case DONE:
-                    var msg = stringReader.get();
-                    System.out.println(msg);
-                    stringReader.reset();
+                    var packet = packetReader.get();
+                    System.out.println(packet);
+                    packetReader.reset();
                     break;
                 case REFILL:
                     return;
@@ -48,7 +49,7 @@ public class Context {
         }
     }
 
-    public void queuePacket(String packet) {
+    public void queuePacket(Packet packet) {
         queue.add(packet);
 
         processOut();
@@ -56,12 +57,10 @@ public class Context {
     }
 
     private void processOut() {
-        while(bufferOut.remaining() >= 1024 && !queue.isEmpty()) {
-            var msg = queue.poll();
-            var send = UTF8.encode(msg);
+        while(!queue.isEmpty()) {
+            var packet = queue.poll();
 
-            bufferOut.putInt(send.remaining());
-            bufferOut.put(send);
+            packet.putInBuffer(bufferOut);
         }
     }
 
