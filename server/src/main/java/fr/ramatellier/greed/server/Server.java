@@ -14,12 +14,18 @@ public class Server {
     private static final int BUFFER_SIZE = 1_024;
     private static final Logger logger = Logger.getLogger(Server.class.getName());
     private final ServerSocketChannel serverSocketChannel;
+    private final SocketChannel parentSocketChannel;
+    private final InetSocketAddress parentSocketAddress;
+    private SelectionKey serverKey;
+    private SelectionKey parentKey;
     private final Selector selector;
     private final boolean isRoot;
 
     private Server(int port) throws IOException {
         serverSocketChannel = ServerSocketChannel.open();
         serverSocketChannel.bind(new InetSocketAddress(port));
+        parentSocketChannel = null;
+        parentSocketAddress = null;
         selector = Selector.open();
         isRoot = true;
     }
@@ -27,6 +33,8 @@ public class Server {
     private Server(int hostPort, String IP, int connectPort) throws IOException {
         serverSocketChannel = ServerSocketChannel.open();
         serverSocketChannel.bind(new InetSocketAddress(hostPort));
+        parentSocketChannel = SocketChannel.open();
+        parentSocketAddress = new InetSocketAddress(IP, connectPort);
         selector = Selector.open();
         isRoot = false;
     }
@@ -39,9 +47,29 @@ public class Server {
         return new Server(hostPort, IP, connectPort);
     }
 
+    private void connect() throws IOException {
+        serverSocketChannel.configureBlocking(false);
+        serverKey = serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
+
+        parentSocketChannel.configureBlocking(false);
+        parentSocketChannel.connect(parentSocketAddress);
+        parentKey = parentSocketChannel.register(selector, SelectionKey.OP_CONNECT);
+
+        while (!Thread.interrupted()) {
+            Helpers.printKeys(selector); // for debug
+            System.out.println("Starting select");
+            try {
+                selector.select(this::treatKey);
+            } catch (UncheckedIOException tunneled) {
+                throw tunneled.getCause();
+            }
+            System.out.println("Select finished");
+        }
+    }
+
     public void launch() throws IOException {
         serverSocketChannel.configureBlocking(false);
-        serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
+        serverKey = serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
 
         while (!Thread.interrupted()) {
             Helpers.printKeys(selector); // for debug
@@ -58,7 +86,10 @@ public class Server {
     private void treatKey(SelectionKey key) {
         Helpers.printSelectedKey(key); // for debug
         try {
-            if (key.isValid() && key.isAcceptable()) {
+            if (key.isValid() && key.equals(parentKey) && key.isConnectable()) {
+                doConnect(key);
+            }
+            if (key.isValid() && key.equals(serverKey) && key.isAcceptable()) {
                 doAccept(key);
             }
         } catch (IOException ioe) {
@@ -75,6 +106,14 @@ public class Server {
             logger.log(Level.INFO, "Connection closed with client due to IOException", e);
             silentlyClose(key);
         }
+    }
+
+    private void doConnect(SelectionKey key) throws IOException {
+        if (!parentSocketChannel.finishConnect())
+            return ;
+
+        var socketKey = key.interestOps(SelectionKey.OP_WRITE);
+        socketKey.attach(new Context(this, socketKey));
     }
 
     private void doAccept(SelectionKey key) throws IOException {
@@ -112,7 +151,7 @@ public class Server {
             createROOT(Integer.parseInt(args[0])).launch();
         }
         else {
-            createCONNECTED(Integer.parseInt(args[0]), args[1], Integer.parseInt(args[2])).launch();
+            createCONNECTED(Integer.parseInt(args[0]), args[1], Integer.parseInt(args[2])).connect();
         }
     }
 
