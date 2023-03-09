@@ -2,11 +2,10 @@ package fr.ramatellier.greed.server.reader;
 
 import java.nio.ByteBuffer;
 //TODO factor code with IntReader
-public class ByteReader implements Reader<Byte>{
+public class ByteReader implements Reader<Byte> {
     private enum State {
         DONE, WAITING, ERROR
     };
-
     private State state = State.WAITING;
     private final ByteBuffer internalBuffer = ByteBuffer.allocate(Integer.BYTES); // write-mode
     private byte value;

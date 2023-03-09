@@ -3,7 +3,6 @@ package fr.ramatellier.greed.server.reader;
 import java.nio.ByteBuffer;
 
 public class IntReader implements Reader<Integer> {
-
     private enum State {
         DONE, WAITING, ERROR
     };
