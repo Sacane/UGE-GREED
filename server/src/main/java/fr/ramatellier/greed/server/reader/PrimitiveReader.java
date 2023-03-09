@@ -7,19 +7,20 @@ import java.util.function.Function;
  * Perform reader of a primitive Value, passing its number of bytes in constructor.
  * @param <T>
  */
-abstract class PrimitiveReader<T> implements Reader<T> {
+abstract class PrimitiveReader<T> implements Reader<T>{
     private enum State {
         DONE, WAITING, ERROR
-    }
+    };
+
     private State state = State.WAITING;
     private final ByteBuffer internalBuffer; // write-mode
     private T value;
     private final Function<ByteBuffer, T> converter;
-
-    PrimitiveReader(int nbByte, Function<ByteBuffer, T> converter) {
+    PrimitiveReader(int nbByte, Function<ByteBuffer, T> converter){
         this.internalBuffer = ByteBuffer.allocate(nbByte);
         this.converter = converter;
     }
+
 
     @Override
     public ProcessStatus process(ByteBuffer buffer) {
