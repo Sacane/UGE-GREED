@@ -11,14 +11,6 @@ public class IDPacket implements Packet {
         this.port = port;
     }
 
-    public String getAddress() {
-        return ipPacket.getAddress();
-    }
-
-    public int getPort() {
-        return port;
-    }
-
     @Override
     public void putInBuffer(ByteBuffer buffer) {
         ipPacket.putInBuffer(buffer);
