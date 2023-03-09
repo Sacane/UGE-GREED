@@ -7,9 +7,12 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 
 public class Context {
+    private static final Charset UTF8 = StandardCharsets.UTF_8;
     private static final int BUFFER_SIZE = 1_024;
     private final SelectionKey key;
     private final SocketChannel sc;
@@ -53,6 +56,13 @@ public class Context {
     }
 
     private void processOut() {
+        while(bufferOut.remaining() >= 1024 && !queue.isEmpty()) {
+            var msg = queue.poll();
+            var send = UTF8.encode(msg);
+
+            bufferOut.putInt(send.remaining());
+            bufferOut.put(send);
+        }
     }
 
     private void updateInterestOps() {

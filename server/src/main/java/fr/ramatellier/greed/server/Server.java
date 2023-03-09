@@ -109,10 +109,10 @@ public class Server {
         if (!parentSocketChannel.finishConnect())
             return ;
 
-        var socketKey = key.interestOps(SelectionKey.OP_WRITE);
-        var context = new Context(this, socketKey);
+        key.interestOps(SelectionKey.OP_READ);
+        var context = new Context(this, parentKey);
         context.queuePacket("COUCOU");
-        socketKey.attach(context);
+        parentKey.attach(context);
     }
 
     private void doAccept(SelectionKey key) throws IOException {
