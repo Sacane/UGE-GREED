@@ -10,4 +10,21 @@ public interface Reader<T> {
     public T get();
 
     public void reset();
+
+    default void fillBuffer(ByteBuffer srcBuffer, ByteBuffer dstBuffer) {
+        try {
+            srcBuffer.flip();
+
+            if (srcBuffer.remaining() <= dstBuffer.remaining()) {
+                dstBuffer.put(srcBuffer);
+            } else {
+                var oldLimit = srcBuffer.limit();
+                srcBuffer.limit(srcBuffer.position() + dstBuffer.remaining());
+                dstBuffer.put(srcBuffer);
+                srcBuffer.limit(oldLimit);
+            }
+        } finally {
+            srcBuffer.compact();
+        }
+    }
 }

@@ -14,23 +14,6 @@ public class StringReader implements Reader<String> {
     private State state = State.WAITING_INT;
     private String value;
 
-    private static void fillBuffer(ByteBuffer srcBuffer, ByteBuffer dstBuffer) {
-        try {
-            srcBuffer.flip();
-
-            if (srcBuffer.remaining() <= dstBuffer.remaining()) {
-                dstBuffer.put(srcBuffer);
-            } else {
-                var oldLimit = srcBuffer.limit();
-                srcBuffer.limit(srcBuffer.position() + dstBuffer.remaining());
-                dstBuffer.put(srcBuffer);
-                srcBuffer.limit(oldLimit);
-            }
-        } finally {
-            srcBuffer.compact();
-        }
-    }
-
     @Override
     public ProcessStatus process(ByteBuffer buffer) {
         if (state == State.DONE || state == State.ERROR) {
