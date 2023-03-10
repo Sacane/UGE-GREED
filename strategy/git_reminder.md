@@ -1,9 +1,7 @@
 # Strategie de notre utilisation de git en équipe
 
 
-## 1. lifecycle
-
-### 1.1. Avant de travailler 
+## 1. Avant de travailler
 
 Je récupère la dernière version de la branche main
 
@@ -11,11 +9,11 @@ menu Git -> **Fetch**, puis selectionner la local branche main -> **update**
 puis basculer sur sa branche (quentin, johan..) avec checkout puis selectionner main -> 'rebase **my branch** onto main'
 
 
-#### 1.2 Pendant que je travaille
+## 2 Pendant que je travail
 
 Lorsque je termine une fonction, une fonctionnalité, quelque chose d'explicite et qu'elle compile, je commit avec un message explicite sur ce que j'ai fait.
 
-#### 1.3. Quand je termine de travailler
+## 3. Quand je termine de travailler
 
 Je push ma branche sur le serveur avec menu Git -> **Push** -> **Push my branch**
 
