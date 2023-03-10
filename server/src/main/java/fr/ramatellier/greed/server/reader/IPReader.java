@@ -2,6 +2,8 @@ package fr.ramatellier.greed.server.reader;
 
 import fr.ramatellier.greed.server.IPPacket;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
@@ -41,27 +43,33 @@ public class IPReader implements Reader<IPPacket> {
             if(!addressBuffer.hasRemaining()) {
                 addressBuffer.flip();
                 String address;
-
-                if(sizeReader.get() == 4) {
-                    var values = new ArrayList<Byte>();
-
-                    for(var i = 0; i < 4; i++) {
-                        values.add(addressBuffer.get());
-                    }
-
-                    address = values.stream().map(s -> s.toString()).collect(Collectors.joining("."));
+                try {
+                    var bytes = new byte[addressBuffer.remaining()];
+                    var addres = InetAddress.getByAddress(bytes);
+                    value = new IPPacket(addres.getHostAddress());
+                } catch (UnknownHostException e) {
+                    throw new RuntimeException(e);
                 }
-                else {
-                    var values = new ArrayList<Short>();
-
-                    for(var i = 0; i < 8; i++) {
-                        values.add(addressBuffer.getShort());
-                    }
-
-                    address = values.stream().map(s -> s.toString()).collect(Collectors.joining(":"));
-                }
+//                if(sizeReader.get() == 4) {
+//                    var values = new ArrayList<Byte>();
+//
+//                    for(var i = 0; i < 4; i++) {
+//                        values.add(addressBuffer.get());
+//                    }
+//
+//                    address = values.stream().map(s -> s.toString()).collect(Collectors.joining("."));
+//                }
+//                else {
+//                    var values = new ArrayList<Short>();
+//
+//                    for(var i = 0; i < 8; i++) {
+//                        values.add(addressBuffer.getShort());
+//                    }
+//
+//                    address = values.stream().map(s -> s.toString()).collect(Collectors.joining(":"));
+//                }
                 state = State.DONE;
-                value = new IPPacket(address);
+//                value = new IPPacket(address);
             }
         }
 
