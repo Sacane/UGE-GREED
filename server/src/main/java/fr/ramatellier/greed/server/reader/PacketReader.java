@@ -13,6 +13,7 @@ public class PacketReader implements Reader<Packet> {
     private State state = State.WAITING_LOCATION;
     private final ByteReader locationReader = new ByteReader();
     private final ByteReader codeReader = new ByteReader();
+    private final IDReader idReader = new IDReader();
     private Packet value;
 
     @Override
@@ -36,9 +37,17 @@ public class PacketReader implements Reader<Packet> {
             }
         }
 
-        if(state == State.WAITING_PACKET && locationReader.get() == 0 && codeReader.get() == 1) {
-            value = new TestPacket("COUCOU");
-            state = State.DONE;
+        if(state == State.WAITING_PACKET) {
+            if(locationReader.get() == 0 && codeReader.get() == 1) {
+                var status = idReader.process(buffer);
+
+                if(status == ProcessStatus.DONE) {
+                    var packet = idReader.get();
+                    System.out.println("Demande de connexion depuis " + packet.getAddress() + " " + packet.getPort());
+                    value = new TestPacket("COUCOU");
+                    state = State.DONE;
+                }
+            }
         }
 
         if (state != State.DONE) {
@@ -62,5 +71,6 @@ public class PacketReader implements Reader<Packet> {
         state = State.WAITING_LOCATION;
         locationReader.reset();
         codeReader.reset();
+        idReader.reset();
     }
 }
