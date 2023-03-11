@@ -1,11 +1,15 @@
 package fr.ramatellier.greed.server;
 
+import fr.ramatellier.greed.server.util.RootTable;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.*;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -19,21 +23,45 @@ public class Server {
     private SelectionKey serverKey;
     private SelectionKey parentKey;
     private final Selector selector;
+    private final InetSocketAddress address;
+    private boolean isRunning = true;
+    private final RootTable rootTable = new RootTable();
 
     private Server(int port) throws IOException {
+        address = new InetSocketAddress(port);
         serverSocketChannel = ServerSocketChannel.open();
-        serverSocketChannel.bind(new InetSocketAddress(port));
+        serverSocketChannel.bind(address);
         parentSocketChannel = null;
         parentSocketAddress = null;
         selector = Selector.open();
     }
 
     private Server(int hostPort, String IP, int connectPort) throws IOException {
+        address = new InetSocketAddress(hostPort);
         serverSocketChannel = ServerSocketChannel.open();
-        serverSocketChannel.bind(new InetSocketAddress(hostPort));
+        serverSocketChannel.bind(address);
         parentSocketChannel = SocketChannel.open();
         parentSocketAddress = new InetSocketAddress(IP, connectPort);
         selector = Selector.open();
+    }
+
+    public InetSocketAddress getAddress() {
+        return address;
+    }
+
+    public boolean isRunning() {
+        return isRunning;
+    }
+
+    public void addRoot(InetSocketAddress src, InetSocketAddress dst) {
+        if(!src.equals(address)) {
+            rootTable.putOrUpdate(src, dst);
+            System.out.println(rootTable);
+        }
+    }
+
+    public List<InetSocketAddress> neighbours() {
+        return rootTable.keys();
     }
 
     private static Server createROOT(int port) throws IOException {
@@ -53,7 +81,7 @@ public class Server {
         parentKey = parentSocketChannel.register(selector, SelectionKey.OP_CONNECT);
 
         while (!Thread.interrupted()) {
-            Helpers.printKeys(selector); // for debug
+            // Helpers.printKeys(selector); // for debug
             System.out.println("Starting select");
             try {
                 selector.select(this::treatKey);
@@ -69,7 +97,7 @@ public class Server {
         serverKey = serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
 
         while (!Thread.interrupted()) {
-            Helpers.printKeys(selector); // for debug
+            // Helpers.printKeys(selector); // for debug
             System.out.println("Starting select");
             try {
                 selector.select(this::treatKey);
@@ -81,7 +109,7 @@ public class Server {
     }
 
     private void treatKey(SelectionKey key) {
-        Helpers.printSelectedKey(key); // for debug
+        // Helpers.printSelectedKey(key); // for debug
         try {
             if (key.isValid() && key.equals(parentKey) && key.isConnectable()) {
                 doConnect(key);

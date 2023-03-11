@@ -2,18 +2,20 @@ package fr.ramatellier.greed.server.reader;
 
 import fr.ramatellier.greed.server.ConnectPacket;
 import fr.ramatellier.greed.server.Packet;
-import fr.ramatellier.greed.server.TestPacket;
+import fr.ramatellier.greed.server.util.OpCodes;
 
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
 public class PacketReader implements Reader<Packet> {
     private enum State {
         DONE, WAITING_LOCATION, WAITING_CODE, WAITING_PACKET, ERROR
-    };
+    }
     private State state = State.WAITING_LOCATION;
     private final ByteReader locationReader = new ByteReader();
     private final ByteReader codeReader = new ByteReader();
     private final IDReader idReader = new IDReader();
+    private final ConnectOKPacketReader connectOKPacketReader = new ConnectOKPacketReader();
     private Packet value;
 
     @Override
@@ -38,13 +40,22 @@ public class PacketReader implements Reader<Packet> {
         }
 
         if(state == State.WAITING_PACKET) {
-            if(locationReader.get() == 0 && codeReader.get() == 1) {
+            if(locationReader.get() == 0 && codeReader.get() == OpCodes.CONNECT) {
                 var status = idReader.process(buffer);
 
                 if(status == ProcessStatus.DONE) {
                     var packet = idReader.get();
-                    System.out.println("Demande de connexion depuis " + packet.getAddress() + " " + packet.getPort());
-                    value = new TestPacket("COUCOU");
+                    // System.out.println("Demande de connexion depuis " + packet.getAddress() + " " + packet.getPort());
+                    // value = new TestPacket("COUCOU");
+                    value = new ConnectPacket(new InetSocketAddress(packet.getAddress(), packet.getPort()));
+                    state = State.DONE;
+                }
+            }
+            else if(locationReader.get() == 0 && codeReader.get() == OpCodes.OK) {
+                var status = connectOKPacketReader.process(buffer);
+
+                if(status == ProcessStatus.DONE) {
+                    value = connectOKPacketReader.get();
                     state = State.DONE;
                 }
             }

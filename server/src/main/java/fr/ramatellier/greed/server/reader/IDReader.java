@@ -2,6 +2,7 @@ package fr.ramatellier.greed.server.reader;
 
 import fr.ramatellier.greed.server.IDPacket;
 
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
 public class IDReader implements Reader<IDPacket> {
@@ -32,7 +33,7 @@ public class IDReader implements Reader<IDPacket> {
             if(status == ProcessStatus.DONE) {
                 state = State.DONE;
 
-                value = new IDPacket(ipReader.get().getAddress(), portReader.get());
+                value = new IDPacket(new InetSocketAddress(ipReader.get().getAddress(), portReader.get()));
             }
         }
 

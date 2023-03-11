@@ -5,6 +5,7 @@ import fr.ramatellier.greed.server.reader.Reader;
 import fr.ramatellier.greed.server.reader.StringReader;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
@@ -37,7 +38,37 @@ public class Context {
             switch (status) {
                 case DONE:
                     var packet = packetReader.get();
-                    System.out.println(packet);
+
+                    switch (packet) {
+                        case ConnectPacket connectionPacket:
+                            if(server.isRunning()) {
+                                System.out.println("Demande de connexion depuis " + connectionPacket.getAddress() + " " + connectionPacket.getPort());
+
+                                var response = new ConnectOKPacket(server.getAddress(), server.neighbours());
+                                queuePacket(response);
+
+                                var address = connectionPacket.getSocket();
+                                server.addRoot(address, address);
+                            }
+                            break;
+                        case ConnectOKPacket connectOKPacket:
+                            System.out.println("Connexion acceptée depuis " + connectOKPacket.getAddress() + " " + connectOKPacket.getPort());
+
+                            var addressMother = connectOKPacket.getMotherAddress();
+                            for(var neighbor: connectOKPacket.neighbours()) {
+                                server.addRoot(neighbor, addressMother);
+                            }
+                            server.addRoot(addressMother, addressMother);
+
+                            break;
+                        case TestPacket testPacket:
+                            System.out.println(testPacket);
+                            break;
+                        default:
+                            System.out.println("Paquet inconnu");
+                            break;
+                    }
+
                     packetReader.reset();
                     break;
                 case REFILL:

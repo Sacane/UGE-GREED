@@ -7,7 +7,19 @@ public class ConnectPacket implements Packet {
     private final IDPacket idPacket;
 
     public ConnectPacket(InetSocketAddress address) {
-        idPacket = new IDPacket(address.getHostName(), address.getPort());
+        idPacket = new IDPacket(address);
+    }
+
+    public String getAddress() {
+        return idPacket.getAddress();
+    }
+
+    public int getPort() {
+        return idPacket.getPort();
+    }
+
+    public InetSocketAddress getSocket() {
+        return idPacket.getSocket();
     }
 
     public void putInBuffer(ByteBuffer buffer) {
