@@ -74,23 +74,11 @@ public class Server {
     }
 
     private void connect() throws IOException {
-        serverSocketChannel.configureBlocking(false);
-        serverKey = serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
-
         parentSocketChannel.configureBlocking(false);
         parentSocketChannel.connect(parentSocketAddress);
         parentKey = parentSocketChannel.register(selector, SelectionKey.OP_CONNECT);
 
-        while (!Thread.interrupted()) {
-            // Helpers.printKeys(selector); // for debug
-            System.out.println("Starting select");
-            try {
-                selector.select(this::treatKey);
-            } catch (UncheckedIOException tunneled) {
-                throw tunneled.getCause();
-            }
-            System.out.println("Select finished");
-        }
+        launch();
     }
 
     public void launch() throws IOException {
