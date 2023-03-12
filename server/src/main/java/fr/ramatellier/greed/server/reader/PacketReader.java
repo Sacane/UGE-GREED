@@ -1,7 +1,6 @@
 package fr.ramatellier.greed.server.reader;
 
-import fr.ramatellier.greed.server.ConnectPacket;
-import fr.ramatellier.greed.server.Packet;
+import fr.ramatellier.greed.server.packet.Packet;
 import fr.ramatellier.greed.server.TestPacket;
 
 import java.nio.ByteBuffer;

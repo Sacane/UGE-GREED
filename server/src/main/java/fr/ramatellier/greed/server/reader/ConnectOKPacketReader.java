@@ -1,7 +1,7 @@
 package fr.ramatellier.greed.server.reader;
 
-import fr.ramatellier.greed.server.ConnectOKPacket;
-import fr.ramatellier.greed.server.IDPacket;
+import fr.ramatellier.greed.server.packet.ConnectOKPacket;
+import fr.ramatellier.greed.server.packet.IDPacket;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;

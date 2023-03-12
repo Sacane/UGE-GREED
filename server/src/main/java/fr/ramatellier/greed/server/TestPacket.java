@@ -1,5 +1,7 @@
 package fr.ramatellier.greed.server;
 
+import fr.ramatellier.greed.server.packet.Packet;
+
 import java.nio.ByteBuffer;
 
 public class TestPacket implements Packet {

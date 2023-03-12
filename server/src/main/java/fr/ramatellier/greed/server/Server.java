@@ -1,5 +1,7 @@
 package fr.ramatellier.greed.server;
 
+import fr.ramatellier.greed.server.packet.ConnectPacket;
+import fr.ramatellier.greed.server.packet.Packet;
 import fr.ramatellier.greed.server.util.RootTable;
 
 import java.io.IOException;
@@ -8,7 +10,6 @@ import java.net.InetSocketAddress;
 import java.nio.channels.*;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;

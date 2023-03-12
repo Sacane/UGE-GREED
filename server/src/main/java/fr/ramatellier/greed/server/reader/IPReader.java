@@ -1,6 +1,6 @@
 package fr.ramatellier.greed.server.reader;
 
-import fr.ramatellier.greed.server.IPPacket;
+import fr.ramatellier.greed.server.packet.IPPacket;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;

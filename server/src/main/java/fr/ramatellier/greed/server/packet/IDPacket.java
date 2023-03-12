@@ -1,4 +1,4 @@
-package fr.ramatellier.greed.server;
+package fr.ramatellier.greed.server.packet;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;

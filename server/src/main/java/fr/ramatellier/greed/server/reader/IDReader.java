@@ -1,6 +1,6 @@
 package fr.ramatellier.greed.server.reader;
 
-import fr.ramatellier.greed.server.IDPacket;
+import fr.ramatellier.greed.server.packet.IDPacket;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;

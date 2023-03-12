@@ -1,9 +1,8 @@
-package fr.ramatellier.greed.server;
+package fr.ramatellier.greed.server.packet;
 
 import fr.ramatellier.greed.server.util.OpCodes;
 import fr.ramatellier.greed.server.util.TramKind;
 
-import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
