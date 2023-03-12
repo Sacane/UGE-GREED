@@ -27,12 +27,10 @@ public class RootTable {
 
     @Override
     public String toString() {
-        var res = "";
-
+        var builder = new StringBuilder();
         for(var value: table.entrySet()) {
-            res += "Key: " + value.getKey() + "  to  " + value.getValue() + "\n";
+            builder.append("Key: ").append(value.getKey()).append("  to  ").append(value.getValue()).append("\n");
         }
-
-        return res;
+        return builder.toString();
     }
 }
