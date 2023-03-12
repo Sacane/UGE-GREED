@@ -2,6 +2,8 @@ package fr.ramatellier.greed.server.reader;
 
 import fr.ramatellier.greed.server.packet.IPPacket;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
@@ -20,19 +22,11 @@ public class IPReader implements Reader<IPPacket> {
         if (state == State.DONE || state == State.ERROR) {
             throw new IllegalStateException();
         }
-
         if(state == State.WAITING_SIZE) {
             var status = sizeReader.process(buffer);
-
             if(status == ProcessStatus.DONE) {
                 state = State.WAITING_ADDRESS;
-
-                if(sizeReader.get() == 4) {
-                    addressBuffer = ByteBuffer.allocate(4);
-                }
-                else {
-                    addressBuffer = ByteBuffer.allocate(16);
-                }
+                addressBuffer = ByteBuffer.allocate(sizeReader.get() == 4 ? 4 : 16);
             }
         }
         if(state == State.WAITING_ADDRESS) {
@@ -40,35 +34,19 @@ public class IPReader implements Reader<IPPacket> {
 
             if(!addressBuffer.hasRemaining()) {
                 addressBuffer.flip();
-                String address;
-
-                if(sizeReader.get() == 4) {
-                    var values = new ArrayList<Byte>();
-
-                    for(var i = 0; i < 4; i++) {
-                        values.add(addressBuffer.get());
-                    }
-
-                    address = values.stream().map(s -> s.toString()).collect(Collectors.joining("."));
+                try {
+                    var bytes = new byte[addressBuffer.remaining()];
+                    var addres = InetAddress.getByAddress(bytes);
+                    value = new IPPacket(addres.getHostAddress());
+                    state = State.DONE;
+                } catch (UnknownHostException e) {
+                    return ProcessStatus.ERROR;
                 }
-                else {
-                    var values = new ArrayList<Short>();
-
-                    for(var i = 0; i < 8; i++) {
-                        values.add(addressBuffer.getShort());
-                    }
-
-                    address = values.stream().map(s -> s.toString()).collect(Collectors.joining(":"));
-                }
-                state = State.DONE;
-                value = new IPPacket(address);
             }
         }
-
         if (state != State.DONE) {
             return ProcessStatus.REFILL;
         }
-
         return ProcessStatus.DONE;
     }
 
