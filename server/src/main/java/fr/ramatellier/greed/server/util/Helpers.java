@@ -1,4 +1,4 @@
-package fr.ramatellier.greed.server;
+package fr.ramatellier.greed.server.util;
 
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
