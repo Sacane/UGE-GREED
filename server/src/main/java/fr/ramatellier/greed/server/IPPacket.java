@@ -1,5 +1,7 @@
 package fr.ramatellier.greed.server;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 
 public class IPPacket implements Packet {
@@ -7,13 +9,7 @@ public class IPPacket implements Packet {
     private final String address;
 
     public IPPacket(String address) {
-        if(address.contains(".")) {
-            size = 4;
-        }
-        else {
-            size = 6;
-        }
-
+        this.size = address.contains(".") ? (byte)0x04 : (byte)0x06;
         this.address = address;
     }
 
@@ -23,20 +19,12 @@ public class IPPacket implements Packet {
 
     public void putInBuffer(ByteBuffer buffer) {
         buffer.put(size);
-
-        if(size == 4) {
-            var values = address.split(".");
-
-            for(var value: values) {
-                buffer.put(Byte.valueOf(value));
-            }
+        try {
+            var ipAddress = InetAddress.getByName(address).getAddress();
+            buffer.put(ipAddress);
+        } catch (UnknownHostException e) {
+            throw new AssertionError(e);
         }
-        else {
-            var values = address.split(":");
 
-            for(var value: values) {
-                buffer.putShort(Short.valueOf(value));
-            }
-        }
     }
 }
