@@ -12,9 +12,20 @@ public class ConnectKOPacket implements Packet{
     public ConnectKOPacket(String address) {
         this.localAddress = Objects.requireNonNull(address);
     }
+
+    @Override
+    public TramKind kind() {
+        return TramKind.LOCAL;
+    }
+
+    @Override
+    public byte opCode() {
+        return OpCodes.KO;
+    }
+
     @Override
     public void putInBuffer(ByteBuffer buffer) {
-        buffer.put(TramKind.LOCAL.bytes);
+        buffer.put(kind().BYTES);
         buffer.put(OpCodes.KO);
         var ipPacket = new IPPacket(localAddress);
         ipPacket.putInBuffer(buffer);

@@ -1,5 +1,8 @@
 package fr.ramatellier.greed.server.packet;
 
+import fr.ramatellier.greed.server.util.OpCodes;
+import fr.ramatellier.greed.server.util.TramKind;
+
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
@@ -22,8 +25,18 @@ public class ConnectPacket implements Packet {
         return idPacket.getSocket();
     }
 
+    @Override
+    public TramKind kind() {
+        return TramKind.LOCAL;
+    }
+
+    @Override
+    public byte opCode() {
+        return OpCodes.CONNECT;
+    }
+
     public void putInBuffer(ByteBuffer buffer) {
-        buffer.put((byte) 0);
+        buffer.put(kind().BYTES);
         buffer.put((byte) 1);
         idPacket.putInBuffer(buffer);
     }

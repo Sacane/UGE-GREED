@@ -1,5 +1,8 @@
 package fr.ramatellier.greed.server.packet;
 
+import fr.ramatellier.greed.server.util.OpCodes;
+import fr.ramatellier.greed.server.util.TramKind;
+
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -34,9 +37,19 @@ public class ConnectOKPacket implements Packet {
     }
 
     @Override
+    public TramKind kind() {
+        return TramKind.LOCAL;
+    }
+
+    @Override
+    public byte opCode() {
+        return OpCodes.OK;
+    }
+
+    @Override
     public void putInBuffer(ByteBuffer buffer) {
-        buffer.put((byte) 0);
-        buffer.put((byte) 3);
+        buffer.put(kind().BYTES);
+        buffer.put(opCode());
         idMother.putInBuffer(buffer);
         buffer.putInt(ids.size());
         for(var id: ids) {

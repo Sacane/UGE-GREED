@@ -1,5 +1,7 @@
 package fr.ramatellier.greed.server.packet;
 
+import fr.ramatellier.greed.server.util.TramKind;
+
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
@@ -15,6 +17,16 @@ public class IPPacket implements Packet {
 
     public String getAddress() {
         return address;
+    }
+
+    @Override
+    public TramKind kind() {
+        return TramKind.ANY;
+    }
+
+    @Override
+    public byte opCode() {
+        return 0;
     }
 
     public void putInBuffer(ByteBuffer buffer) {
