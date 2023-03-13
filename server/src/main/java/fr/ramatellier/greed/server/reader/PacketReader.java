@@ -1,13 +1,14 @@
 package fr.ramatellier.greed.server.reader;
 
 import fr.ramatellier.greed.server.packet.ConnectPacket;
+import fr.ramatellier.greed.server.packet.FullPacket;
 import fr.ramatellier.greed.server.packet.Packet;
 import fr.ramatellier.greed.server.util.OpCodes;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
-public class PacketReader implements Reader<Packet> {
+public class PacketReader implements Reader<FullPacket> {
     private enum State {
         DONE, WAITING_LOCATION, WAITING_CODE, WAITING_PACKET, ERROR
     };
@@ -16,7 +17,7 @@ public class PacketReader implements Reader<Packet> {
     private final ByteReader codeReader = new ByteReader();
     private final IDReader idReader = new IDReader();
     private final ConnectOKPacketReader connectOKPacketReader = new ConnectOKPacketReader();
-    private Packet value;
+    private FullPacket value;
 
     @Override
     public ProcessStatus process(ByteBuffer buffer) {
@@ -70,7 +71,7 @@ public class PacketReader implements Reader<Packet> {
 
 
     @Override
-    public Packet get() {
+    public FullPacket get() {
         if (state != State.DONE) {
             throw new IllegalStateException();
         }

@@ -19,6 +19,7 @@ public class Context {
     private static final int BUFFER_SIZE = 1_024;
     private final SelectionKey key;
     private final SocketChannel sc;
+    private final ServerVisitor visitor;
     private final ByteBuffer bufferIn = ByteBuffer.allocate(BUFFER_SIZE);
     private final ByteBuffer bufferOut = ByteBuffer.allocate(BUFFER_SIZE);
     private final PacketReader packetReader = new PacketReader();
@@ -31,6 +32,7 @@ public class Context {
         this.key = key;
         this.sc = (SocketChannel) key.channel();
         this.server = server;
+        this.visitor = new ServerVisitor(server, this);
     }
 
     private void processIn() {
@@ -39,7 +41,7 @@ public class Context {
             switch (status) {
                 case DONE:
                     var packet = packetReader.get();
-
+                    packet.accept(visitor);
                     switch (packet) {
                         case ConnectPacket connectionPacket:
                             if(server.isRunning()) {
