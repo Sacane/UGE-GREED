@@ -27,6 +27,12 @@ public class Server {
     private final InetSocketAddress address;
     private boolean isRunning = true;
     private final RootTable rootTable = new RootTable();
+    private ServerState state = ServerState.ON_GOING;
+
+    enum ServerState{
+        ON_GOING,
+        STOPPED
+    }
 
     private Server(int port) throws IOException {
         address = new InetSocketAddress(port);
