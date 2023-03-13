@@ -8,7 +8,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ConnectOKPacket implements Packet {
+public class ConnectOKPacket implements FullPacket {
     private final IDPacket idMother;
     private final List<IDPacket> ids = new ArrayList<>();
 
@@ -55,5 +55,10 @@ public class ConnectOKPacket implements Packet {
         for(var id: ids) {
             id.putInBuffer(buffer);
         }
+    }
+
+    @Override
+    public void accept(PacketVisitor visitor) {
+        visitor.visit(this);
     }
 }

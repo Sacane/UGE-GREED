@@ -6,7 +6,7 @@ import fr.ramatellier.greed.server.util.TramKind;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
-public class ConnectKOPacket implements Packet{
+public class ConnectKOPacket implements FullPacket{
 
     private final String localAddress;
     public ConnectKOPacket(String address) {
@@ -29,5 +29,10 @@ public class ConnectKOPacket implements Packet{
         buffer.put(OpCodes.KO);
         var ipPacket = new IPPacket(localAddress);
         ipPacket.putInBuffer(buffer);
+    }
+
+    @Override
+    public void accept(PacketVisitor visitor) {
+        visitor.visit(this);
     }
 }
