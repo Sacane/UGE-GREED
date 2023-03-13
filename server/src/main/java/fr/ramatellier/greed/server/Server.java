@@ -2,6 +2,7 @@ package fr.ramatellier.greed.server;
 
 import fr.ramatellier.greed.server.packet.ConnectPacket;
 import fr.ramatellier.greed.server.packet.Packet;
+import fr.ramatellier.greed.server.util.Helpers;
 import fr.ramatellier.greed.server.util.RootTable;
 
 import java.io.IOException;
@@ -26,12 +27,11 @@ public class Server {
     private final Selector selector;
     private final InetSocketAddress address;
     private boolean isRunning = true;
+    private final boolean isRoot;
     private final RootTable rootTable = new RootTable();
-    private ServerState state = ServerState.ON_GOING;
-
+    private ServerState state = ServerState.STOPPED;
     enum ServerState{
-        ON_GOING,
-        STOPPED
+        ON_GOING, STOPPED
     }
 
     private Server(int port) throws IOException {
@@ -41,6 +41,7 @@ public class Server {
         parentSocketChannel = null;
         parentSocketAddress = null;
         selector = Selector.open();
+        this.isRoot = true;
     }
 
     private Server(int hostPort, String IP, int connectPort) throws IOException {
@@ -50,6 +51,7 @@ public class Server {
         parentSocketChannel = SocketChannel.open();
         parentSocketAddress = new InetSocketAddress(IP, connectPort);
         selector = Selector.open();
+        this.isRoot = false;
     }
 
     public InetSocketAddress getAddress() {
@@ -80,31 +82,50 @@ public class Server {
     }
 
     private void connect() throws IOException {
+        logger.info("Trying to connect to " + parentSocketAddress + " ...");
         parentSocketChannel.configureBlocking(false);
         parentSocketChannel.connect(parentSocketAddress);
         parentKey = parentSocketChannel.register(selector, SelectionKey.OP_CONNECT);
+        var context = new Context(this, parentKey);
+//        context.queuePacket(new ConnectPacket((InetSocketAddress) serverSocketChannel.getLocalAddress()));
+        parentKey.attach(context);
 
-        launch();
+//        launch();
+        initConnection();
     }
 
-    public void launch() throws IOException {
-        serverSocketChannel.configureBlocking(false);
-        serverKey = serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
-
+    private void initConnection() throws IOException{
         while (!Thread.interrupted()) {
-            // Helpers.printKeys(selector); // for debug
-            System.out.println("Starting select");
+//            Helpers.printKeys(selector); // for debug
+//            System.out.println("Starting select");
             try {
                 selector.select(this::treatKey);
             } catch (UncheckedIOException tunneled) {
                 throw tunneled.getCause();
             }
-            System.out.println("Select finished");
+//            System.out.println("Select finished");
+        }
+    }
+
+    public void launch() throws IOException {
+        serverSocketChannel.configureBlocking(false);
+        serverKey = serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
+        logger.info("Server started on " + address);
+        state = ServerState.ON_GOING;
+        while (!Thread.interrupted()) {
+//             Helpers.printKeys(selector); // for debug
+//            System.out.println("Starting select");
+            try {
+                selector.select(this::treatKey);
+            } catch (UncheckedIOException tunneled) {
+                throw tunneled.getCause();
+            }
+//            System.out.println("Select finished");
         }
     }
 
     private void treatKey(SelectionKey key) {
-        // Helpers.printSelectedKey(key); // for debug
+//        Helpers.printSelectedKey(key); // for debug
         try {
             if (key.isValid() && key.equals(parentKey) && key.isConnectable()) {
                 doConnect(key);
@@ -129,16 +150,25 @@ public class Server {
     }
 
     private void doConnect(SelectionKey key) throws IOException {
-        if (!parentSocketChannel.finishConnect())
+        if (!parentSocketChannel.finishConnect()){
+            logger.info("TEST HERE");
             return ;
+        }
 
-        key.interestOps(SelectionKey.OP_READ);
-        var context = new Context(this, parentKey);
+//        var context = new Context(this, parentKey);
+        var context = (Context) key.attachment();
         context.queuePacket(new ConnectPacket((InetSocketAddress) serverSocketChannel.getLocalAddress()));
-        parentKey.attach(context);
+//        parentKey.attach(context);
+//        if(state == ServerState.STOPPED){
+//            launch();
+//        }
+        key.interestOps(SelectionKey.OP_WRITE);
+        serverSocketChannel.configureBlocking(false);
+        serverKey = serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
     }
 
     private void doAccept(SelectionKey key) throws IOException {
+        logger.info("Accepting connection...");
         ServerSocketChannel ssc = (ServerSocketChannel) key.channel();
         SocketChannel sc = ssc.accept();
 

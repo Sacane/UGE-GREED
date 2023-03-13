@@ -1,7 +1,5 @@
 package fr.ramatellier.greed.server;
 
-import fr.ramatellier.greed.server.packet.ConnectOKPacket;
-import fr.ramatellier.greed.server.packet.ConnectPacket;
 import fr.ramatellier.greed.server.packet.Packet;
 import fr.ramatellier.greed.server.reader.PacketReader;
 import fr.ramatellier.greed.server.reader.Reader;
@@ -41,38 +39,8 @@ public class Context {
             switch (status) {
                 case DONE:
                     var packet = packetReader.get();
-                    packet.accept(visitor);
-                    switch (packet) {
-                        case ConnectPacket connectionPacket:
-                            if(server.isRunning()) {
-                                System.out.println("Demande de connexion depuis " + connectionPacket.getAddress() + " " + connectionPacket.getPort());
-
-                                var response = new ConnectOKPacket(server.getAddress(), server.neighbours());
-                                queuePacket(response);
-
-                                var address = connectionPacket.getSocket();
-                                server.addRoot(address, address);
-                            }
-                            break;
-                        case ConnectOKPacket connectOKPacket:
-                            System.out.println("Connexion acceptée depuis " + connectOKPacket.getAddress() + " " + connectOKPacket.getPort());
-
-                            var addressMother = connectOKPacket.getMotherAddress();
-                            for(var neighbor: connectOKPacket.neighbours()) {
-                                server.addRoot(neighbor, addressMother);
-                            }
-                            server.addRoot(addressMother, addressMother);
-
-                            break;
-                        case TestPacket testPacket:
-                            System.out.println(testPacket);
-                            break;
-                        default:
-                            System.out.println("Paquet inconnu");
-                            break;
-                    }
-
                     packetReader.reset();
+                    packet.accept(visitor);
                     break;
                 case REFILL:
                     return;
