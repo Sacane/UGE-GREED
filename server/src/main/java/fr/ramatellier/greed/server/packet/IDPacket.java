@@ -1,7 +1,5 @@
 package fr.ramatellier.greed.server.packet;
 
-import fr.ramatellier.greed.server.util.TramKind;
-
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
@@ -26,16 +24,6 @@ public class IDPacket implements Packet {
 
     public InetSocketAddress getSocket() {
         return address;
-    }
-
-    @Override
-    public TramKind kind() {
-        return TramKind.ANY;
-    }
-
-    @Override
-    public byte opCode() {
-        return 0;
     }
 
     @Override

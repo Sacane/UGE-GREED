@@ -13,16 +13,6 @@ public class TestPacket implements Packet {
     }
 
     @Override
-    public TramKind kind() {
-        return null;
-    }
-
-    @Override
-    public byte opCode() {
-        return 0;
-    }
-
-    @Override
     public void putInBuffer(ByteBuffer buffer) {
     }
 

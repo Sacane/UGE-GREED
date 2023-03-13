@@ -1,5 +1,7 @@
 package fr.ramatellier.greed.server;
 
+import fr.ramatellier.greed.server.packet.Packet;
+
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
@@ -9,6 +11,7 @@ public class ConnectPacket implements Packet {
     public ConnectPacket(InetSocketAddress address) {
         idPacket = new IDPacket(address.getHostName(), address.getPort());
     }
+
 
     public void putInBuffer(ByteBuffer buffer) {
         buffer.put((byte) 0);

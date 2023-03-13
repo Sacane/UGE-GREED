@@ -19,16 +19,6 @@ public class IPPacket implements Packet {
         return address;
     }
 
-    @Override
-    public TramKind kind() {
-        return TramKind.ANY;
-    }
-
-    @Override
-    public byte opCode() {
-        return 0;
-    }
-
     public void putInBuffer(ByteBuffer buffer) {
         buffer.put(size);
         try {

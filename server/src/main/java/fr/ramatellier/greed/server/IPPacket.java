@@ -1,5 +1,8 @@
 package fr.ramatellier.greed.server;
 
+import fr.ramatellier.greed.server.packet.Packet;
+import fr.ramatellier.greed.server.util.TramKind;
+
 import java.nio.ByteBuffer;
 
 public class IPPacket implements Packet {
@@ -20,6 +23,7 @@ public class IPPacket implements Packet {
     public String getAddress() {
         return address;
     }
+
 
     public void putInBuffer(ByteBuffer buffer) {
         buffer.put(size);
