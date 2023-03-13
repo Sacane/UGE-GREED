@@ -42,7 +42,7 @@ public class ServerVisitor implements PacketVisitor {
 
     @Override
     public void visit(ConnectKOPacket packet) {
-
+        System.out.println("ConnectKOPacket");
     }
 
 }
