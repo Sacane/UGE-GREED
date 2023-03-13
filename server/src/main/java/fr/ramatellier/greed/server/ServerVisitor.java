@@ -37,6 +37,7 @@ public class ServerVisitor implements PacketVisitor {
 
     @Override
     public void visit(ConnectOKPacket packet) {
+        System.out.println("ConnectOKPacket");
     }
 
     @Override
