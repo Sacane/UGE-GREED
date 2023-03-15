@@ -5,15 +5,13 @@ import fr.ramatellier.greed.server.reader.PacketReader;
 import fr.ramatellier.greed.server.reader.Reader;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 
 public class Context {
-    private static final Charset UTF8 = StandardCharsets.UTF_8;
     private static final int BUFFER_SIZE = 1_024;
     private final SelectionKey key;
     private final SocketChannel sc;
@@ -22,15 +20,16 @@ public class Context {
     private final ByteBuffer bufferOut = ByteBuffer.allocate(BUFFER_SIZE);
     private final PacketReader packetReader = new PacketReader();
     private final ArrayDeque<Packet> queue = new ArrayDeque<>();
-    private final Server server; // we could also have Context as an instance class, which would naturally
-    // give access to ServerChatInt.this
     private boolean closed = false;
 
     public Context(Server server, SelectionKey key) {
         this.key = key;
         this.sc = (SocketChannel) key.channel();
-        this.server = server;
         this.visitor = new ServerVisitor(server, this);
+    }
+    public String src(){
+        var address = (InetSocketAddress) sc.socket().getRemoteSocketAddress();
+        return address.getHostName();
     }
 
     private void processIn() {

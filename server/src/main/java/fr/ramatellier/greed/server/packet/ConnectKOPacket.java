@@ -3,6 +3,7 @@ package fr.ramatellier.greed.server.packet;
 import fr.ramatellier.greed.server.util.OpCodes;
 import fr.ramatellier.greed.server.util.TramKind;
 
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
@@ -22,17 +23,6 @@ public class ConnectKOPacket implements FullPacket{
     public byte opCode() {
         return OpCodes.KO;
     }
-
-    @Override
-    public IPPacket src() {
-        return null;
-    }
-
-    @Override
-    public IPPacket dest() {
-        return null;
-    }
-
     @Override
     public void putInBuffer(ByteBuffer buffer) {
         buffer.put(kind().BYTES);

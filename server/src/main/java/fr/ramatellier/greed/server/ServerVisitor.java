@@ -1,9 +1,15 @@
 package fr.ramatellier.greed.server;
 
 import fr.ramatellier.greed.server.packet.*;
+import fr.ramatellier.greed.server.util.TramKind;
+
 import java.util.Objects;
 import java.util.logging.Logger;
 
+/**
+ * Visitor for packets received by the server.
+ * The context linked to this visitor is the context allowing to communicate with the sender.
+ */
 public class ServerVisitor implements PacketVisitor {
 
     private final Server server;
@@ -15,35 +21,29 @@ public class ServerVisitor implements PacketVisitor {
         this.context = Objects.requireNonNull(context);
     }
 
-    public Context getContext(){
-        return context;
-    }
-
     @Override
     public void visit(ConnectPacket packet) {
-
         //send OKPacket
         if(server.isRunning()){
             logger.info("Connection demand received from " + packet.getAddress() + " " + packet.getPort());
-
             var response = new ConnectOKPacket(server.getAddress(), server.neighbours());
             context.queuePacket(response);
-
             var socket = packet.getSocket();
             server.addRoot(socket, socket);
+            server.addNeighbor(socket.getHostName(), context);
         }
-
+        //TODO send KOPacket if server is not running
     }
 
     @Override
     public void visit(ConnectOKPacket packet) {
         logger.info("Connection accepted from " + packet.getAddress() + " on port " + packet.getPort());
-
         var addressMother = packet.getMotherAddress();
         for(var neighbor: packet.neighbours()) {
             server.addRoot(neighbor, addressMother);
         }
         server.addRoot(addressMother, addressMother);
+        server.addNeighbor(addressMother.getHostName(), context);
     }
 
     @Override
@@ -59,16 +59,20 @@ public class ServerVisitor implements PacketVisitor {
         }
     }
 
+    //Broadcast this packet to all neighbours
     private void queueBroadcastPacket(FullPacket packet){
-        //Broadcast this packet to all neighbours
-        server.broadcast(packet);
+
+        if(packet.kind() != TramKind.BROADCAST){
+            throw new AssertionError();
+        }
+        server.broadcast(packet, context.src());
     }
     private void queueLocalPacket(FullPacket packet){
         //DO nothing special except treat the packet
         context.queuePacket(packet);
     }
     private void queueTransferPacket(FullPacket packet){
-        server.transfer(packet);
+        server.transfer(context.src(), packet);
     }
 
 }

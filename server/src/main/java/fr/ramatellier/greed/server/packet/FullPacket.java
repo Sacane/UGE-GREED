@@ -6,6 +6,4 @@ public interface FullPacket extends Packet{
     void accept(PacketVisitor visitor);
     TramKind kind();
     byte opCode();
-    IPPacket src();
-    IPPacket dest();
 }

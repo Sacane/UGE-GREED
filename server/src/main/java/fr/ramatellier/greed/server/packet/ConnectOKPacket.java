@@ -7,12 +7,13 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 public class ConnectOKPacket implements FullPacket {
     private final IDPacket idMother;
     private final List<IDPacket> ids = new ArrayList<>();
 
-    public ConnectOKPacket(InetSocketAddress addressMother, List<InetSocketAddress> addressList) {
+    public ConnectOKPacket(InetSocketAddress addressMother, Set<InetSocketAddress> addressList) {
         idMother = new IDPacket(addressMother);
 
         for(var address: addressList) {
@@ -33,7 +34,7 @@ public class ConnectOKPacket implements FullPacket {
     }
 
     public List<InetSocketAddress> neighbours() {
-        return ids.stream().map(id -> id.getSocket()).toList();
+        return ids.stream().map(IDPacket::getSocket).toList();
     }
 
     @Override
@@ -44,16 +45,6 @@ public class ConnectOKPacket implements FullPacket {
     @Override
     public byte opCode() {
         return OpCodes.OK;
-    }
-
-    @Override
-    public IPPacket src() {
-        return null;
-    }
-
-    @Override
-    public IPPacket dest() {
-        return null;
     }
 
     @Override

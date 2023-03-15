@@ -2,7 +2,7 @@ package fr.ramatellier.greed.server.util;
 
 import java.net.InetSocketAddress;
 import java.util.HashMap;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Set;
 
 public class RootTable {
@@ -16,13 +16,13 @@ public class RootTable {
         table.merge(key, value, (old, newValue) -> newValue);
     }
 
-    public InetSocketAddress getNeighbourOf(InetSocketAddress address) {
+    public InetSocketAddress closestNeighbourOf(InetSocketAddress address) {
         if(!exists(address)) return null;
         return table.get(address);
     }
 
-    public List<InetSocketAddress> keys() {
-        return table.keySet().stream().toList();
+    public Set<InetSocketAddress> neighbours() {
+        return new HashSet<>(table.values());
     }
 
     @Override

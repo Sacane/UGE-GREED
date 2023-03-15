@@ -12,7 +12,9 @@ import java.net.InetSocketAddress;
 import java.nio.channels.*;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Objects;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -31,8 +33,9 @@ public class Server {
     private final boolean isRoot;
     private final RootTable rootTable = new RootTable();
     private ServerState state = ServerState.STOPPED;
+    private final HashMap<String, Context> neighbours = new HashMap<>();
 
-    public void transfer(FullPacket packet) {
+    public void transfer(String dst, FullPacket packet) {
 
     }
 
@@ -65,7 +68,7 @@ public class Server {
     }
 
     public boolean isRunning() {
-        return isRunning;
+        return state != ServerState.STOPPED;
     }
 
     public void addRoot(InetSocketAddress src, InetSocketAddress dst) {
@@ -76,8 +79,8 @@ public class Server {
         }
     }
 
-    public List<InetSocketAddress> neighbours() {
-        return rootTable.keys();
+    public Set<InetSocketAddress> neighbours() {
+        return rootTable.neighbours();
     }
 
     private static Server createROOT(int port) throws IOException {
@@ -85,6 +88,7 @@ public class Server {
     }
 
     private static Server createCONNECTED(int hostPort, String IP, int connectPort) throws IOException {
+        Objects.requireNonNull(IP, "IP can't be null");
         return new Server(hostPort, IP, connectPort);
     }
 
@@ -93,30 +97,28 @@ public class Server {
         parentSocketChannel.configureBlocking(false);
         parentSocketChannel.connect(parentSocketAddress);
         parentKey = parentSocketChannel.register(selector, SelectionKey.OP_CONNECT);
-        var context = new Context(this, parentKey);parentKey.attach(context);
+        var context = new Context(this, parentKey);
+        parentKey.attach(context);
+        state = ServerState.ON_GOING;
         initConnection();
+    }
+
+    public void launch() throws IOException {
+        state = ServerState.ON_GOING;
+        serverSocketChannel.configureBlocking(false);
+        serverKey = serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
+        logger.info("Server started on " + address);
+        state = ServerState.ON_GOING;
+        initConnection();
+    }
+
+    public void addNeighbor(String name, Context context){
+        neighbours.putIfAbsent(name, context);
     }
 
     private void initConnection() throws IOException{
         while (!Thread.interrupted()) {
 //            Helpers.printKeys(selector); // for debug
-//            System.out.println("Starting select");
-            try {
-                selector.select(this::treatKey);
-            } catch (UncheckedIOException tunneled) {
-                throw tunneled.getCause();
-            }
-//            System.out.println("Select finished");
-        }
-    }
-
-    public void launch() throws IOException {
-        serverSocketChannel.configureBlocking(false);
-        serverKey = serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
-        logger.info("Server started on " + address);
-        state = ServerState.ON_GOING;
-        while (!Thread.interrupted()) {
-//             Helpers.printKeys(selector); // for debug
 //            System.out.println("Starting select");
             try {
                 selector.select(this::treatKey);
@@ -154,7 +156,6 @@ public class Server {
 
     private void doConnect(SelectionKey key) throws IOException {
         if (!parentSocketChannel.finishConnect()){
-            logger.info("TEST HERE");
             return ;
         }
         var context = (Context) key.attachment();
@@ -187,10 +188,12 @@ public class Server {
         }
     }
 
-    public void broadcast(FullPacket packet) {
-        for (SelectionKey key : selector.keys()) {
-            var context = (Context)key.attachment();
-            context.queuePacket(packet);
+    public void broadcast(FullPacket packet, String src) {
+        for(var entry : neighbours.entrySet()) {
+            if(entry.getKey().equals(src)){
+                continue;
+            }
+            entry.getValue().queuePacket(packet);
         }
     }
 
