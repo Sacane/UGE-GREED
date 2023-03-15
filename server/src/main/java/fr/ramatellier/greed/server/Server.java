@@ -1,6 +1,7 @@
 package fr.ramatellier.greed.server;
 
 import fr.ramatellier.greed.server.packet.ConnectPacket;
+import fr.ramatellier.greed.server.packet.FullPacket;
 import fr.ramatellier.greed.server.packet.Packet;
 import fr.ramatellier.greed.server.util.Helpers;
 import fr.ramatellier.greed.server.util.RootTable;
@@ -30,6 +31,11 @@ public class Server {
     private final boolean isRoot;
     private final RootTable rootTable = new RootTable();
     private ServerState state = ServerState.STOPPED;
+
+    public void transfer(FullPacket packet) {
+
+    }
+
     enum ServerState{
         ON_GOING, STOPPED
     }
@@ -64,6 +70,7 @@ public class Server {
 
     public void addRoot(InetSocketAddress src, InetSocketAddress dst) {
         if(!src.equals(address)) {
+            logger.info("Root table has been updated");
             rootTable.putOrUpdate(src, dst);
             System.out.println(rootTable);
         }
@@ -86,11 +93,7 @@ public class Server {
         parentSocketChannel.configureBlocking(false);
         parentSocketChannel.connect(parentSocketAddress);
         parentKey = parentSocketChannel.register(selector, SelectionKey.OP_CONNECT);
-        var context = new Context(this, parentKey);
-//        context.queuePacket(new ConnectPacket((InetSocketAddress) serverSocketChannel.getLocalAddress()));
-        parentKey.attach(context);
-
-//        launch();
+        var context = new Context(this, parentKey);parentKey.attach(context);
         initConnection();
     }
 
@@ -154,14 +157,8 @@ public class Server {
             logger.info("TEST HERE");
             return ;
         }
-
-//        var context = new Context(this, parentKey);
         var context = (Context) key.attachment();
         context.queuePacket(new ConnectPacket((InetSocketAddress) serverSocketChannel.getLocalAddress()));
-//        parentKey.attach(context);
-//        if(state == ServerState.STOPPED){
-//            launch();
-//        }
         key.interestOps(SelectionKey.OP_WRITE);
         serverSocketChannel.configureBlocking(false);
         serverKey = serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
@@ -190,7 +187,11 @@ public class Server {
         }
     }
 
-    private void broadcast(Packet packet) {
+    public void broadcast(FullPacket packet) {
+        for (SelectionKey key : selector.keys()) {
+            var context = (Context)key.attachment();
+            context.queuePacket(packet);
+        }
     }
 
     public static void main(String[] args) throws NumberFormatException, IOException {

@@ -1,13 +1,7 @@
 package fr.ramatellier.greed.server;
 
-import fr.ramatellier.greed.server.packet.ConnectKOPacket;
-import fr.ramatellier.greed.server.packet.ConnectOKPacket;
-import fr.ramatellier.greed.server.packet.ConnectPacket;
-import fr.ramatellier.greed.server.packet.PacketVisitor;
-
-import java.io.IOException;
+import fr.ramatellier.greed.server.packet.*;
 import java.util.Objects;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class ServerVisitor implements PacketVisitor {
@@ -55,6 +49,26 @@ public class ServerVisitor implements PacketVisitor {
     @Override
     public void visit(ConnectKOPacket packet) {
         System.out.println("ConnectKOPacket");
+    }
+
+    private void queuePacket(FullPacket packet){
+        switch (packet.kind()) {
+            case BROADCAST -> queueBroadcastPacket(packet);
+            case LOCAL -> queueLocalPacket(packet);
+            case TRANSFERT -> queueTransferPacket(packet);
+        }
+    }
+
+    private void queueBroadcastPacket(FullPacket packet){
+        //Broadcast this packet to all neighbours
+        server.broadcast(packet);
+    }
+    private void queueLocalPacket(FullPacket packet){
+        //DO nothing special except treat the packet
+        context.queuePacket(packet);
+    }
+    private void queueTransferPacket(FullPacket packet){
+        server.transfer(packet);
     }
 
 }
