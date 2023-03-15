@@ -35,6 +35,16 @@ public class ConnectPacket implements FullPacket {
         return OpCodes.CONNECT;
     }
 
+    @Override
+    public IPPacket src() {
+        return null;
+    }
+
+    @Override
+    public IPPacket dest() {
+        return null;
+    }
+
     public void putInBuffer(ByteBuffer buffer) {
         buffer.put(kind().BYTES);
         buffer.put((byte) 1);

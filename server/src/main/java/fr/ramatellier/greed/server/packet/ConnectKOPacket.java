@@ -24,6 +24,16 @@ public class ConnectKOPacket implements FullPacket{
     }
 
     @Override
+    public IPPacket src() {
+        return null;
+    }
+
+    @Override
+    public IPPacket dest() {
+        return null;
+    }
+
+    @Override
     public void putInBuffer(ByteBuffer buffer) {
         buffer.put(kind().BYTES);
         buffer.put(OpCodes.KO);
