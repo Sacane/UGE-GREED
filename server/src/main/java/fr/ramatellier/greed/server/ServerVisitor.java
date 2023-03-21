@@ -30,7 +30,7 @@ public class ServerVisitor implements PacketVisitor {
             var socket = packet.getSocket();
             server.addRoot(socket, socket, context);
 
-            var addNodePacket = new AddNodePacket(new IDPacket(socket), new IDPacket(server.getAddress()));
+            var addNodePacket = new AddNodePacket(new IDPacket(server.getAddress()), new IDPacket(socket));
             queueBroadcastPacket(addNodePacket, socket);
         }
         //TODO send KOPacket if server is not running
@@ -54,10 +54,15 @@ public class ServerVisitor implements PacketVisitor {
     @Override
     public void visit(AddNodePacket packet) {
         logger.info("AddNodePacket received from " + packet.getSrc().getSocket());
-        server.addRoot(packet.getSrc().getSocket(), packet.getDaughter().getSocket(), context);
-        var addNodeResponsePacket = new AddNodePacket(new IDPacket(server.getAddress()), packet.getDaughter());
+        server.addRoot(packet.getDaughter().getSocket(), packet.getSrc().getSocket(), context);
+
         logger.info("update root table and send broadcast to neighbours");
-        queuePacket(addNodeResponsePacket);
+        var addNodePacket = new AddNodePacket(new IDPacket(server.getAddress()), packet.getDaughter());
+        queueBroadcastPacket(addNodePacket, packet.getSrc().getSocket());
+    }
+
+    @Override
+    public void visit(WorkRequestPacket packet) {
     }
 
     private void queuePacket(FullPacket packet){
@@ -73,6 +78,7 @@ public class ServerVisitor implements PacketVisitor {
         if(packet.kind() != TramKind.BROADCAST){
             throw new AssertionError();
         }
+
         server.broadcast(packet, address);
     }
     private void queueLocalPacket(FullPacket packet){

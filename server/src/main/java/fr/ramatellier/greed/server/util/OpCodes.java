@@ -7,4 +7,5 @@ public final class OpCodes {
     public static final byte KO = 0x02;
     public static final byte OK = 0x03;
     public static final byte ADD_NODE = 0x04;
+    public static final byte WORK = 0x05;
 }

@@ -5,4 +5,5 @@ public interface PacketVisitor {
     void visit(ConnectOKPacket packet);
     void visit(ConnectKOPacket packet);
     void visit(AddNodePacket packet);
+    void visit(WorkRequestPacket packet);
 }
