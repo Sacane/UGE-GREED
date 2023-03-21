@@ -29,7 +29,6 @@ public class ServerVisitor implements PacketVisitor {
             context.queuePacket(response);
             var socket = packet.getSocket();
             server.addRoot(socket, socket, context);
-            server.addNeighbor(socket, context);
 
             var addNodePacket = new AddNodePacket(new IDPacket(socket), new IDPacket(server.getAddress()));
             queueBroadcastPacket(addNodePacket, socket);
@@ -45,7 +44,6 @@ public class ServerVisitor implements PacketVisitor {
             server.addRoot(neighbor, addressMother, context);
         }
         server.addRoot(addressMother, addressMother, context);
-        server.addNeighbor(addressMother, context);
     }
 
     @Override

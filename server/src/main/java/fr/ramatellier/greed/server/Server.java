@@ -34,7 +34,6 @@ public class Server {
     private final boolean isRoot;
     private final RootTable rootTable = new RootTable();
     private ServerState state = ServerState.STOPPED;
-    private final HashMap<InetSocketAddress, Context> neighbours = new HashMap<>();
 
     public void transfer(InetSocketAddress dst, FullPacket packet) {
 
@@ -111,10 +110,6 @@ public class Server {
         logger.info("Server started on " + address);
         state = ServerState.ON_GOING;
         initConnection();
-    }
-
-    public void addNeighbor(InetSocketAddress name, Context context){
-        neighbours.putIfAbsent(name, context);
     }
 
     private void initConnection() throws IOException{
