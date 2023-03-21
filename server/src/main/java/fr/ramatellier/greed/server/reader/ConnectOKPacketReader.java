@@ -48,15 +48,18 @@ public class ConnectOKPacketReader implements Reader<ConnectOKPacket> {
                 state = State.DONE;
             }
             else {
-                var status = idReader.process(buffer);
+                while(buffer.hasRemaining() && ids.size() != sizeReader.get()) {
+                    var status = idReader.process(buffer);
 
-                if(status == ProcessStatus.DONE) {
-                    ids.add(idReader.get());
-                    idReader.reset();
-                }
-                if(ids.size() == sizeReader.get()) {
-                    value = new ConnectOKPacket(idMother.getSocket(), ids.stream().map(IDPacket::getSocket).collect(Collectors.toSet()));
-                    state = State.DONE;
+                    if(status == ProcessStatus.DONE) {
+                        ids.add(idReader.get());
+                        idReader.reset();
+                    }
+
+                    if(ids.size() == sizeReader.get()) {
+                        value = new ConnectOKPacket(idMother.getSocket(), ids.stream().map(IDPacket::getSocket).collect(Collectors.toSet()));
+                        state = State.DONE;
+                    }
                 }
             }
         }

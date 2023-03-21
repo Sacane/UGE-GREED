@@ -23,7 +23,16 @@ public class RootTable {
     }
 
     public Set<InetSocketAddress> neighbours() {
-        return new HashSet<>(table.values().stream().map(AddressContext::address).toList());
+        /*var set = new HashSet<InetSocketAddress>();
+
+        for(var socket: table.keySet()) {
+            System.out.println(socket);
+            set.add(socket);
+        }
+
+        return set;*/
+        return table.keySet();
+        // return new HashSet<>(table.values().stream().map(AddressContext::address).toList());
     }
 
     public void onNeighbours(InetSocketAddress address, Consumer<AddressContext> action) {
