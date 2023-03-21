@@ -19,7 +19,6 @@ public class RootTable {
 
     public AddressContext closestNeighbourOf(InetSocketAddress address) {
         if(!exists(address)) return null;
-
         return table.get(address);
     }
 
@@ -27,10 +26,10 @@ public class RootTable {
         return new HashSet<>(table.values().stream().map(AddressContext::address).toList());
     }
 
-    public void onNeighbours(InetSocketAddress address, Consumer<Context> action) {
+    public void onNeighbours(InetSocketAddress address, Consumer<AddressContext> action) {
         for(var value: table.entrySet()) {
             if(value.getKey().equals(value.getValue().address()) && !value.getKey().equals(address)) {
-                action.accept(value.getValue().context());
+                action.accept(value.getValue());
             }
         }
     }
