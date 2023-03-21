@@ -1,5 +1,6 @@
 package fr.ramatellier.greed.server;
 
+import fr.ramatellier.greed.server.packet.ConnectKOPacket;
 import fr.ramatellier.greed.server.packet.ConnectPacket;
 import fr.ramatellier.greed.server.packet.FullPacket;
 import fr.ramatellier.greed.server.packet.Packet;
@@ -33,9 +34,9 @@ public class Server {
     private final boolean isRoot;
     private final RootTable rootTable = new RootTable();
     private ServerState state = ServerState.STOPPED;
-    private final HashMap<String, Context> neighbours = new HashMap<>();
+    private final HashMap<InetSocketAddress, Context> neighbours = new HashMap<>();
 
-    public void transfer(String dst, FullPacket packet) {
+    public void transfer(InetSocketAddress dst, FullPacket packet) {
 
     }
 
@@ -71,10 +72,10 @@ public class Server {
         return state != ServerState.STOPPED;
     }
 
-    public void addRoot(InetSocketAddress src, InetSocketAddress dst) {
+    public void addRoot(InetSocketAddress src, InetSocketAddress dst, Context context) {
         if(!src.equals(address)) {
             logger.info("Root table has been updated");
-            rootTable.putOrUpdate(src, dst);
+            rootTable.putOrUpdate(src, dst, context);
             System.out.println(rootTable);
         }
     }
@@ -112,7 +113,7 @@ public class Server {
         initConnection();
     }
 
-    public void addNeighbor(String name, Context context){
+    public void addNeighbor(InetSocketAddress name, Context context){
         neighbours.putIfAbsent(name, context);
     }
 
@@ -188,12 +189,21 @@ public class Server {
         }
     }
 
-    public void broadcast(FullPacket packet, String src) {
-        for(var entry : neighbours.entrySet()) {
-            if(entry.getKey().equals(src)){
+    public void broadcast(FullPacket packet, InetSocketAddress src) {
+        /*for (var key : selector.keys()) {
+            var context = (Context) key.attachment();
+
+            context.queuePacket(new );
+        }*/
+        /*for(var entry : neighbours.entrySet()) {
+            System.out.println(entry.getKey() + "   " + src);
+            if(entry.getKey().equals(src)) {
                 continue;
             }
             entry.getValue().queuePacket(packet);
+        }*/
+        for(var context: rootTable.onNeighbours(src)) {
+            context.queuePacket(packet);
         }
     }
 

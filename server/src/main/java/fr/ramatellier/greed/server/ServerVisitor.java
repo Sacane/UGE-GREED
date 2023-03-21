@@ -2,6 +2,8 @@ package fr.ramatellier.greed.server;
 
 import fr.ramatellier.greed.server.packet.*;
 import fr.ramatellier.greed.server.util.TramKind;
+
+import java.net.InetSocketAddress;
 import java.util.Objects;
 import java.util.logging.Logger;
 
@@ -10,7 +12,6 @@ import java.util.logging.Logger;
  * The context linked to this visitor is the context allowing to communicate with the sender.
  */
 public class ServerVisitor implements PacketVisitor {
-
     private final Server server;
     private final Context context;
     private static final Logger logger = Logger.getLogger(ServerVisitor.class.getName());
@@ -22,17 +23,16 @@ public class ServerVisitor implements PacketVisitor {
 
     @Override
     public void visit(ConnectPacket packet) {
-        //send OKPacket
-        if(server.isRunning()){
+        if(server.isRunning()) {
             logger.info("Connection demand received from " + packet.getAddress() + " " + packet.getPort());
             var response = new ConnectOKPacket(server.getAddress(), server.neighbours());
             context.queuePacket(response);
             var socket = packet.getSocket();
-            server.addRoot(socket, socket);
-            server.addNeighbor(socket.getHostName(), context);
+            server.addRoot(socket, socket, context);
+            server.addNeighbor(socket, context);
 
-            var addNodePacket = new AddNodePacket(new IDPacket(server.getAddress()), new IDPacket(socket));
-            queuePacket(addNodePacket);
+            var addNodePacket = new AddNodePacket(new IDPacket(socket), new IDPacket(server.getAddress()));
+            queueBroadcastPacket(addNodePacket, socket);
         }
         //TODO send KOPacket if server is not running
     }
@@ -42,10 +42,10 @@ public class ServerVisitor implements PacketVisitor {
         logger.info("Connection accepted from " + packet.getAddress() + " on port " + packet.getPort());
         var addressMother = packet.getMotherAddress();
         for(var neighbor: packet.neighbours()) {
-            server.addRoot(neighbor, addressMother);
+            server.addRoot(neighbor, addressMother, context);
         }
-        server.addRoot(addressMother, addressMother);
-        server.addNeighbor(addressMother.getHostName(), context);
+        server.addRoot(addressMother, addressMother, context);
+        server.addNeighbor(addressMother, context);
     }
 
     @Override
@@ -56,7 +56,7 @@ public class ServerVisitor implements PacketVisitor {
     @Override
     public void visit(AddNodePacket packet) {
         logger.info("AddNodePacket received from " + packet.getSrc().getSocket());
-        server.addRoot(packet.getSrc().getSocket(), packet.getDaughter().getSocket());
+        server.addRoot(packet.getSrc().getSocket(), packet.getDaughter().getSocket(), context);
         var addNodeResponsePacket = new AddNodePacket(new IDPacket(server.getAddress()), packet.getDaughter());
         logger.info("update root table and send broadcast to neighbours");
         queuePacket(addNodeResponsePacket);
@@ -64,18 +64,18 @@ public class ServerVisitor implements PacketVisitor {
 
     private void queuePacket(FullPacket packet){
         switch (packet.kind()) {
-            case BROADCAST -> queueBroadcastPacket(packet);
+            // case BROADCAST -> queueBroadcastPacket(packet);
             case LOCAL -> queueLocalPacket(packet);
             case TRANSFERT -> queueTransferPacket(packet);
         }
     }
 
     //Broadcast this packet to all neighbours
-    private void queueBroadcastPacket(FullPacket packet){
+    private void queueBroadcastPacket(FullPacket packet, InetSocketAddress address) {
         if(packet.kind() != TramKind.BROADCAST){
             throw new AssertionError();
         }
-        server.broadcast(packet, context.src());
+        server.broadcast(packet, address);
     }
     private void queueLocalPacket(FullPacket packet){
         //DO nothing special except treat the packet

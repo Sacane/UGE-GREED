@@ -1,6 +1,6 @@
 package fr.ramatellier.greed.server;
 
-import fr.ramatellier.greed.server.packet.Packet;
+import fr.ramatellier.greed.server.packet.FullPacket;
 import fr.ramatellier.greed.server.reader.PacketReader;
 import fr.ramatellier.greed.server.reader.Reader;
 
@@ -19,7 +19,7 @@ public class Context {
     private final ByteBuffer bufferIn = ByteBuffer.allocate(BUFFER_SIZE);
     private final ByteBuffer bufferOut = ByteBuffer.allocate(BUFFER_SIZE);
     private final PacketReader packetReader = new PacketReader();
-    private final ArrayDeque<Packet> queue = new ArrayDeque<>();
+    private final ArrayDeque<FullPacket> queue = new ArrayDeque<>();
     private boolean closed = false;
 
     public Context(Server server, SelectionKey key) {
@@ -27,9 +27,15 @@ public class Context {
         this.sc = (SocketChannel) key.channel();
         this.visitor = new ServerVisitor(server, this);
     }
-    public String src(){
-        var address = (InetSocketAddress) sc.socket().getRemoteSocketAddress();
-        return address.getHostName();
+
+    public InetSocketAddress src() {
+        InetSocketAddress address = null;
+        try {
+            address = (InetSocketAddress) sc.getLocalAddress();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return address;
     }
 
     private void processIn() {
@@ -51,7 +57,7 @@ public class Context {
     }
 
 
-    public void queuePacket(Packet packet) {
+    public void queuePacket(FullPacket packet) {
         queue.add(packet);
 
         processOut();
