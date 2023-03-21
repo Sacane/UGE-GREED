@@ -1,0 +1,42 @@
+package fr.ramatellier.greed.server.packet;
+
+import fr.ramatellier.greed.server.util.OpCodes;
+import fr.ramatellier.greed.server.util.TramKind;
+
+import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.util.Objects;
+
+public class AddNodePacket implements FullPacket{
+    private final InetSocketAddress src;
+    private final InetSocketAddress daughter;
+
+    public AddNodePacket(InetSocketAddress src, InetSocketAddress daughter){
+        this.src = Objects.requireNonNull(src);
+        this.daughter = Objects.requireNonNull(daughter);
+    }
+
+
+    @Override
+    public void accept(PacketVisitor visitor) {
+
+    }
+
+    @Override
+    public TramKind kind() {
+        return TramKind.BROADCAST;
+    }
+
+    @Override
+    public byte opCode() {
+        return OpCodes.ADD_NODE;
+    }
+
+    @Override
+    public void putInBuffer(ByteBuffer buffer) {
+        buffer.put(kind().BYTES);
+        buffer.put(opCode());
+        buffer.put(src.getAddress().getAddress());
+        buffer.put(daughter.getAddress().getAddress());
+    }
+}
