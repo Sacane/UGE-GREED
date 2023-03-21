@@ -2,8 +2,6 @@ package fr.ramatellier.greed.server;
 
 import fr.ramatellier.greed.server.packet.*;
 import fr.ramatellier.greed.server.util.TramKind;
-
-import java.net.InetSocketAddress;
 import java.util.Objects;
 import java.util.logging.Logger;
 
@@ -32,6 +30,9 @@ public class ServerVisitor implements PacketVisitor {
             var socket = packet.getSocket();
             server.addRoot(socket, socket);
             server.addNeighbor(socket.getHostName(), context);
+
+            var addNodePacket = new AddNodePacket(new IDPacket(server.getAddress()), new IDPacket(socket));
+            queuePacket(addNodePacket);
         }
         //TODO send KOPacket if server is not running
     }
@@ -54,6 +55,11 @@ public class ServerVisitor implements PacketVisitor {
 
     @Override
     public void visit(AddNodePacket packet) {
+        logger.info("AddNodePacket received from " + packet.getSrc().getSocket());
+        server.addRoot(packet.getSrc().getSocket(), packet.getDaughter().getSocket());
+        var addNodeResponsePacket = new AddNodePacket(new IDPacket(server.getAddress()), packet.getDaughter());
+        logger.info("update root table and send broadcast to neighbours");
+        queuePacket(addNodeResponsePacket);
     }
 
     private void queuePacket(FullPacket packet){

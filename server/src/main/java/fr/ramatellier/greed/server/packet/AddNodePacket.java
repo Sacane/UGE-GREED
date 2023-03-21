@@ -16,10 +16,17 @@ public class AddNodePacket implements FullPacket {
         this.daughter = Objects.requireNonNull(daughter);
     }
 
+    public IDPacket getSrc() {
+        return src;
+    }
+
+    public IDPacket getDaughter() {
+        return daughter;
+    }
 
     @Override
     public void accept(PacketVisitor visitor) {
-
+        visitor.visit(this);
     }
 
     @Override
