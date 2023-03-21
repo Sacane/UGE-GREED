@@ -7,11 +7,11 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
-public class AddNodePacket implements FullPacket{
+public class AddNodePacket implements FullPacket {
     private final InetSocketAddress src;
     private final InetSocketAddress daughter;
 
-    public AddNodePacket(InetSocketAddress src, InetSocketAddress daughter){
+    public AddNodePacket(InetSocketAddress src, InetSocketAddress daughter) {
         this.src = Objects.requireNonNull(src);
         this.daughter = Objects.requireNonNull(daughter);
     }
@@ -36,7 +36,7 @@ public class AddNodePacket implements FullPacket{
     public void putInBuffer(ByteBuffer buffer) {
         buffer.put(kind().BYTES);
         buffer.put(opCode());
-        buffer.put(src.getAddress().getAddress());
-        buffer.put(daughter.getAddress().getAddress());
+        new IDPacket(src).putInBuffer(buffer);
+        new IDPacket(daughter).putInBuffer(buffer);
     }
 }
