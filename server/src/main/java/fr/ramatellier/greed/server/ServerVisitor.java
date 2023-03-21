@@ -3,6 +3,7 @@ package fr.ramatellier.greed.server;
 import fr.ramatellier.greed.server.packet.*;
 import fr.ramatellier.greed.server.util.TramKind;
 
+import java.net.InetSocketAddress;
 import java.util.Objects;
 import java.util.logging.Logger;
 
@@ -51,6 +52,10 @@ public class ServerVisitor implements PacketVisitor {
         System.out.println("ConnectKOPacket");
     }
 
+    @Override
+    public void visit(AddNodePacket packet) {
+    }
+
     private void queuePacket(FullPacket packet){
         switch (packet.kind()) {
             case BROADCAST -> queueBroadcastPacket(packet);
@@ -61,7 +66,6 @@ public class ServerVisitor implements PacketVisitor {
 
     //Broadcast this packet to all neighbours
     private void queueBroadcastPacket(FullPacket packet){
-
         if(packet.kind() != TramKind.BROADCAST){
             throw new AssertionError();
         }

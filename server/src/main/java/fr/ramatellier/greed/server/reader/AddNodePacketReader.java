@@ -30,7 +30,7 @@ public class AddNodePacketReader implements Reader<AddNodePacket> {
             var status = idDaughterReader.process(buffer);
 
             if(status == ProcessStatus.DONE) {
-                value = new AddNodePacket(idReader.get().getSocket(), idDaughterReader.get().getSocket());
+                value = new AddNodePacket(idReader.get(), idDaughterReader.get());
                 state = State.DONE;
             }
         }

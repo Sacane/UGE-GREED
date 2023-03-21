@@ -8,10 +8,10 @@ import java.nio.ByteBuffer;
 import java.util.Objects;
 
 public class AddNodePacket implements FullPacket {
-    private final InetSocketAddress src;
-    private final InetSocketAddress daughter;
+    private final IDPacket src;
+    private final IDPacket daughter;
 
-    public AddNodePacket(InetSocketAddress src, InetSocketAddress daughter) {
+    public AddNodePacket(IDPacket src, IDPacket daughter) {
         this.src = Objects.requireNonNull(src);
         this.daughter = Objects.requireNonNull(daughter);
     }
@@ -36,7 +36,7 @@ public class AddNodePacket implements FullPacket {
     public void putInBuffer(ByteBuffer buffer) {
         buffer.put(kind().BYTES);
         buffer.put(opCode());
-        new IDPacket(src).putInBuffer(buffer);
-        new IDPacket(daughter).putInBuffer(buffer);
+        src.putInBuffer(buffer);
+        daughter.putInBuffer(buffer);
     }
 }
