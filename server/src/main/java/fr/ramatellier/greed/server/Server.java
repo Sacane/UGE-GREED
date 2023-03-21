@@ -1,27 +1,19 @@
 package fr.ramatellier.greed.server;
 
-import fr.ramatellier.greed.server.packet.ConnectKOPacket;
 import fr.ramatellier.greed.server.packet.ConnectPacket;
 import fr.ramatellier.greed.server.packet.FullPacket;
-import fr.ramatellier.greed.server.packet.Packet;
-import fr.ramatellier.greed.server.util.Helpers;
 import fr.ramatellier.greed.server.util.RootTable;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.*;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class Server {
-    private static final Charset UTF8 = StandardCharsets.UTF_8;
-    private static final int BUFFER_SIZE = 1_024;
     private static final Logger logger = Logger.getLogger(Server.class.getName());
     private final ServerSocketChannel serverSocketChannel;
     private final SocketChannel parentSocketChannel;
@@ -34,9 +26,18 @@ public class Server {
     private final boolean isRoot;
     private final RootTable rootTable = new RootTable();
     private ServerState state = ServerState.STOPPED;
+    private final ArrayBlockingQueue<Command> commandQueue = new ArrayBlockingQueue<>(10);
+
+    enum Command{
+        INFO, STOP, SHUTDOWN
+    }
 
     public void transfer(InetSocketAddress dst, FullPacket packet) {
-
+        if(dst.equals(address)){
+            return;
+        }
+        var addressContext = rootTable.closestNeighbourOf(dst);
+        addressContext.context().queuePacket(packet);
     }
 
     enum ServerState{
@@ -52,6 +53,33 @@ public class Server {
         selector = Selector.open();
         this.isRoot = true;
     }
+
+    private void sendCommand(Command command) throws InterruptedException{
+        synchronized (commandQueue){
+            commandQueue.put(command);
+            selector.wakeup();
+        }
+    }
+
+    private void consoleRun(){
+        try{
+            var scan = new Scanner(System.in);
+            while(scan.hasNextLine()){
+                var line = scan.nextLine();
+                switch(line){
+                    case "INFO" -> sendCommand(Command.INFO);
+                    case "STOP" -> sendCommand(Command.STOP);
+                    case "SHUTDOWN" -> sendCommand(Command.SHUTDOWN);
+                    default -> System.out.println("Unknown command");
+                }
+            }
+        }catch (InterruptedException e){
+            e.printStackTrace();
+        } finally {
+            logger.info("Console Thread has been stopped");
+        }
+    }
+
 
     private Server(int hostPort, String IP, int connectPort) throws IOException {
         address = new InetSocketAddress(hostPort);
@@ -92,6 +120,27 @@ public class Server {
         return new Server(hostPort, IP, connectPort);
     }
 
+    void processCommand(){
+        for(;;){
+            var command = commandQueue.poll();
+            if(command == null){
+                return;
+            }
+            switch(command){
+                case INFO -> {
+                    logger.info("Command INFO received");
+                    rootTable.onNeighbours(address, info -> System.out.println(info.address()));
+                }
+                case STOP -> {
+                    logger.info("Command STOP received");
+                }
+                case SHUTDOWN -> {
+                    logger.info("Command SHUTDOWN received");
+                }
+            }
+        }
+    }
+
     private void connect() throws IOException {
         logger.info("Trying to connect to " + parentSocketAddress + " ...");
         parentSocketChannel.configureBlocking(false);
@@ -113,11 +162,15 @@ public class Server {
     }
 
     private void initConnection() throws IOException{
+        Thread.ofPlatform()
+                .daemon()
+                .start(this::consoleRun);
         while (!Thread.interrupted()) {
 //            Helpers.printKeys(selector); // for debug
 //            System.out.println("Starting select");
             try {
                 selector.select(this::treatKey);
+                processCommand();
             } catch (UncheckedIOException tunneled) {
                 throw tunneled.getCause();
             }
@@ -155,7 +208,7 @@ public class Server {
             return ;
         }
         var context = (Context) key.attachment();
-        context.queuePacket(new ConnectPacket((InetSocketAddress) serverSocketChannel.getLocalAddress()));
+        context.queuePacket(new ConnectPacket(address));
         key.interestOps(SelectionKey.OP_WRITE);
         serverSocketChannel.configureBlocking(false);
         serverKey = serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
@@ -185,7 +238,7 @@ public class Server {
     }
 
     public void broadcast(FullPacket packet, InetSocketAddress src) {
-        rootTable.onNeighbours(src, context -> context.queuePacket(packet));
+        rootTable.onNeighbours(src, addressContext -> addressContext.context().queuePacket(packet));
     }
 
     public static void main(String[] args) throws NumberFormatException, IOException {
