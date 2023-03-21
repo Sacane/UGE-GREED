@@ -4,6 +4,7 @@ import fr.ramatellier.greed.server.Context;
 
 import java.net.InetSocketAddress;
 import java.util.*;
+import java.util.function.Consumer;
 
 public class RootTable {
     private final HashMap<InetSocketAddress, AddressContext> table = new HashMap<>();
@@ -23,19 +24,15 @@ public class RootTable {
     }
 
     public Set<InetSocketAddress> neighbours() {
-        return new HashSet<>(table.values().stream().map(i -> i.address()).toList());
+        return new HashSet<>(table.values().stream().map(AddressContext::address).toList());
     }
 
-    public List<Context> onNeighbours(InetSocketAddress address) {
-        var neighbours = new ArrayList<Context>();
-
+    public void onNeighbours(InetSocketAddress address, Consumer<Context> action) {
         for(var value: table.entrySet()) {
             if(value.getKey().equals(value.getValue().address()) && !value.getKey().equals(address)) {
-                neighbours.add(value.getValue().context());
+                action.accept(value.getValue().context());
             }
         }
-
-        return neighbours;
     }
 
     @Override

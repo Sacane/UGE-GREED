@@ -190,21 +190,7 @@ public class Server {
     }
 
     public void broadcast(FullPacket packet, InetSocketAddress src) {
-        /*for (var key : selector.keys()) {
-            var context = (Context) key.attachment();
-
-            context.queuePacket(new );
-        }*/
-        /*for(var entry : neighbours.entrySet()) {
-            System.out.println(entry.getKey() + "   " + src);
-            if(entry.getKey().equals(src)) {
-                continue;
-            }
-            entry.getValue().queuePacket(packet);
-        }*/
-        for(var context: rootTable.onNeighbours(src)) {
-            context.queuePacket(packet);
-        }
+        rootTable.onNeighbours(src, context -> context.queuePacket(packet));
     }
 
     public static void main(String[] args) throws NumberFormatException, IOException {
