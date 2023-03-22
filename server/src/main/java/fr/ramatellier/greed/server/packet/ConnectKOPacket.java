@@ -5,7 +5,7 @@ import fr.ramatellier.greed.server.util.TramKind;
 
 import java.nio.ByteBuffer;
 
-public class ConnectKOPacket implements FullPacket {
+public final class ConnectKOPacket implements FullPacket {
     public ConnectKOPacket() {
     }
 
@@ -22,10 +22,5 @@ public class ConnectKOPacket implements FullPacket {
     public void putInBuffer(ByteBuffer buffer) {
         buffer.put(kind().BYTES);
         buffer.put(opCode());
-    }
-
-    @Override
-    public void accept(PacketVisitor visitor) {
-        visitor.visit(this);
     }
 }

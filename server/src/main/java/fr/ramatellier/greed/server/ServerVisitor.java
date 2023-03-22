@@ -53,12 +53,12 @@ public class ServerVisitor implements PacketVisitor {
 
     @Override
     public void visit(AddNodePacket packet) {
-        logger.info("AddNodePacket received from " + packet.getSrc().getSocket());
-        server.addRoot(packet.getDaughter().getSocket(), packet.getSrc().getSocket(), context);
+        logger.info("AddNodePacket received from " + packet.src().getSocket());
+        server.addRoot(packet.daughter().getSocket(), packet.src().getSocket(), context);
 
         logger.info("update root table and send broadcast to neighbours");
-        var addNodePacket = new AddNodePacket(new IDPacket(server.getAddress()), packet.getDaughter());
-        queueBroadcastPacket(addNodePacket, packet.getSrc().getSocket());
+        var addNodePacket = new AddNodePacket(new IDPacket(server.getAddress()), packet.daughter());
+        queueBroadcastPacket(addNodePacket, packet.src().getSocket());
     }
 
     @Override

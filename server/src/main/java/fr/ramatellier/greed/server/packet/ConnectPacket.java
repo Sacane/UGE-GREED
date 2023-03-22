@@ -6,7 +6,7 @@ import fr.ramatellier.greed.server.util.TramKind;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
-public class ConnectPacket implements FullPacket {
+public final class ConnectPacket implements FullPacket {
     private final IDPacket idPacket;
 
     public ConnectPacket(InetSocketAddress address) {
@@ -39,10 +39,5 @@ public class ConnectPacket implements FullPacket {
         buffer.put(kind().BYTES);
         buffer.put((byte) 1);
         idPacket.putInBuffer(buffer);
-    }
-
-    @Override
-    public void accept(PacketVisitor visitor) {
-        visitor.visit(this);
     }
 }

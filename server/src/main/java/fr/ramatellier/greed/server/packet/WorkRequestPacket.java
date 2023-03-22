@@ -6,7 +6,7 @@ import fr.ramatellier.greed.server.util.TramKind;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
-public class WorkRequestPacket implements FullPacket {
+public final class WorkRequestPacket implements FullPacket {
     private final IDPacket idSrc;
     private final IDPacket idDst;
     private final long requestId;
@@ -21,11 +21,6 @@ public class WorkRequestPacket implements FullPacket {
         checker = new CheckerPacket(url, className);
         range = new RangePacket(start, end);
         this.max = max;
-    }
-
-    @Override
-    public void accept(PacketVisitor visitor) {
-        visitor.visit(this);
     }
 
     @Override

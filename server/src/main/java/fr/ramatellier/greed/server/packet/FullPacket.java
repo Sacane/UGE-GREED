@@ -2,8 +2,10 @@ package fr.ramatellier.greed.server.packet;
 
 import fr.ramatellier.greed.server.util.TramKind;
 
-public interface FullPacket extends Packet{
-    void accept(PacketVisitor visitor);
+public sealed interface FullPacket extends Packet permits ConnectPacket, ConnectKOPacket, ConnectOKPacket, AddNodePacket, WorkRequestPacket{
+    default void accept(PacketVisitor visitor){
+        visitor.visit(this);
+    }
     TramKind kind();
     byte opCode();
 }
