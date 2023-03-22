@@ -25,7 +25,7 @@ public class ServerVisitor implements PacketVisitor {
     public void visit(ConnectPacket packet) {
         if(server.isRunning()) {
             logger.info("Connection demand received from " + packet.getAddress() + " " + packet.getPort());
-            var response = new ConnectOKPacket(server.getAddress(), server.neighbours());
+            var response = new ConnectOKPacket(server.getAddress(), server.registeredAddresses());
             context.queuePacket(response);
             var socket = packet.getSocket();
             server.addRoot(socket, socket, context);
@@ -63,14 +63,6 @@ public class ServerVisitor implements PacketVisitor {
 
     @Override
     public void visit(WorkRequestPacket packet) {
-    }
-
-    private void queuePacket(FullPacket packet){
-        switch (packet.kind()) {
-            // case BROADCAST -> queueBroadcastPacket(packet);
-            case LOCAL -> queueLocalPacket(packet);
-            case TRANSFERT -> queueTransferPacket(packet);
-        }
     }
 
     //Broadcast this packet to all neighbours

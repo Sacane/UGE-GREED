@@ -15,29 +15,25 @@ import java.util.logging.Logger;
 
 public class Server {
     private static final Logger logger = Logger.getLogger(Server.class.getName());
+
+    // Self server field
     private final ServerSocketChannel serverSocketChannel;
-    private final SocketChannel parentSocketChannel;
-    private final InetSocketAddress parentSocketAddress;
     private SelectionKey serverKey;
-    private SelectionKey parentKey;
     private final Selector selector;
-    private final InetSocketAddress address;
     private boolean isRunning = true;
     private final boolean isRoot;
+    private final InetSocketAddress address;
     private final RootTable rootTable = new RootTable();
     private ServerState state = ServerState.STOPPED;
     private final ArrayBlockingQueue<Command> commandQueue = new ArrayBlockingQueue<>(10);
 
+    // Parent information
+    private final SocketChannel parentSocketChannel;
+    private final InetSocketAddress parentSocketAddress;
+    private SelectionKey parentKey;
+
     enum Command{
         INFO, STOP, SHUTDOWN
-    }
-
-    public void transfer(InetSocketAddress dst, FullPacket packet) {
-        if(dst.equals(address)){
-            return;
-        }
-        var addressContext = rootTable.closestNeighbourOf(dst);
-        addressContext.context().queuePacket(packet);
     }
 
     enum ServerState{
@@ -53,34 +49,6 @@ public class Server {
         selector = Selector.open();
         this.isRoot = true;
     }
-
-    private void sendCommand(Command command) throws InterruptedException{
-        synchronized (commandQueue){
-            commandQueue.put(command);
-            selector.wakeup();
-        }
-    }
-
-    private void consoleRun(){
-        try{
-            var scan = new Scanner(System.in);
-            while(scan.hasNextLine()){
-                var line = scan.nextLine();
-                switch(line){
-                    case "INFO" -> sendCommand(Command.INFO);
-                    case "STOP" -> sendCommand(Command.STOP);
-                    case "SHUTDOWN" -> sendCommand(Command.SHUTDOWN);
-                    default -> System.out.println("Unknown command");
-                }
-            }
-        }catch (InterruptedException e){
-            e.printStackTrace();
-        } finally {
-            logger.info("Console Thread has been stopped");
-        }
-    }
-
-
     private Server(int hostPort, String IP, int connectPort) throws IOException {
         address = new InetSocketAddress(hostPort);
         serverSocketChannel = ServerSocketChannel.open();
@@ -91,6 +59,45 @@ public class Server {
         this.isRoot = false;
     }
 
+
+    private void sendCommand(Command command) throws InterruptedException{
+        synchronized (commandQueue){
+            commandQueue.put(command);
+            selector.wakeup();
+        }
+    }
+
+    private void consoleRun(){
+        try{
+            try(var scan = new Scanner(System.in)){
+                while(scan.hasNextLine()){
+                    var line = scan.nextLine();
+                    switch(line){
+                        case "INFO" -> sendCommand(Command.INFO);
+                        case "STOP" -> sendCommand(Command.STOP);
+                        case "SHUTDOWN" -> sendCommand(Command.SHUTDOWN);
+                        default -> System.out.println("Unknown command");
+                    }
+                }
+            }
+        }catch (InterruptedException e){
+            logger.info("Console Thread has been interrupted");
+        } finally {
+            logger.info("Console Thread has been stopped");
+        }
+    }
+
+    /**
+     * transfer the packet to the destination.
+     * @param dst destination
+     * @param packet packet to transfer
+     */
+    public void transfer(InetSocketAddress dst, FullPacket packet) {
+        if(dst.equals(address)){
+            return;
+        }
+        rootTable.sendTo(dst, packet);
+    }
     public InetSocketAddress getAddress() {
         return address;
     }
@@ -103,23 +110,34 @@ public class Server {
         if(!src.equals(address)) {
             logger.info("Root table has been updated");
             rootTable.putOrUpdate(src, dst, context);
-            System.out.println(rootTable);
         }
     }
 
-    public Set<InetSocketAddress> neighbours() {
-        return rootTable.neighbours();
+    public Set<InetSocketAddress> registeredAddresses() {
+        return rootTable.registeredAddresses();
     }
 
-    private static Server createROOT(int port) throws IOException {
-        return new Server(port);
+    public static void launchRoot(int port) throws IOException {
+        new Server(port).launch();
     }
 
-    private static Server createCONNECTED(int hostPort, String IP, int connectPort) throws IOException {
+    public static void launchConnected(int hostPort, String IP, int connectPort) throws IOException {
         Objects.requireNonNull(IP, "IP can't be null");
-        return new Server(hostPort, IP, connectPort);
+        new Server(hostPort, IP, connectPort).connect();
     }
-
+    private void printInfo(){
+        var root = isRoot ? "ROOT" : "CONNECTED";
+        System.out.print("This server is a " + root + " server ");
+        if(!isRoot){
+            System.out.println("connected to " + parentSocketAddress);
+        } else {
+            System.out.println();
+        }
+        System.out.println("Connected to " + address);
+        System.out.println("Neighbours : ");
+        rootTable.onNeighboursDo(null, info -> System.out.println("- " + info.address()));
+        System.out.println("Root table : \n" + rootTable);
+    }
     void processCommand(){
         for(;;){
             var command = commandQueue.poll();
@@ -128,8 +146,7 @@ public class Server {
             }
             switch(command){
                 case INFO -> {
-                    logger.info("Command INFO received");
-                    rootTable.onNeighbours(address, info -> System.out.println(info.address()));
+                    printInfo();
                 }
                 case STOP -> {
                     logger.info("Command STOP received");
@@ -141,7 +158,10 @@ public class Server {
         }
     }
 
-    private void connect() throws IOException {
+    public void connect() throws IOException {
+        if(isRoot || parentSocketAddress == null) {
+            throw new IllegalStateException("This server is a root server");
+        }
         logger.info("Trying to connect to " + parentSocketAddress + " ...");
         parentSocketChannel.configureBlocking(false);
         parentSocketChannel.connect(parentSocketAddress);
@@ -153,6 +173,9 @@ public class Server {
     }
 
     public void launch() throws IOException {
+        if(!isRoot) {
+            throw new IllegalStateException("This server is not a root server");
+        }
         state = ServerState.ON_GOING;
         serverSocketChannel.configureBlocking(false);
         serverKey = serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
@@ -237,26 +260,16 @@ public class Server {
         }
     }
 
+    /**
+     * Broadcast a packet to all neighbours except the source.
+     * @param packet the packet to broadcast
+     * @param src the source of the packet (the packet won't be sent to this address)
+     */
     public void broadcast(FullPacket packet, InetSocketAddress src) {
-        rootTable.onNeighbours(src, addressContext -> addressContext.context().queuePacket(packet));
+        Objects.requireNonNull(packet);
+        Objects.requireNonNull(src);
+        rootTable.onNeighboursDo(src, addressContext -> addressContext.context().queuePacket(packet));
     }
 
-    public static void main(String[] args) throws NumberFormatException, IOException {
-        if (args.length != 1 && args.length != 3) {
-            usage();
-            return;
-        }
 
-        if(args.length == 1) {
-            createROOT(Integer.parseInt(args[0])).launch();
-        }
-        else {
-            createCONNECTED(Integer.parseInt(args[0]), args[1], Integer.parseInt(args[2])).connect();
-        }
-    }
-
-    private static void usage() {
-        System.out.println("Usage (ROOT MODE) : Server port");
-        System.out.println("Usage (CONNECTED MODE) : Server port IP port");
-    }
 }
