@@ -1,0 +1,52 @@
+package fr.ramatellier.greed.server.packet;
+
+import fr.ramatellier.greed.server.util.OpCodes;
+import fr.ramatellier.greed.server.util.TramKind;
+
+import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+
+public class WorkRequestPacket implements FullPacket {
+    private final IDPacket idSrc;
+    private final IDPacket idDst;
+    private final long requestId;
+    private final CheckerPacket checker;
+    private final RangePacket range;
+    private final long max;
+
+    public WorkRequestPacket(InetSocketAddress src, InetSocketAddress dst, long requestId, String url, String className, long start, long end, long max) {
+        idSrc = new IDPacket(src);
+        idDst = new IDPacket(dst);
+        this.requestId = requestId;
+        checker = new CheckerPacket(url, className);
+        range = new RangePacket(start, end);
+        this.max = max;
+    }
+
+    @Override
+    public void accept(PacketVisitor visitor) {
+        visitor.visit(this);
+    }
+
+    @Override
+    public TramKind kind() {
+        return TramKind.TRANSFERT;
+    }
+
+    @Override
+    public byte opCode() {
+        return OpCodes.WORK;
+    }
+
+    @Override
+    public void putInBuffer(ByteBuffer buffer) {
+        buffer.put(kind().BYTES);
+        buffer.put(opCode());
+        idSrc.putInBuffer(buffer);
+        idDst.putInBuffer(buffer);
+        buffer.putLong(requestId);
+        checker.putInBuffer(buffer);
+        range.putInBuffer(buffer);
+        buffer.putLong(max);
+    }
+}

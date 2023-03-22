@@ -5,6 +5,7 @@ import fr.ramatellier.greed.server.packet.IDPacket;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.stream.Collectors;
 
 public class ConnectOKPacketReader implements Reader<ConnectOKPacket> {
     private enum State {
@@ -43,19 +44,22 @@ public class ConnectOKPacketReader implements Reader<ConnectOKPacket> {
         }
         if(state == State.WAITING_IDS) {
             if(ids.size() == sizeReader.get()) {
-                value = new ConnectOKPacket(idMother.getSocket(), ids.stream().map(id -> id.getSocket()).toList());
+                value = new ConnectOKPacket(idMother.getSocket(), ids.stream().map(IDPacket::getSocket).collect(Collectors.toSet()));
                 state = State.DONE;
             }
             else {
-                var status = idReader.process(buffer);
+                while(buffer.hasRemaining() && ids.size() != sizeReader.get()) {
+                    var status = idReader.process(buffer);
 
-                if(status == ProcessStatus.DONE) {
-                    ids.add(idReader.get());
-                    idReader.reset();
-                }
-                if(ids.size() == sizeReader.get()) {
-                    value = new ConnectOKPacket(idMother.getSocket(), ids.stream().map(id -> id.getSocket()).toList());
-                    state = State.DONE;
+                    if(status == ProcessStatus.DONE) {
+                        ids.add(idReader.get());
+                        idReader.reset();
+                    }
+
+                    if(ids.size() == sizeReader.get()) {
+                        value = new ConnectOKPacket(idMother.getSocket(), ids.stream().map(IDPacket::getSocket).collect(Collectors.toSet()));
+                        state = State.DONE;
+                    }
                 }
             }
         }

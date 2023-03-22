@@ -1,36 +1,41 @@
 package fr.ramatellier.greed.server;
 
-import fr.ramatellier.greed.server.packet.ConnectOKPacket;
-import fr.ramatellier.greed.server.packet.ConnectPacket;
-import fr.ramatellier.greed.server.packet.Packet;
+import fr.ramatellier.greed.server.packet.FullPacket;
 import fr.ramatellier.greed.server.reader.PacketReader;
 import fr.ramatellier.greed.server.reader.Reader;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 
 public class Context {
-    private static final Charset UTF8 = StandardCharsets.UTF_8;
     private static final int BUFFER_SIZE = 1_024;
     private final SelectionKey key;
     private final SocketChannel sc;
+    private final ServerVisitor visitor;
     private final ByteBuffer bufferIn = ByteBuffer.allocate(BUFFER_SIZE);
     private final ByteBuffer bufferOut = ByteBuffer.allocate(BUFFER_SIZE);
     private final PacketReader packetReader = new PacketReader();
-    private final ArrayDeque<Packet> queue = new ArrayDeque<>();
-    private final Server server; // we could also have Context as an instance class, which would naturally
-    // give access to ServerChatInt.this
+    private final ArrayDeque<FullPacket> queue = new ArrayDeque<>();
     private boolean closed = false;
 
     public Context(Server server, SelectionKey key) {
         this.key = key;
         this.sc = (SocketChannel) key.channel();
-        this.server = server;
+        this.visitor = new ServerVisitor(server, this);
+    }
+
+    public InetSocketAddress src() {
+        InetSocketAddress address = null;
+        try {
+            address = (InetSocketAddress) sc.getLocalAddress();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return address;
     }
 
     private void processIn() {
@@ -39,38 +44,8 @@ public class Context {
             switch (status) {
                 case DONE:
                     var packet = packetReader.get();
-
-                    switch (packet) {
-                        case ConnectPacket connectionPacket:
-                            if(server.isRunning()) {
-                                System.out.println("Demande de connexion depuis " + connectionPacket.getAddress() + " " + connectionPacket.getPort());
-
-                                var response = new ConnectOKPacket(server.getAddress(), server.neighbours());
-                                queuePacket(response);
-
-                                var address = connectionPacket.getSocket();
-                                server.addRoot(address, address);
-                            }
-                            break;
-                        case ConnectOKPacket connectOKPacket:
-                            System.out.println("Connexion acceptée depuis " + connectOKPacket.getAddress() + " " + connectOKPacket.getPort());
-
-                            var addressMother = connectOKPacket.getMotherAddress();
-                            for(var neighbor: connectOKPacket.neighbours()) {
-                                server.addRoot(neighbor, addressMother);
-                            }
-                            server.addRoot(addressMother, addressMother);
-
-                            break;
-                        case TestPacket testPacket:
-                            System.out.println(testPacket);
-                            break;
-                        default:
-                            System.out.println("Paquet inconnu");
-                            break;
-                    }
-
                     packetReader.reset();
+                    packet.accept(visitor);
                     break;
                 case REFILL:
                     return;
@@ -82,7 +57,7 @@ public class Context {
     }
 
 
-    public void queuePacket(Packet packet) {
+    public void queuePacket(FullPacket packet) {
         queue.add(packet);
 
         processOut();
