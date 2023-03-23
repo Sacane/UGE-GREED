@@ -54,5 +54,7 @@ public class AddNodePacketReader implements Reader<AddNodePacket> {
     @Override
     public void reset() {
         state = State.WAITING_ID;
+        idReader.reset();
+        idDaughterReader.reset();
     }
 }

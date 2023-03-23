@@ -23,6 +23,14 @@ public final class WorkRequestPacket implements FullPacket {
         this.max = max;
     }
 
+    public IDPacket getIdSrc() {
+        return idSrc;
+    }
+
+    public IDPacket getIdDst() {
+        return idDst;
+    }
+
     @Override
     public TramKind kind() {
         return TramKind.TRANSFERT;

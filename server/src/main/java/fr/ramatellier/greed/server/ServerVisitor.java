@@ -31,7 +31,7 @@ public class ServerVisitor implements PacketVisitor {
             server.addRoot(socket, socket, context);
 
             var addNodePacket = new AddNodePacket(new IDPacket(server.getAddress()), new IDPacket(socket));
-            queueBroadcastPacket(addNodePacket, socket);
+            server.broadcast(addNodePacket, socket);
         }
         //TODO send KOPacket if server is not running
     }
@@ -58,27 +58,36 @@ public class ServerVisitor implements PacketVisitor {
 
         logger.info("update root table and send broadcast to neighbours");
         var addNodePacket = new AddNodePacket(new IDPacket(server.getAddress()), packet.daughter());
-        queueBroadcastPacket(addNodePacket, packet.src().getSocket());
+        server.broadcast(addNodePacket, packet.src().getSocket());
     }
 
     @Override
     public void visit(WorkRequestPacket packet) {
+        if(packet.getIdSrc().getSocket().equals(packet.getIdDst().getSocket())) {
+            System.out.println("RECEIVE A COMPUTATION FOR ME FROM " + packet.getIdSrc().getSocket());
+        }
+        else {
+            System.out.println("RECEIVE A COMPUTATION FROM " + packet.getIdSrc().getSocket() + " TO " + packet.getIdDst().getSocket());
+
+            server.transfer(packet.getIdDst().getSocket(), packet);
+        }
     }
 
     //Broadcast this packet to all neighbours
     private void queueBroadcastPacket(FullPacket packet, InetSocketAddress address) {
-        if(packet.kind() != TramKind.BROADCAST){
+        if(packet.kind() != TramKind.BROADCAST) {
             throw new AssertionError();
         }
 
         server.broadcast(packet, address);
     }
-    private void queueLocalPacket(FullPacket packet){
+
+    private void queueLocalPacket(FullPacket packet) {
         //DO nothing special except treat the packet
         context.queuePacket(packet);
     }
-    private void queueTransferPacket(FullPacket packet){
+
+    private void queueTransferPacket(FullPacket packet) {
         server.transfer(context.src(), packet);
     }
-
 }
