@@ -8,4 +8,5 @@ public final class OpCodes {
     public static final byte OK = 0x03;
     public static final byte ADD_NODE = 0x04;
     public static final byte WORK = 0x05;
+    public static final byte WORK_RESPONSE = 0x07;
 }
