@@ -65,6 +65,7 @@ public class ServerVisitor implements PacketVisitor {
     public void visit(WorkRequestPacket packet) {
         if(server.getAddress().equals(packet.getIdDst().getSocket())) {
             System.out.println("RECEIVE A COMPUTATION FOR ME FROM " + packet.getIdSrc().getSocket());
+            System.out.println(packet.getRequestId() + " " + packet.getChecker().getUrl() + " " + packet.getChecker().getClassName());
         }
         else {
             System.out.println("RECEIVE A COMPUTATION FROM " + packet.getIdSrc().getSocket() + " TO " + packet.getIdDst().getSocket());

@@ -6,11 +6,13 @@ import java.nio.ByteBuffer;
 
 public class WorkRequestPacketReader implements Reader<WorkRequestPacket> {
     private enum State {
-        DONE, WAITING_IDSRC, WAITING_IDDST, ERROR
+        DONE, WAITING_IDSRC, WAITING_IDDST, WAITING_REQUESTID, WAITING_CHECKER, ERROR
     }
     private State state = State.WAITING_IDSRC;
     private final IDReader idSrcReader = new IDReader();
     private final IDReader idDstReader = new IDReader();
+    private final LongReader requestIdReader = new LongReader();
+    private final CheckerPacketReader checkerPacketReader = new CheckerPacketReader();
     private WorkRequestPacket value;
 
     @Override
@@ -30,9 +32,23 @@ public class WorkRequestPacketReader implements Reader<WorkRequestPacket> {
             var status = idDstReader.process(buffer);
 
             if(status == ProcessStatus.DONE) {
+                state = State.WAITING_REQUESTID;
+            }
+        }
+        if(state == State.WAITING_REQUESTID) {
+            var status = requestIdReader.process(buffer);
+
+            if(status == ProcessStatus.DONE) {
+                state = State.WAITING_CHECKER;
+            }
+        }
+        if(state == State.WAITING_CHECKER) {
+            var status = checkerPacketReader.process(buffer);
+
+            if(status == ProcessStatus.DONE) {
                 state = State.DONE;
 
-                value = new WorkRequestPacket(idSrcReader.get().getSocket(), idDstReader.get().getSocket(), 0, "", "", 0, 0, 0);
+                value = new WorkRequestPacket(idSrcReader.get().getSocket(), idDstReader.get().getSocket(), requestIdReader.get(), checkerPacketReader.get().getUrl(), checkerPacketReader.get().getClassName(), 0, 0, 0);
             }
         }
 
