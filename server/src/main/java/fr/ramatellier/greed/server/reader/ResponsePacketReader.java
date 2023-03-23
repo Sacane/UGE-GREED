@@ -1,22 +1,20 @@
 package fr.ramatellier.greed.server.reader;
 
-import fr.ramatellier.greed.server.packet.IDPacket;
 import fr.ramatellier.greed.server.packet.ResponsePacket;
 
 import java.nio.ByteBuffer;
 
 public class ResponsePacketReader implements Reader<ResponsePacket>{
-    private String response;
-    private Long value;
-    private Byte responseCode;
-    private ResponsePacket packet;
+    private final LongReader longReader = new LongReader();
+    private final ByteReader byteReader = new ByteReader();
+    private final StringReader stringReader = new StringReader();
 
     enum State {
         ERROR,
         WAITING_VALUE,
         WAITING_RESPONSE_CODE,
         WAITING_RESPONSE,
-        DONE
+        DONE,
     }
     private State state = State.WAITING_VALUE;
     @Override
@@ -25,21 +23,48 @@ public class ResponsePacketReader implements Reader<ResponsePacket>{
             throw new IllegalStateException();
         }
         if(state == State.WAITING_VALUE) {
-            if(bb.remaining() >= Long.BYTES) {
-                value = bb.getLong();
+            var status = longReader.process(bb);
+            if(status == ProcessStatus.DONE) {
                 state = State.WAITING_RESPONSE_CODE;
+            } else if(status == ProcessStatus.ERROR) {
+                return ProcessStatus.ERROR;
             }
         }
-        return null;
+        if(state == State.WAITING_RESPONSE_CODE) {
+            var status = byteReader.process(bb);
+            if(status == ProcessStatus.DONE) {
+                state = State.WAITING_RESPONSE;
+            } else if(status == ProcessStatus.ERROR) {
+                return ProcessStatus.ERROR;
+            }
+        }
+        if(state == State.WAITING_RESPONSE) {
+            var status = stringReader.process(bb);
+            if(status == ProcessStatus.DONE) {
+                state = State.DONE;
+            } else if(status == ProcessStatus.ERROR) {
+                return ProcessStatus.ERROR;
+            }
+        }
+        if(state != State.DONE) {
+            return ProcessStatus.REFILL;
+        }
+        return ProcessStatus.DONE;
     }
 
     @Override
     public ResponsePacket get() {
-        return packet;
+        if(state != State.DONE) {
+            throw new IllegalStateException();
+        }
+        return new ResponsePacket(longReader.get(), stringReader.get(), byteReader.get());
     }
 
     @Override
     public void reset() {
-
+        state = State.WAITING_VALUE;
+        longReader.reset();
+        byteReader.reset();
+        stringReader.reset();
     }
 }
