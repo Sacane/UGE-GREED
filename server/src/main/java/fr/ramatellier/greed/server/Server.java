@@ -2,6 +2,7 @@ package fr.ramatellier.greed.server;
 
 import fr.ramatellier.greed.server.packet.ConnectPacket;
 import fr.ramatellier.greed.server.packet.FullPacket;
+import fr.ramatellier.greed.server.packet.WorkRequestPacket;
 import fr.ramatellier.greed.server.util.RootTable;
 
 import java.io.IOException;
@@ -271,5 +272,13 @@ public class Server {
         rootTable.onNeighboursDo(src, addressContext -> addressContext.context().queuePacket(packet));
     }
 
+    public void startWork(String url, String className, long start, long end) {
+        var workers = rootTable.allAddress();
 
+        for(var worker: workers) {
+            var packet = new WorkRequestPacket(address, worker.address(), 0, url, className, start, end, 0);
+
+            worker.context().queuePacket(packet);
+        }
+    }
 }

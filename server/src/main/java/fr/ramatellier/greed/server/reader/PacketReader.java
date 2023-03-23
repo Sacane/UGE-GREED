@@ -103,5 +103,7 @@ public class PacketReader implements Reader<FullPacket> {
         locationReader.reset();
         codeReader.reset();
         idReader.reset();
+        connectOKPacketReader.reset();
+        addNodePacketReader.reset();
     }
 }

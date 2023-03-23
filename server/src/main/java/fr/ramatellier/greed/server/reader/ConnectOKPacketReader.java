@@ -83,5 +83,7 @@ public class ConnectOKPacketReader implements Reader<ConnectOKPacket> {
     @Override
     public void reset() {
         state = State.WAITING_IDMOTHER;
+        idReader.reset();
+        sizeReader.reset();
     }
 }

@@ -72,6 +72,10 @@ public class RootTable {
         }
     }
 
+    public List<AddressContext> allAddress() {
+        return table.values().stream().toList();
+    }
+
     private boolean isNeighbour(Map.Entry<InetSocketAddress, AddressContext> entry){
         return entry.getKey().equals(entry.getValue().address());
     }
