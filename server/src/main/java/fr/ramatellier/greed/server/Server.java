@@ -14,6 +14,8 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static java.lang.Long.parseLong;
+
 public class Server {
     private static final Logger logger = Logger.getLogger(Server.class.getName());
 
@@ -26,7 +28,7 @@ public class Server {
     private final InetSocketAddress address;
     private final RootTable rootTable = new RootTable();
     private ServerState state = ServerState.STOPPED;
-    private final ArrayBlockingQueue<Command> commandQueue = new ArrayBlockingQueue<>(10);
+    private final ArrayBlockingQueue<CommandArgs> commandQueue = new ArrayBlockingQueue<>(10);
 
     // Parent information
     private final SocketChannel parentSocketChannel;
@@ -35,6 +37,8 @@ public class Server {
 
     enum Command{
         INFO, STOP, SHUTDOWN, COMPUTE
+    }
+    public record CommandArgs(Command command, String[] args) {
     }
 
     enum ServerState{
@@ -61,7 +65,7 @@ public class Server {
     }
 
 
-    private void sendCommand(Command command) throws InterruptedException{
+    private void sendCommand(CommandArgs command) throws InterruptedException{
         synchronized (commandQueue){
             commandQueue.put(command);
             selector.wakeup();
@@ -72,12 +76,12 @@ public class Server {
         try{
             try(var scan = new Scanner(System.in)){
                 while(scan.hasNextLine()){
-                    var line = scan.nextLine();
-                    switch(line){
-                        case "INFO" -> sendCommand(Command.INFO);
-                        case "STOP" -> sendCommand(Command.STOP);
-                        case "SHUTDOWN" -> sendCommand(Command.SHUTDOWN);
-                        case "COMPUTE" -> sendCommand(Command.COMPUTE);
+                    var line = scan.nextLine().split(" ");
+                    switch(line[0]){
+                        case "INFO" -> sendCommand(new CommandArgs(Command.INFO, null));
+                        case "STOP" -> sendCommand(new CommandArgs(Command.STOP, null));
+                        case "SHUTDOWN" -> sendCommand(new CommandArgs(Command.SHUTDOWN, null));
+                        case "COMPUTE" -> sendCommand(new CommandArgs(Command.COMPUTE, new String[]{line[1], line[2], line[3], line[4]}));
                         default -> System.out.println("Unknown command");
                     }
                 }
@@ -146,7 +150,7 @@ public class Server {
             if(command == null){
                 return;
             }
-            switch(command){
+            switch(command.command()){
                 case INFO -> {
                     printInfo();
                 }
@@ -158,25 +162,34 @@ public class Server {
                 }
                 case COMPUTE -> {
                     logger.info("Command COMPUTE received");
-                    parseComputeCommand();
+                    parseComputeCommand(command.args());
                 }
             }
         }
     }
-    private void parseComputeCommand(){
-        System.out.println("Please type the following information in the next line to start a computing service :");
-        System.out.println("[URL] [CLASS-NAME] [START as INT] [END as INT]");
+    private void parseComputeCommand(String[] args) {
+        processComputeCommand(new ComputeInfo(args[0], args[1], parseLong(args[2]), parseLong(args[3])));
+        /*System.out.println("Please type the following information in the next line to start a computing service :");
+        System.out.println("[URL] [CLASS-NAME] [START as LONG] [END as LONG]");
         var scanner = new Scanner(System.in);
         var line = scanner.nextLine();
+        System.out.println("LINE --> " + line);
         var commandParser = new ComputeCommandParser(line);
         if(!commandParser.check()){
             System.out.println("The computation command is not valid");
             return;
         }
-        processComputeCommand(commandParser.get());
+        processComputeCommand(commandParser.get());*/
     }
-    private void processComputeCommand(ComputeInfo info){
 
+    private void processComputeCommand(ComputeInfo info) {
+        var workers = rootTable.allAddress();
+
+        for(var worker: workers) {
+            var packet = new WorkRequestPacket(address, worker.address(), 0, info.url(), info.className(), info.start(), info.end(), 0);
+
+            worker.context().queuePacket(packet);
+        }
     }
 
     public void connect() throws IOException {
@@ -290,15 +303,5 @@ public class Server {
         Objects.requireNonNull(packet);
         Objects.requireNonNull(src);
         rootTable.onNeighboursDo(src, addressContext -> addressContext.context().queuePacket(packet));
-    }
-
-    public void startWork(String url, String className, long start, long end) {
-        var workers = rootTable.allAddress();
-
-        for(var worker: workers) {
-            var packet = new WorkRequestPacket(address, worker.address(), 0, url, className, start, end, 0);
-
-            worker.context().queuePacket(packet);
-        }
     }
 }

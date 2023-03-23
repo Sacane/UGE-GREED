@@ -1,3 +1,3 @@
 package fr.ramatellier.greed.server;
 
-public record ComputeInfo(String url, String className, int start, int end) {}
+public record ComputeInfo(String url, String className, long start, long end) {}

@@ -47,9 +47,9 @@ public final class WorkRequestPacket implements FullPacket {
         buffer.put(opCode());
         idSrc.putInBuffer(buffer);
         idDst.putInBuffer(buffer);
-        buffer.putLong(requestId);
+        /*buffer.putLong(requestId);
         checker.putInBuffer(buffer);
         range.putInBuffer(buffer);
-        buffer.putLong(max);
+        buffer.putLong(max);*/
     }
 }

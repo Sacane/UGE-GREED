@@ -19,6 +19,7 @@ public class PacketReader implements Reader<FullPacket> {
     private final IDReader idReader = new IDReader();
     private final ConnectOKPacketReader connectOKPacketReader = new ConnectOKPacketReader();
     private final AddNodePacketReader addNodePacketReader = new AddNodePacketReader();
+    private final WorkRequestPacketReader workRequestPacketReader = new WorkRequestPacketReader();
     private FullPacket value;
 
     @Override
@@ -78,6 +79,16 @@ public class PacketReader implements Reader<FullPacket> {
                     }
                 }
             }
+            else if(locationReader.get() == TramKind.TRANSFERT.BYTES) {
+                if(codeReader.get() == OpCodes.WORK) {
+                    var status = workRequestPacketReader.process(buffer);
+
+                    if(status == ProcessStatus.DONE) {
+                        value = workRequestPacketReader.get();
+                        state = State.DONE;
+                    }
+                }
+            }
         }
 
         if (state != State.DONE) {
@@ -105,5 +116,6 @@ public class PacketReader implements Reader<FullPacket> {
         idReader.reset();
         connectOKPacketReader.reset();
         addNodePacketReader.reset();
+        workRequestPacketReader.reset();
     }
 }
