@@ -15,6 +15,14 @@ public class CheckerPacket implements Packet {
         this.className = Objects.requireNonNull(className);
     }
 
+    public String getUrl() {
+        return url;
+    }
+
+    public String getClassName() {
+        return className;
+    }
+
     @Override
     public void putInBuffer(ByteBuffer buffer) {
         var encodeURL = UTF8.encode(url);
