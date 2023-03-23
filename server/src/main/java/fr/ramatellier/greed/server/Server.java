@@ -192,7 +192,7 @@ public class Server {
         var workers = rootTable.allAddress();
 
         for(var worker: workers) {
-            var packet = new WorkRequestPacket(address, worker.address(), 0, info.url(), info.className(), info.start(), info.end(), 0);
+            var packet = new WorkRequestPacket(address, worker.address(), 0, info.url(), info.className(), info.start(), info.end(), 10000);
 
             worker.context().queuePacket(packet);
         }

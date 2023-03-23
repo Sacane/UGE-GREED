@@ -6,13 +6,15 @@ import java.nio.ByteBuffer;
 
 public class WorkRequestPacketReader implements Reader<WorkRequestPacket> {
     private enum State {
-        DONE, WAITING_IDSRC, WAITING_IDDST, WAITING_REQUESTID, WAITING_CHECKER, ERROR
+        DONE, WAITING_IDSRC, WAITING_IDDST, WAITING_REQUESTID, WAITING_CHECKER, WAITING_RANGE, WAITING_MAX, ERROR
     }
     private State state = State.WAITING_IDSRC;
     private final IDReader idSrcReader = new IDReader();
     private final IDReader idDstReader = new IDReader();
     private final LongReader requestIdReader = new LongReader();
     private final CheckerPacketReader checkerPacketReader = new CheckerPacketReader();
+    private final RangePacketReader rangePacketReader = new RangePacketReader();
+    private final LongReader maxReader = new LongReader();
     private WorkRequestPacket value;
 
     @Override
@@ -46,9 +48,23 @@ public class WorkRequestPacketReader implements Reader<WorkRequestPacket> {
             var status = checkerPacketReader.process(buffer);
 
             if(status == ProcessStatus.DONE) {
+                state = State.WAITING_RANGE;
+            }
+        }
+        if(state == State.WAITING_RANGE) {
+            var status = rangePacketReader.process(buffer);
+
+            if(status == ProcessStatus.DONE) {
+                state = State.WAITING_MAX;
+            }
+        }
+        if(state == State.WAITING_MAX) {
+            var status = maxReader.process(buffer);
+
+            if(status == ProcessStatus.DONE) {
                 state = State.DONE;
 
-                value = new WorkRequestPacket(idSrcReader.get().getSocket(), idDstReader.get().getSocket(), requestIdReader.get(), checkerPacketReader.get().getUrl(), checkerPacketReader.get().getClassName(), 0, 0, 0);
+                value = new WorkRequestPacket(idSrcReader.get().getSocket(), idDstReader.get().getSocket(), requestIdReader.get(), checkerPacketReader.get().getUrl(), checkerPacketReader.get().getClassName(), rangePacketReader.get().getStart(), rangePacketReader.get().getEnd(), maxReader.get());
             }
         }
 
@@ -73,5 +89,9 @@ public class WorkRequestPacketReader implements Reader<WorkRequestPacket> {
         state = State.WAITING_IDSRC;
         idSrcReader.reset();
         idDstReader.reset();
+        requestIdReader.reset();
+        checkerPacketReader.reset();
+        rangePacketReader.reset();
+        maxReader.reset();
     }
 }

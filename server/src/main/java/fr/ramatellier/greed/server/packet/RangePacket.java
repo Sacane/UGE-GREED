@@ -11,6 +11,14 @@ public class RangePacket implements Packet {
         this.end = end;
     }
 
+    public long getStart() {
+        return start;
+    }
+
+    public long getEnd() {
+        return end;
+    }
+
     @Override
     public void putInBuffer(ByteBuffer buffer) {
         buffer.putLong(start);
