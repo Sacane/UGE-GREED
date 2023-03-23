@@ -33,7 +33,7 @@ public class Server {
     private SelectionKey parentKey;
 
     enum Command{
-        INFO, STOP, SHUTDOWN
+        INFO, STOP, SHUTDOWN, COMPUTE
     }
 
     enum ServerState{
@@ -76,6 +76,7 @@ public class Server {
                         case "INFO" -> sendCommand(Command.INFO);
                         case "STOP" -> sendCommand(Command.STOP);
                         case "SHUTDOWN" -> sendCommand(Command.SHUTDOWN);
+                        case "COMPUTE" -> sendCommand(Command.COMPUTE);
                         default -> System.out.println("Unknown command");
                     }
                 }
@@ -154,8 +155,27 @@ public class Server {
                 case SHUTDOWN -> {
                     logger.info("Command SHUTDOWN received");
                 }
+                case COMPUTE -> {
+                    logger.info("Command COMPUTE received");
+                    parseComputeCommand();
+                }
             }
         }
+    }
+    private void parseComputeCommand(){
+        System.out.println("Please type the following information in the next line to start a computing service :");
+        System.out.println("[URL] [CLASS-NAME] [START as INT] [END as INT]");
+        var scanner = new Scanner(System.in);
+        var line = scanner.nextLine();
+        var commandParser = new ComputeCommandParser(line);
+        if(!commandParser.check()){
+            System.out.println("The computation command is not valid");
+            return;
+        }
+        processComputeCommand(commandParser.get());
+    }
+    private void processComputeCommand(ComputeInfo info){
+
     }
 
     public void connect() throws IOException {
