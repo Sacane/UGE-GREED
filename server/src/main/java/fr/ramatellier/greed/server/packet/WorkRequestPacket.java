@@ -39,6 +39,14 @@ public final class WorkRequestPacket implements FullPacket {
         return checker;
     }
 
+    public RangePacket getRange() {
+        return range;
+    }
+
+    public long getMax() {
+        return max;
+    }
+
     @Override
     public TramKind kind() {
         return TramKind.TRANSFERT;
@@ -57,7 +65,7 @@ public final class WorkRequestPacket implements FullPacket {
         idDst.putInBuffer(buffer);
         buffer.putLong(requestId);
         checker.putInBuffer(buffer);
-        /*range.putInBuffer(buffer);
-        buffer.putLong(max);*/
+        range.putInBuffer(buffer);
+        buffer.putLong(max);
     }
 }
