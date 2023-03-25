@@ -7,10 +7,10 @@ import java.nio.ByteBuffer;
 import java.util.Objects;
 
 public record WorkResponsePacket(
-        IDPacket src,
-        IDPacket dst,
-        long requestID,
-        ResponsePacket responsePacket
+    IDPacket src,
+    IDPacket dst,
+    long requestID,
+    ResponsePacket responsePacket
 ) implements FullPacket{
     public WorkResponsePacket{
         Objects.requireNonNull(src);
@@ -24,7 +24,7 @@ public record WorkResponsePacket(
 
     @Override
     public byte opCode() {
-        return OpCodes.WORK_RESPONSE;
+        return OpCodes.WORK_RESPONSE.BYTES;
     }
 
     @Override

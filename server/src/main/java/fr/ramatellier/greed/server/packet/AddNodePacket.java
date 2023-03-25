@@ -19,7 +19,7 @@ public record AddNodePacket(IDPacket src, IDPacket daughter) implements FullPack
 
     @Override
     public byte opCode() {
-        return OpCodes.ADD_NODE;
+        return OpCodes.ADD_NODE.BYTES;
     }
 
     @Override

@@ -45,18 +45,16 @@ public class PacketReader implements Reader<FullPacket> {
 
         if(state == State.WAITING_PACKET) {
             if(locationReader.get() == TramKind.LOCAL.BYTES) {
-                if(codeReader.get() == OpCodes.CONNECT) {
+                if(codeReader.get() == OpCodes.CONNECT.BYTES) {
                     var status = idReader.process(buffer);
 
                     if(status == ProcessStatus.DONE) {
                         var packet = idReader.get();
-                        // System.out.println("Demande de connexion depuis " + packet.getAddress() + " " + packet.getPort());
-                        // value = new TestPacket("COUCOU");
                         value = new ConnectPacket(new InetSocketAddress(packet.getAddress(), packet.getPort()));
                         state = State.DONE;
                     }
                 }
-                else if(codeReader.get() == OpCodes.OK) {
+                else if(codeReader.get() == OpCodes.OK.BYTES) {
                     var status = connectOKPacketReader.process(buffer);
 
                     if(status == ProcessStatus.DONE) {
@@ -64,13 +62,13 @@ public class PacketReader implements Reader<FullPacket> {
                         state = State.DONE;
                     }
                 }
-                else if(codeReader.get() == OpCodes.KO) {
+                else if(codeReader.get() == OpCodes.KO.BYTES) {
                     value = new ConnectKOPacket();
                     state = State.DONE;
                 }
             }
             else if(locationReader.get() == TramKind.BROADCAST.BYTES) {
-                if(codeReader.get() == OpCodes.ADD_NODE) {
+                if(codeReader.get() == OpCodes.ADD_NODE.BYTES) {
                     var status = addNodePacketReader.process(buffer);
 
                     if(status == ProcessStatus.DONE) {
@@ -80,7 +78,7 @@ public class PacketReader implements Reader<FullPacket> {
                 }
             }
             else if(locationReader.get() == TramKind.TRANSFERT.BYTES) {
-                if(codeReader.get() == OpCodes.WORK) {
+                if(codeReader.get() == OpCodes.WORK.BYTES) {
                     var status = workRequestPacketReader.process(buffer);
 
                     if(status == ProcessStatus.DONE) {

@@ -4,6 +4,7 @@ import fr.ramatellier.greed.server.packet.ConnectPacket;
 import fr.ramatellier.greed.server.packet.FullPacket;
 import fr.ramatellier.greed.server.packet.WorkRequestPacket;
 import fr.ramatellier.greed.server.util.RootTable;
+import fr.ramatellier.greed.server.util.TramKind;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -16,8 +17,6 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static java.lang.Long.parseLong;
-
 public class Server {
     private static final Logger logger = Logger.getLogger(Server.class.getName());
 
@@ -25,7 +24,6 @@ public class Server {
     private final ServerSocketChannel serverSocketChannel;
     private SelectionKey serverKey;
     private final Selector selector;
-    private boolean isRunning = true;
     private final boolean isRoot;
     private final InetSocketAddress address;
     private final RootTable rootTable = new RootTable();
@@ -41,13 +39,12 @@ public class Server {
 
     public static final Charset UTF8 = StandardCharsets.UTF_8;
 
-    enum Command{
+    private enum Command{
         INFO, STOP, SHUTDOWN, COMPUTE
     }
-    public record CommandArgs(Command command, String[] args) {
-    }
+    private record CommandArgs(Command command, String[] args) {}
 
-    enum ServerState{
+    private enum ServerState{
         ON_GOING, STOPPED
     }
 
@@ -76,14 +73,14 @@ public class Server {
             selector.wakeup();
         }
     }
-    private void sendCommandWithArgs(Command command, String line, int numberArgs) throws InterruptedException {
-        if(line.split(" ").length != numberArgs){
+    private void sendCommandWithArgs(String line) throws InterruptedException {
+        if(line.split(" ").length != 5){
             logger.warning("Invalid given command : " + line);
-            System.out.println("Expected " + (numberArgs - 1) + " arguments");
+            System.out.println("Expected " + (5 - 1) + " arguments");
             return;
         }
         var args = Arrays.stream(line.split(" ")).skip(1).toArray(String[]::new);
-        sendCommand(new CommandArgs(command, args));
+        sendCommand(new CommandArgs(Command.COMPUTE, args));
     }
     private void consoleRun(){
         try{
@@ -95,7 +92,7 @@ public class Server {
                         case "INFO" -> sendCommand(new CommandArgs(Command.INFO, null));
                         case "STOP" -> sendCommand(new CommandArgs(Command.STOP, null));
                         case "SHUTDOWN" -> sendCommand(new CommandArgs(Command.SHUTDOWN, null));
-                        case "COMPUTE" -> sendCommandWithArgs(Command.COMPUTE, line, 5);
+                        case "COMPUTE" -> sendCommandWithArgs(line);
                         default -> System.out.println("Unknown command");
                     }
                 }
@@ -113,11 +110,18 @@ public class Server {
      * @param packet packet to transfer
      */
     public void transfer(InetSocketAddress dst, FullPacket packet) {
+        if(packet.kind() != TramKind.TRANSFERT){
+            throw new AssertionError("Only transfer packet can be transferred");
+        }
         if(dst.equals(address)){
             return;
         }
         rootTable.sendTo(dst, packet);
     }
+
+    /**
+     * @return the inetSocketAddress of the server.
+     */
     public InetSocketAddress getAddress() {
         return address;
     }
@@ -133,14 +137,29 @@ public class Server {
         }
     }
 
+    /**
+     * returns the set of registered addresses in the rootTable.
+     */
     public Set<InetSocketAddress> registeredAddresses() {
         return rootTable.registeredAddresses();
     }
 
+    /**
+     * Launch a root Server on the given port.
+     * @param port port of the server
+     * @throws IOException if an I/O error occurs
+     */
     public static void launchRoot(int port) throws IOException {
         new Server(port).launch();
     }
 
+    /**
+     * Launch a server on the given hostPort, connected to another server.
+     * @param hostPort port of the current server
+     * @param IP IP of the server to connect to
+     * @param connectPort port of the server to connect to
+     * @throws IOException if an I/O error occurs
+     */
     public static void launchConnected(int hostPort, String IP, int connectPort) throws IOException {
         Objects.requireNonNull(IP, "IP can't be null");
         new Server(hostPort, IP, connectPort).connect();
@@ -202,7 +221,7 @@ public class Server {
         }
     }
 
-    public void connect() throws IOException {
+    private void connect() throws IOException {
         if(isRoot || parentSocketAddress == null) {
             throw new IllegalStateException("This server is a root server");
         }
@@ -215,7 +234,7 @@ public class Server {
         initConnection();
     }
 
-    public void launch() throws IOException {
+    private void launch() throws IOException {
         if(!isRoot) {
             throw new IllegalStateException("This server is not a root server");
         }
@@ -313,11 +332,16 @@ public class Server {
         Objects.requireNonNull(src);
         rootTable.onNeighboursDo(src, addressContext -> addressContext.context().queuePacket(packet));
     }
+
+    /**
+     * Shutdown the current server and close all connections.
+     */
     public void shutdown() {
         try {
             serverSocketChannel.close();
             silentlyClose(serverKey);
-            silentlyClose(parentKey);
+            if(!isRoot) silentlyClose(parentKey);
+            state = ServerState.STOPPED;
         } catch (IOException e) {
         }
     }

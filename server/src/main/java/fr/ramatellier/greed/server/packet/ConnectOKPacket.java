@@ -44,7 +44,7 @@ public final class ConnectOKPacket implements FullPacket {
 
     @Override
     public byte opCode() {
-        return OpCodes.OK;
+        return OpCodes.OK.BYTES;
     }
 
     @Override

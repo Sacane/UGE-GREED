@@ -54,7 +54,7 @@ public final class WorkRequestPacket implements FullPacket {
 
     @Override
     public byte opCode() {
-        return OpCodes.WORK;
+        return OpCodes.WORK.BYTES;
     }
 
     @Override
