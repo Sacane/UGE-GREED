@@ -29,7 +29,7 @@ public class Server {
     private final boolean isRoot;
     private final InetSocketAddress address;
     private final RootTable rootTable = new RootTable();
-    private ServerState state = ServerState.STOPPED;
+    private ServerState state = ServerState.ON_GOING;
     private final ArrayBlockingQueue<CommandArgs> commandQueue = new ArrayBlockingQueue<>(10);
 
     // Parent information
@@ -70,8 +70,7 @@ public class Server {
         this.isRoot = false;
     }
 
-
-    private void sendCommand(CommandArgs command) throws InterruptedException{
+    private void sendCommand(CommandArgs command) throws InterruptedException {
         synchronized (commandQueue){
             commandQueue.put(command);
             selector.wakeup();
@@ -146,7 +145,7 @@ public class Server {
         Objects.requireNonNull(IP, "IP can't be null");
         new Server(hostPort, IP, connectPort).connect();
     }
-    private void printInfo(){
+    private void printInfo() {
         var root = isRoot ? "ROOT" : "CONNECTED";
         System.out.print("This server is a " + root + " server ");
         if(!isRoot){
@@ -171,6 +170,7 @@ public class Server {
                 }
                 case STOP -> {
                     logger.info("Command STOP received");
+                    state = (state == ServerState.ON_GOING) ? ServerState.STOPPED : ServerState.ON_GOING;
                 }
                 case SHUTDOWN -> {
                     logger.info("Command SHUTDOWN received");
@@ -183,14 +183,7 @@ public class Server {
         }
     }
     private void parseComputeCommand(String[] args) {
-        var line = Arrays.stream(args).reduce("", (s, s2) -> s + " " + s2);
-        var parser = new ComputeCommandParser(line.trim());
-        if(!parser.check()){
-            System.out.println("The computation command is not valid");
-            return;
-        }
-        processComputeCommand(parser.get());
-//        processComputeCommand(new ComputeInfo(args[0], args[1], parseLong(args[2]), parseLong(args[3])));
+        processComputeCommand(new ComputeInfo(args[0], args[1], parseLong(args[2]), parseLong(args[3])));
         /*System.out.println("Please type the following information in the next line to start a computing service :");
         System.out.println("[URL] [CLASS-NAME] [START as LONG] [END as LONG]");
         var scanner = new Scanner(System.in);
@@ -224,7 +217,6 @@ public class Server {
         parentKey = parentSocketChannel.register(selector, SelectionKey.OP_CONNECT);
         var context = new Context(this, parentKey);
         parentKey.attach(context);
-        state = ServerState.ON_GOING;
         initConnection();
     }
 
@@ -232,11 +224,9 @@ public class Server {
         if(!isRoot) {
             throw new IllegalStateException("This server is not a root server");
         }
-        state = ServerState.ON_GOING;
         serverSocketChannel.configureBlocking(false);
         serverKey = serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
         logger.info("Server started on " + address);
-        state = ServerState.ON_GOING;
         initConnection();
     }
 
@@ -252,6 +242,8 @@ public class Server {
                 processCommand();
             } catch (UncheckedIOException tunneled) {
                 throw tunneled.getCause();
+            } catch (CancelledKeyException exception) {
+                return ;
             }
 //            System.out.println("Select finished");
         }
@@ -283,7 +275,7 @@ public class Server {
     }
 
     private void doConnect(SelectionKey key) throws IOException {
-        if (!parentSocketChannel.finishConnect()){
+        if (!parentSocketChannel.finishConnect()) {
             return ;
         }
         var context = (Context) key.attachment();
@@ -325,5 +317,13 @@ public class Server {
         Objects.requireNonNull(packet);
         Objects.requireNonNull(src);
         rootTable.onNeighboursDo(src, addressContext -> addressContext.context().queuePacket(packet));
+    }
+    public void shutdown() {
+        try {
+            serverSocketChannel.close();
+            silentlyClose(serverKey);
+            silentlyClose(parentKey);
+        } catch (IOException e) {
+        }
     }
 }

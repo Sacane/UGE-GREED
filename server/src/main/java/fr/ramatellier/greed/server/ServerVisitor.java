@@ -23,8 +23,10 @@ public class ServerVisitor implements PacketVisitor {
 
     @Override
     public void visit(ConnectPacket packet) {
+        logger.info("Connection demand received from " + packet.getAddress() + " " + packet.getPort());
+
         if(server.isRunning()) {
-            logger.info("Connection demand received from " + packet.getAddress() + " " + packet.getPort());
+            logger.info("Connection accepted");
             var response = new ConnectOKPacket(server.getAddress(), server.registeredAddresses());
             context.queuePacket(response);
             var socket = packet.getSocket();
@@ -33,7 +35,10 @@ public class ServerVisitor implements PacketVisitor {
             var addNodePacket = new AddNodePacket(new IDPacket(server.getAddress()), new IDPacket(socket));
             server.broadcast(addNodePacket, socket);
         }
-        //TODO send KOPacket if server is not running
+        else {
+            logger.info("Connection refused");
+            context.queuePacket(new ConnectKOPacket());
+        }
     }
 
     @Override
@@ -48,7 +53,9 @@ public class ServerVisitor implements PacketVisitor {
 
     @Override
     public void visit(ConnectKOPacket packet) {
-        System.out.println("ConnectKOPacket");
+        System.out.println("Connection refused");
+
+        server.shutdown();
     }
 
     @Override
