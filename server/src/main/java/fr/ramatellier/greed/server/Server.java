@@ -183,18 +183,13 @@ public class Server {
         }
     }
     private void parseComputeCommand(String[] args) {
-        processComputeCommand(new ComputeInfo(args[0], args[1], parseLong(args[2]), parseLong(args[3])));
-        /*System.out.println("Please type the following information in the next line to start a computing service :");
-        System.out.println("[URL] [CLASS-NAME] [START as LONG] [END as LONG]");
-        var scanner = new Scanner(System.in);
-        var line = scanner.nextLine();
-        System.out.println("LINE --> " + line);
-        var commandParser = new ComputeCommandParser(line);
-        if(!commandParser.check()){
+        var line = Arrays.stream(args).reduce("", (s, s2) -> s + " " + s2);
+        var parser = new ComputeCommandParser(line.trim());
+        if(!parser.check()){
             System.out.println("The computation command is not valid");
             return;
         }
-        processComputeCommand(commandParser.get());*/
+        processComputeCommand(parser.get());
     }
 
     private void processComputeCommand(ComputeInfo info) {
