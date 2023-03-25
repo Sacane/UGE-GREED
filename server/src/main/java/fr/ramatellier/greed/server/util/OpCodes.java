@@ -1,11 +1,19 @@
 package fr.ramatellier.greed.server.util;
 
-public final class OpCodes {
-    private OpCodes() {}
+public enum OpCodes {
 
-    public static final byte CONNECT = 0x01;
-    public static final byte KO = 0x02;
-    public static final byte OK = 0x03;
-    public static final byte ADD_NODE = 0x04;
-    public static final byte WORK = 0x05;
+    CONNECT((byte)0x01), KO((byte)0x02), OK((byte)0x03), ADD_NODE((byte)0x04), WORK((byte)0x05), WORK_RESPONSE((byte)0x07);
+    public final byte BYTES;
+
+    OpCodes(byte bytes) {
+        this.BYTES = bytes;
+    }
+    public static OpCodes fromByte(byte b){
+        for(OpCodes opCode : OpCodes.values()){
+            if(opCode.BYTES == b){
+                return opCode;
+            }
+        }
+        return null;
+    }
 }
