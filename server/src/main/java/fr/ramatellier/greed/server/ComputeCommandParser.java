@@ -19,8 +19,8 @@ public final class ComputeCommandParser {
         var url = split[0];
         var className = split[1];
         try{
-            var start = Integer.parseInt(split[2]);
-            var end = Integer.parseInt(split[3]);
+            var start = Long.parseLong(split[2]);
+            var end = Long.parseLong(split[3]);
             if(end < start){
                 return false;
             }

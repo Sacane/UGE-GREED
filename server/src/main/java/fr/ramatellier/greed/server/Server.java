@@ -77,17 +77,26 @@ public class Server {
             selector.wakeup();
         }
     }
-
+    private void sendCommandWithArgs(Command command, String line, int numberArgs) throws InterruptedException {
+        if(line.split(" ").length != numberArgs){
+            logger.warning("Invalid given command : " + line);
+            System.out.println("Expected " + (numberArgs - 1) + " arguments");
+            return;
+        }
+        var args = Arrays.stream(line.split(" ")).skip(1).toArray(String[]::new);
+        sendCommand(new CommandArgs(command, args));
+    }
     private void consoleRun(){
         try{
             try(var scan = new Scanner(System.in)){
                 while(scan.hasNextLine()){
-                    var line = scan.nextLine().split(" ");
-                    switch(line[0]){
+                    var line  = scan.nextLine();
+                    var command = line.split(" ")[0];
+                    switch(command){
                         case "INFO" -> sendCommand(new CommandArgs(Command.INFO, null));
                         case "STOP" -> sendCommand(new CommandArgs(Command.STOP, null));
                         case "SHUTDOWN" -> sendCommand(new CommandArgs(Command.SHUTDOWN, null));
-                        case "COMPUTE" -> sendCommand(new CommandArgs(Command.COMPUTE, new String[]{line[1], line[2], line[3], line[4]}));
+                        case "COMPUTE" -> sendCommandWithArgs(Command.COMPUTE, line, 5);
                         default -> System.out.println("Unknown command");
                     }
                 }
@@ -174,7 +183,14 @@ public class Server {
         }
     }
     private void parseComputeCommand(String[] args) {
-        processComputeCommand(new ComputeInfo(args[0], args[1], parseLong(args[2]), parseLong(args[3])));
+        var line = Arrays.stream(args).reduce("", (s, s2) -> s + " " + s2);
+        var parser = new ComputeCommandParser(line.trim());
+        if(!parser.check()){
+            System.out.println("The computation command is not valid");
+            return;
+        }
+        processComputeCommand(parser.get());
+//        processComputeCommand(new ComputeInfo(args[0], args[1], parseLong(args[2]), parseLong(args[3])));
         /*System.out.println("Please type the following information in the next line to start a computing service :");
         System.out.println("[URL] [CLASS-NAME] [START as LONG] [END as LONG]");
         var scanner = new Scanner(System.in);
