@@ -59,8 +59,7 @@ public final class WorkRequestPacket implements FullPacket {
 
     @Override
     public void putInBuffer(ByteBuffer buffer) {
-        buffer.put(kind().BYTES);
-        buffer.put(opCode());
+        putHeader(buffer);
         idSrc.putInBuffer(buffer);
         idDst.putInBuffer(buffer);
         buffer.putLong(requestId);

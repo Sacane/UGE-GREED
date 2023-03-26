@@ -17,7 +17,6 @@ public final class ConnectKOPacket implements FullPacket {
     }
     @Override
     public void putInBuffer(ByteBuffer buffer) {
-        buffer.put(kind().BYTES);
-        buffer.put(opCode());
+        putHeader(buffer);
     }
 }

@@ -49,8 +49,7 @@ public final class ConnectOKPacket implements FullPacket {
 
     @Override
     public void putInBuffer(ByteBuffer buffer) {
-        buffer.put(kind().BYTES);
-        buffer.put(opCode());
+        putHeader(buffer);
         idMother.putInBuffer(buffer);
         buffer.putInt(ids.size());
         for(var id: ids) {

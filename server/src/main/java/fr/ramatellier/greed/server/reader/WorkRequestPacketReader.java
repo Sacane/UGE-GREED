@@ -64,7 +64,7 @@ public class WorkRequestPacketReader implements Reader<WorkRequestPacket> {
             if(status == ProcessStatus.DONE) {
                 state = State.DONE;
 
-                value = new WorkRequestPacket(idSrcReader.get().getSocket(), idDstReader.get().getSocket(), requestIdReader.get(), checkerPacketReader.get().getUrl(), checkerPacketReader.get().getClassName(), rangePacketReader.get().getStart(), rangePacketReader.get().getEnd(), maxReader.get());
+                value = new WorkRequestPacket(idSrcReader.get().getSocket(), idDstReader.get().getSocket(), requestIdReader.get(), checkerPacketReader.get().getUrl(), checkerPacketReader.get().getClassName(), rangePacketReader.get().start(), rangePacketReader.get().end(), maxReader.get());
             }
         }
 

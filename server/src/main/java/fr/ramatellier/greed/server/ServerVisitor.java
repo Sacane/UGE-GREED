@@ -1,9 +1,6 @@
 package fr.ramatellier.greed.server;
 
 import fr.ramatellier.greed.server.packet.*;
-import fr.ramatellier.greed.server.util.TramKind;
-
-import java.net.InetSocketAddress;
 import java.util.Objects;
 import java.util.logging.Logger;
 
@@ -24,14 +21,12 @@ public class ServerVisitor implements PacketVisitor {
     @Override
     public void visit(ConnectPacket packet) {
         logger.info("Connection demand received from " + packet.getAddress() + " " + packet.getPort());
-
         if(server.isRunning()) {
             logger.info("Connection accepted");
             var response = new ConnectOKPacket(server.getAddress(), server.registeredAddresses());
             context.queuePacket(response);
             var socket = packet.getSocket();
             server.addRoot(socket, socket, context);
-
             var addNodePacket = new AddNodePacket(new IDPacket(server.getAddress()), new IDPacket(socket));
             server.broadcast(addNodePacket, socket);
         }
@@ -54,7 +49,6 @@ public class ServerVisitor implements PacketVisitor {
     @Override
     public void visit(ConnectKOPacket packet) {
         System.out.println("Connection refused");
-
         server.shutdown();
     }
 
@@ -62,7 +56,6 @@ public class ServerVisitor implements PacketVisitor {
     public void visit(AddNodePacket packet) {
         logger.info("AddNodePacket received from " + packet.src().getSocket());
         server.addRoot(packet.daughter().getSocket(), packet.src().getSocket(), context);
-
         logger.info("update root table and send broadcast to neighbours");
         var addNodePacket = new AddNodePacket(new IDPacket(server.getAddress()), packet.daughter());
         server.broadcast(addNodePacket, packet.src().getSocket());
@@ -72,35 +65,17 @@ public class ServerVisitor implements PacketVisitor {
     public void visit(WorkRequestPacket packet) {
         if(server.getAddress().equals(packet.getIdDst().getSocket())) {
             System.out.println("RECEIVE A COMPUTATION FOR ME FROM " + packet.getIdSrc().getSocket());
-            System.out.println(packet.getRequestId() + " " + packet.getChecker().getUrl() + " " + packet.getChecker().getClassName() + " " + packet.getRange().getStart() + " " + packet.getRange().getEnd() + " " + packet.getMax());
+            System.out.println(packet.getRequestId() + " " + packet.getChecker().getUrl() + " " + packet.getChecker().getClassName() + " " + packet.getRange().start() + " " + packet.getRange().end() + " " + packet.getMax());
         }
         else {
-            System.out.println("RECEIVE A COMPUTATION FROM " + packet.getIdSrc().getSocket() + " TO " + packet.getIdDst().getSocket());
-
+            System.out.println("RECEIVE A COMPUTATION FROM " + packet.getIdSrc().getSocket() + " FOR " + packet.getIdDst().getSocket());
             server.transfer(packet.getIdDst().getSocket(), packet);
         }
     }
 
     @Override
     public void visit(WorkResponsePacket packet) {
+        var responsePacket = packet.responsePacket();
 
-    }
-
-    //Broadcast this packet to all neighbours
-    private void queueBroadcastPacket(FullPacket packet, InetSocketAddress address) {
-        if(packet.kind() != TramKind.BROADCAST) {
-            throw new AssertionError();
-        }
-
-        server.broadcast(packet, address);
-    }
-
-    private void queueLocalPacket(FullPacket packet) {
-        //DO nothing special except treat the packet
-        context.queuePacket(packet);
-    }
-
-    private void queueTransferPacket(FullPacket packet) {
-        server.transfer(context.src(), packet);
     }
 }

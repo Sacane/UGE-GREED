@@ -1,19 +1,19 @@
 package fr.ramatellier.greed.server.reader;
 
-import fr.ramatellier.greed.server.packet.IpAddress;
+import fr.ramatellier.greed.server.packet.IpAddressPacket;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 
-public class IPReader implements Reader<IpAddress> {
+public class IPReader implements Reader<IpAddressPacket> {
     private enum State {
         DONE, WAITING_SIZE, WAITING_ADDRESS, ERROR
     }
     private State state = State.WAITING_SIZE;
     private final ByteReader sizeReader = new ByteReader();
     private ByteBuffer addressBuffer;
-    private IpAddress value;
+    private IpAddressPacket value;
 
     @Override
     public ProcessStatus process(ByteBuffer buffer) {
@@ -35,7 +35,7 @@ public class IPReader implements Reader<IpAddress> {
                 try {
                     var bytes = new byte[addressBuffer.remaining()];
                     var addres = InetAddress.getByAddress(bytes);
-                    value = new IpAddress(addres.getHostAddress());
+                    value = new IpAddressPacket(addres.getHostAddress());
                     state = State.DONE;
                 } catch (UnknownHostException e) {
                     return ProcessStatus.ERROR;
@@ -49,7 +49,7 @@ public class IPReader implements Reader<IpAddress> {
     }
 
     @Override
-    public IpAddress get() {
+    public IpAddressPacket get() {
         if (state != State.DONE) {
             throw new IllegalStateException();
         }

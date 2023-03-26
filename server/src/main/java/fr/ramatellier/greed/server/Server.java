@@ -73,7 +73,7 @@ public class Server {
             selector.wakeup();
         }
     }
-    private void sendCommandWithArgs(String line) throws InterruptedException {
+    private void sendComputeCommand(String line) throws InterruptedException {
         if(line.split(" ").length != 5){
             logger.warning("Invalid given command : " + line);
             System.out.println("Expected " + (5 - 1) + " arguments");
@@ -82,6 +82,7 @@ public class Server {
         var args = Arrays.stream(line.split(" ")).skip(1).toArray(String[]::new);
         sendCommand(new CommandArgs(Command.COMPUTE, args));
     }
+
     private void consoleRun(){
         try{
             try(var scan = new Scanner(System.in)){
@@ -92,7 +93,7 @@ public class Server {
                         case "INFO" -> sendCommand(new CommandArgs(Command.INFO, null));
                         case "STOP" -> sendCommand(new CommandArgs(Command.STOP, null));
                         case "SHUTDOWN" -> sendCommand(new CommandArgs(Command.SHUTDOWN, null));
-                        case "COMPUTE" -> sendCommandWithArgs(line);
+                        case "COMPUTE" -> sendComputeCommand(line);
                         default -> System.out.println("Unknown command");
                     }
                 }
