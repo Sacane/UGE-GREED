@@ -81,6 +81,11 @@ public class ServerVisitor implements PacketVisitor {
         }
     }
 
+    @Override
+    public void visit(WorkResponsePacket packet) {
+
+    }
+
     //Broadcast this packet to all neighbours
     private void queueBroadcastPacket(FullPacket packet, InetSocketAddress address) {
         if(packet.kind() != TramKind.BROADCAST) {
