@@ -14,7 +14,7 @@ public final class ConnectPacket implements FullPacket {
     }
 
     public String getAddress() {
-        return idPacket.getAddress();
+        return idPacket.getHostname();
     }
 
     public int getPort() {

@@ -4,8 +4,14 @@ import fr.ramatellier.greed.server.util.OpCodes;
 import fr.ramatellier.greed.server.util.TramKind;
 
 import java.nio.ByteBuffer;
+import java.util.Objects;
 
-public record WorkRequestResponse(IDPacket dst, IDPacket src, long requestID, long nb_uc) implements FullPacket{
+public record WorkRequestResponsePacket(IDPacket dst, IDPacket src, long requestID, long nb_uc) implements FullPacket{
+
+    public WorkRequestResponsePacket{
+        Objects.requireNonNull(dst);
+        Objects.requireNonNull(src);
+    }
     @Override
     public TramKind kind() {
         return TramKind.TRANSFERT;
@@ -24,4 +30,5 @@ public record WorkRequestResponse(IDPacket dst, IDPacket src, long requestID, lo
         buffer.putLong(requestID);
         buffer.putLong(nb_uc);
     }
+
 }

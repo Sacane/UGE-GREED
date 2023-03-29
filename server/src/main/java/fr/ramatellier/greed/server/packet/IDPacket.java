@@ -14,8 +14,8 @@ public class IDPacket implements Packet {
         this.address = address;
     }
 
-    public String getAddress() {
-        return ipAddressPacket.getAddress();
+    public String getHostname() {
+        return address.getHostName();
     }
 
     public int getPort() {
@@ -30,5 +30,13 @@ public class IDPacket implements Packet {
     public void putInBuffer(ByteBuffer buffer) {
         ipAddressPacket.putInBuffer(buffer);
         buffer.putInt(port);
+    }
+
+    @Override
+    public String toString() {
+        return "IDPacket{" +
+                "port=" + port +
+                ", address=" + address +
+                '}';
     }
 }

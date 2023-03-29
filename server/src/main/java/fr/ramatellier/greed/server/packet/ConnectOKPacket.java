@@ -22,7 +22,7 @@ public final class ConnectOKPacket implements FullPacket {
     }
 
     public String getAddress() {
-        return idMother.getAddress();
+        return idMother.getHostname();
     }
 
     public int getPort() {

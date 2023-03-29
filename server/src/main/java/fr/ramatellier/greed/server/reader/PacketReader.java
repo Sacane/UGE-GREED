@@ -21,6 +21,7 @@ public class PacketReader implements Reader<FullPacket> {
     private final AddNodePacketReader addNodePacketReader = new AddNodePacketReader();
     private final WorkRequestPacketReader workRequestPacketReader = new WorkRequestPacketReader();
     private final WorkAssignmentPacketReader workAssignmentPacketReader = new WorkAssignmentPacketReader();
+    private final WorkRequestResponseReader workRequestResponsePacketReader = new WorkRequestResponseReader();
     private FullPacket value;
 
     @Override
@@ -50,7 +51,7 @@ public class PacketReader implements Reader<FullPacket> {
 
                     if(status == ProcessStatus.DONE) {
                         var packet = idReader.get();
-                        value = new ConnectPacket(new InetSocketAddress(packet.getAddress(), packet.getPort()));
+                        value = new ConnectPacket(new InetSocketAddress(packet.getHostname(), packet.getPort()));
                         state = State.DONE;
                     }
                 }
@@ -99,6 +100,13 @@ public class PacketReader implements Reader<FullPacket> {
                         value = workRequestPacketReader.get();
                     }
                 }
+                else if(codeReader.get() == OpCodes.WORK_REQUEST_RESPONSE.BYTES){
+                    var status = workRequestResponsePacketReader.process(buffer);
+                    if(status == ProcessStatus.DONE) {
+                        state = State.DONE;
+                        value = workRequestResponsePacketReader.get();
+                    }
+                }
             }
         }
 
@@ -128,5 +136,6 @@ public class PacketReader implements Reader<FullPacket> {
         connectOKPacketReader.reset();
         addNodePacketReader.reset();
         workRequestPacketReader.reset();
+        workRequestResponsePacketReader.reset();
     }
 }

@@ -1,5 +1,6 @@
 package fr.ramatellier.greed.server;
 
+import fr.ramatellier.greed.server.compute.ComputationIdentifier;
 import fr.ramatellier.greed.server.compute.ComputeWorkHandler;
 import fr.ramatellier.greed.server.packet.*;
 import fr.uge.ugegreed.Client;
@@ -53,7 +54,7 @@ public class ServerVisitor implements PacketVisitor {
 
     @Override
     public void visit(ConnectKOPacket packet) {
-        System.out.println("Connection refused");
+        System.out.println("Connection refused, target server is shutting down...");
         server.shutdown();
     }
 
@@ -70,8 +71,13 @@ public class ServerVisitor implements PacketVisitor {
     public void visit(WorkRequestPacket packet) {
         if(server.getAddress().equals(packet.getIdDst().getSocket())) {
             System.out.println("RECEIVE A COMPUTATION FOR ME FROM " + packet.getIdSrc().getSocket());
-            System.out.println(packet.getRequestId() + " " + packet.getChecker().getUrl() + " " + packet.getChecker().getClassName() + " " + packet.getRange().start() + " " + packet.getRange().end() + " " + packet.getMax());
-//            compute(packet); TODO do this correctly
+            System.out.println("Destination : " + packet.getIdDst().getSocket() + " Source : " + packet.getIdSrc().getSocket());
+            var handler = server.getHandler();
+            if(handler.hasEnoughCapacity(packet.getMax())){
+                var entity = packet.toComputationEntity();
+                var responsePacket = new WorkRequestResponsePacket(packet.getIdSrc(), packet.getIdDst(), packet.getRequestId(), handler.delta(entity));
+                server.transfer(packet.getIdSrc().getSocket(), responsePacket);
+            }
         }
         else {
             System.out.println("RECEIVE A COMPUTATION FROM " + packet.getIdSrc().getSocket() + " FOR " + packet.getIdDst().getSocket());
@@ -109,10 +115,29 @@ public class ServerVisitor implements PacketVisitor {
 //        }
     }
 
+    @Override
+    public void visit(WorkRequestResponsePacket packet) {
+        System.out.println("WORK REQUEST REPONSE PACKET RECEIVED");
+        System.out.println(packet);
+        var transfer = packet.onConditionTransfer(
+                !server.getAddress().equals(packet.dst().getSocket()),
+                packet.dst().getSocket(),
+                server
+        );
+        if(transfer){
+            return;
+        }
+        var handler = server.getHandler();
+        handler.createComputation(new ComputationIdentifier(packet.requestID(), packet.dst().getSocket()));
+        if(handler.isReadyToDistribute()){
+
+        }
+    }
+
     private void compute(WorkRequestPacket packet) {
         computeWorkHandler.increaseCurrentNumberComputation();
         var entity = packet.toComputationEntity();
-        computeWorkHandler.processComputation(packet.toComputationEntity());
+//        computeWorkHandler.processComputation(packet.toComputationEntity());
         var responseChecker = Client.checkerFromHTTP(entity.url(), entity.className());
         if(responseChecker.isEmpty()){
             logger.severe("INVALID response url or class name");

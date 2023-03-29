@@ -71,6 +71,6 @@ public final class WorkRequestPacket implements FullPacket {
         buffer.putLong(max);
     }
     public ComputationEntity toComputationEntity(){
-        return new ComputationEntity(new ComputationIdentifier(requestId, idSrc.getSocket().getHostName()), new Range(range.start(), range.end()), checker.getClassName(), idDst.getAddress(), checker.getUrl());
+        return new ComputationEntity(new ComputationIdentifier(requestId, idSrc.getSocket()), new Range(range.start(), range.end()), checker.getClassName(), idDst.getHostname(), checker.getUrl(), getMax());
     }
 }

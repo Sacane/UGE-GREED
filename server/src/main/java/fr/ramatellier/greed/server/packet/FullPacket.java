@@ -5,8 +5,8 @@ import fr.ramatellier.greed.server.util.TramKind;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-
-public sealed interface FullPacket extends Packet permits AddNodePacket, ConnectKOPacket, ConnectOKPacket, ConnectPacket, WorkRequestPacket, WorkRequestResponse, WorkResponsePacket, WorkAssignmentPacket {
+//TODO idea : split the interface into 3 interfaces : LocalPacket, TransferPacket and BroadcastPacket
+public sealed interface FullPacket extends Packet permits AddNodePacket, ConnectKOPacket, ConnectOKPacket, ConnectPacket, WorkRequestPacket, WorkRequestResponsePacket, WorkResponsePacket, WorkAssignmentPacket {
     default void accept(PacketVisitor visitor){
         visitor.visit(this);
     }

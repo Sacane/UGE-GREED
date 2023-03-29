@@ -31,6 +31,7 @@ public class Server {
     private ServerState state = ServerState.ON_GOING;
     private final ArrayBlockingQueue<CommandArgs> commandQueue = new ArrayBlockingQueue<>(10);
     private final ComputeWorkHandler handler;
+    public static final long MAXIMUM_COMPUTATION = 1_000_000_000;
 
     // Parent information
     private final SocketChannel parentSocketChannel;
@@ -61,7 +62,7 @@ public class Server {
         parentSocketAddress = null;
         selector = Selector.open();
         this.isRoot = true;
-        this.handler = new ComputeWorkHandler(address.getHostName());
+        this.handler = new ComputeWorkHandler(address);
     }
     private Server(int hostPort, String IP, int connectPort) throws IOException {
         address = new InetSocketAddress(hostPort);
@@ -71,7 +72,7 @@ public class Server {
         parentSocketAddress = new InetSocketAddress(IP, connectPort);
         selector = Selector.open();
         this.isRoot = false;
-        this.handler = new ComputeWorkHandler(address.getHostName());
+        this.handler = new ComputeWorkHandler(address);
     }
 
     private void sendCommand(CommandArgs command) throws InterruptedException {
@@ -90,6 +91,10 @@ public class Server {
         sendCommand(new CommandArgs(Command.COMPUTE, args));
     }
 
+    /**
+     * Exemple for compute :
+     * COMPUTE http://www-igm.univ-mlv.fr/~carayol/Factorizer.jar fr.uge.factors.Factorizer 10 1000
+     */
     private void consoleRun(){
         try{
             try(var scan = new Scanner(System.in)){
@@ -227,7 +232,7 @@ public class Server {
         var workers = rootTable.allAddress(); //TODO remove this method -> access to all Address is not necessary
         var id = handler.nextId();
         for(var worker: workers) {
-            var packet = new WorkRequestPacket(address, worker.address(), id.id(), info.url(), info.className(), info.start(), info.end(), 10000);
+            var packet = new WorkRequestPacket(address, worker.address(), id.id(), info.url(), info.className(), info.start(), info.end(), info.end() - info.start());
 //            worker.context().queuePacket(packet);
             rootTable.sendTo(worker.address(), packet);
         }

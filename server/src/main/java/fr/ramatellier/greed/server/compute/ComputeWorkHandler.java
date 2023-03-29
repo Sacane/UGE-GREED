@@ -1,6 +1,9 @@
 package fr.ramatellier.greed.server.compute;
 
 
+import fr.ramatellier.greed.server.Server;
+
+import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -14,14 +17,15 @@ public final class ComputeWorkHandler {
     private final AtomicLong counterId = new AtomicLong(0L);
     private final AtomicInteger currentNumberComputation = new AtomicInteger(0);
     private final String hostSourceName;
-    private final HashMap<ComputationEntity, Boolean> computationsState = new HashMap<>();
+    private final HashMap<ComputationIdentifier, Boolean> computationsState = new HashMap<>();
     private final HashMap<ComputationEntity, Long> computationResult = new HashMap<>();
-
-    public ComputeWorkHandler(String hostSourceName) {
-        this.hostSourceName = Objects.requireNonNull(hostSourceName);
+    private InetSocketAddress hostAddress;
+    public ComputeWorkHandler(InetSocketAddress hostAddress) {
+        this.hostAddress = Objects.requireNonNull(hostAddress);
+        this.hostSourceName = hostAddress.getHostName();
     }
 
-    public void processComputation(ComputationEntity computation) {
+    public void processComputation(ComputationIdentifier computation) {
         Objects.requireNonNull(computation);
         synchronized (computationsState) {
             if (computationsState.containsKey(computation)) {
@@ -32,7 +36,7 @@ public final class ComputeWorkHandler {
     }
     public ComputationIdentifier nextId(){
         var id = counterId.getAndUpdate(x -> x + 1);
-        return new ComputationIdentifier(id, hostSourceName);
+        return new ComputationIdentifier(id, hostAddress);
     }
     public void increaseCurrentNumberComputation(){
         currentNumberComputation.getAndIncrement();
@@ -61,13 +65,13 @@ public final class ComputeWorkHandler {
      * Initialize a non-ready computation.
      * @param computation the computation to initialize.
      */
-    public void createComputation(ComputationEntity computation){
+    public void createComputation(ComputationIdentifier computation){
         synchronized (computationsState) {
             computationsState.put(computation, false);
         }
     }
 
-    public void switchState(ComputationEntity computation, boolean state){
+    public void switchState(ComputationIdentifier computation, boolean state){
         synchronized (computationsState) {
             if(!computationsState.containsKey(computation)){
                 throw new IllegalArgumentException("Computation target does not exists");
@@ -98,4 +102,12 @@ public final class ComputeWorkHandler {
         }
     }
 
+    public boolean hasEnoughCapacity(long max) {
+        return currentNumberComputation.get() + max < Server.MAXIMUM_COMPUTATION;
+    }
+    public long delta(ComputationEntity entity){
+        synchronized (computationResult){
+            return entity.range().delta() - currentNumberComputation.get();
+        }
+    }
 }

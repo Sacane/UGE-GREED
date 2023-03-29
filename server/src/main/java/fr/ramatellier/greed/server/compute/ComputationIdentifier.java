@@ -1,3 +1,5 @@
 package fr.ramatellier.greed.server.compute;
 
-public record ComputationIdentifier(long id, String hostName) {}
+import java.net.InetSocketAddress;
+
+public record ComputationIdentifier(long id, InetSocketAddress hostName) {}
