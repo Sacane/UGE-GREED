@@ -18,6 +18,7 @@ public interface PacketVisitor {
             case WorkRequestPacket p -> visit(p);
             case WorkAssignmentPacket p -> visit(p);
             case WorkResponsePacket p -> visit(p);
+            case WorkRequestResponse p -> visit(p);
         }
     }
 }
