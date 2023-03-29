@@ -3,6 +3,7 @@ package fr.ramatellier.greed.server.reader;
 import fr.ramatellier.greed.server.packet.ConnectKOPacket;
 import fr.ramatellier.greed.server.packet.ConnectPacket;
 import fr.ramatellier.greed.server.packet.FullPacket;
+import fr.ramatellier.greed.server.packet.LogoutGrantedPacket;
 import fr.ramatellier.greed.server.util.OpCodes;
 import fr.ramatellier.greed.server.util.TramKind;
 
@@ -22,6 +23,8 @@ public class PacketReader implements Reader<FullPacket> {
     private final WorkRequestPacketReader workRequestPacketReader = new WorkRequestPacketReader();
     private final WorkAssignmentPacketReader workAssignmentPacketReader = new WorkAssignmentPacketReader();
     private final WorkRequestResponseReader workRequestResponsePacketReader = new WorkRequestResponseReader();
+    private final LogoutRequestPacketReader logoutRequestPacketReader = new LogoutRequestPacketReader();
+
     private FullPacket value;
 
     @Override
@@ -51,7 +54,7 @@ public class PacketReader implements Reader<FullPacket> {
 
                     if(status == ProcessStatus.DONE) {
                         var packet = idReader.get();
-                        value = new ConnectPacket(new InetSocketAddress(packet.getHostname(), packet.getPort()));
+                        value = new ConnectPacket(new InetSocketAddress(packet.getAddress(), packet.getPort()));
                         state = State.DONE;
                     }
                 }
@@ -68,6 +71,20 @@ public class PacketReader implements Reader<FullPacket> {
                     state = State.DONE;
 
                     value = new ConnectKOPacket();
+                }
+                else if(codeReader.get() == OpCodes.LOGOUT_REQUEST.BYTES) {
+                    var status = logoutRequestPacketReader.process(buffer);
+
+                    if(status == ProcessStatus.DONE) {
+                        state = State.DONE;
+
+                        value = logoutRequestPacketReader.get();
+                    }
+                }
+                else if(codeReader.get() == OpCodes.LOGOUT_GRANTED.BYTES) {
+                    state = State.DONE;
+
+                    value = new LogoutGrantedPacket();
                 }
             }
             else if(locationReader.get() == TramKind.BROADCAST.BYTES) {
