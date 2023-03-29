@@ -20,6 +20,7 @@ public class PacketReader implements Reader<FullPacket> {
     private final ConnectOKPacketReader connectOKPacketReader = new ConnectOKPacketReader();
     private final AddNodePacketReader addNodePacketReader = new AddNodePacketReader();
     private final WorkRequestPacketReader workRequestPacketReader = new WorkRequestPacketReader();
+    private final WorkAssignmentPacketReader workAssignmentPacketReader = new WorkAssignmentPacketReader();
     private FullPacket value;
 
     @Override
@@ -42,7 +43,6 @@ public class PacketReader implements Reader<FullPacket> {
                 state = State.WAITING_PACKET;
             }
         }
-
         if(state == State.WAITING_PACKET) {
             if(locationReader.get() == TramKind.LOCAL.BYTES) {
                 if(codeReader.get() == OpCodes.CONNECT.BYTES) {
@@ -58,13 +58,15 @@ public class PacketReader implements Reader<FullPacket> {
                     var status = connectOKPacketReader.process(buffer);
 
                     if(status == ProcessStatus.DONE) {
-                        value = connectOKPacketReader.get();
                         state = State.DONE;
+
+                        value = connectOKPacketReader.get();
                     }
                 }
                 else if(codeReader.get() == OpCodes.KO.BYTES) {
-                    value = new ConnectKOPacket();
                     state = State.DONE;
+
+                    value = new ConnectKOPacket();
                 }
             }
             else if(locationReader.get() == TramKind.BROADCAST.BYTES) {
@@ -72,8 +74,9 @@ public class PacketReader implements Reader<FullPacket> {
                     var status = addNodePacketReader.process(buffer);
 
                     if(status == ProcessStatus.DONE) {
-                        value = addNodePacketReader.get();
                         state = State.DONE;
+
+                        value = addNodePacketReader.get();
                     }
                 }
             }
@@ -82,8 +85,18 @@ public class PacketReader implements Reader<FullPacket> {
                     var status = workRequestPacketReader.process(buffer);
 
                     if(status == ProcessStatus.DONE) {
-                        value = workRequestPacketReader.get();
                         state = State.DONE;
+
+                        value = workRequestPacketReader.get();
+                    }
+                }
+                else if(codeReader.get() == OpCodes.WORK_ASSIGNEMENT.BYTES) {
+                    var status = workAssignmentPacketReader.process(buffer);
+
+                    if(status == ProcessStatus.DONE) {
+                        state = State.DONE;
+
+                        value = workRequestPacketReader.get();
                     }
                 }
             }
