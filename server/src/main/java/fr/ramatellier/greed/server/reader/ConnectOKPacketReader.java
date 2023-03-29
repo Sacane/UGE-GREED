@@ -44,22 +44,23 @@ public class ConnectOKPacketReader implements Reader<ConnectOKPacket> {
         }
         if(state == State.WAITING_IDS) {
             if(ids.size() == sizeReader.get()) {
-                value = new ConnectOKPacket(idMother.getSocket(), ids.stream().map(IDPacket::getSocket).collect(Collectors.toSet()));
                 state = State.DONE;
+
+                value = new ConnectOKPacket(idMother.getSocket(), ids.stream().map(IDPacket::getSocket).collect(Collectors.toSet()));
             }
-            else {
-                while(buffer.hasRemaining() && ids.size() != sizeReader.get()) {
-                    var status = idReader.process(buffer);
 
-                    if(status == ProcessStatus.DONE) {
-                        ids.add(idReader.get());
-                        idReader.reset();
-                    }
+            while(buffer.limit() > 0 && ids.size() != sizeReader.get()) {
+                var status = idReader.process(buffer);
 
-                    if(ids.size() == sizeReader.get()) {
-                        value = new ConnectOKPacket(idMother.getSocket(), ids.stream().map(IDPacket::getSocket).collect(Collectors.toSet()));
-                        state = State.DONE;
-                    }
+                if(status == ProcessStatus.DONE) {
+                    ids.add(idReader.get());
+                    idReader.reset();
+                }
+
+                if(ids.size() == sizeReader.get()) {
+                    state = State.DONE;
+
+                    value = new ConnectOKPacket(idMother.getSocket(), ids.stream().map(IDPacket::getSocket).collect(Collectors.toSet()));
                 }
             }
         }

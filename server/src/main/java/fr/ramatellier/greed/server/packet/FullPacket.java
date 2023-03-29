@@ -6,7 +6,7 @@ import fr.ramatellier.greed.server.util.TramKind;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
-public sealed interface FullPacket extends Packet permits AddNodePacket, ConnectKOPacket, ConnectOKPacket, ConnectPacket, WorkRequestPacket, WorkRequestResponse, WorkResponsePacket {
+public sealed interface FullPacket extends Packet permits AddNodePacket, ConnectKOPacket, ConnectOKPacket, ConnectPacket, WorkRequestPacket, WorkRequestResponse, WorkResponsePacket, WorkAssignmentPacket {
     default void accept(PacketVisitor visitor){
         visitor.visit(this);
     }

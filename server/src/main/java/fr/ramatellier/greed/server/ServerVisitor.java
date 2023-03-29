@@ -85,6 +85,11 @@ public class ServerVisitor implements PacketVisitor {
      * @param packet the packet to visit
      */
     @Override
+    public void visit(WorkAssignmentPacket packet) {
+        System.out.println("WORK ASSIGNMENT");
+    }
+
+    @Override
     public void visit(WorkResponsePacket packet) {
         if(packet.onConditionTransfer(
                 server.getAddress().equals(packet.dst().getSocket()),
