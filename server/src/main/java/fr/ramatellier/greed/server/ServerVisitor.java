@@ -71,7 +71,7 @@ public class ServerVisitor implements PacketVisitor {
         if(server.getAddress().equals(packet.getIdDst().getSocket())) {
             System.out.println("RECEIVE A COMPUTATION FOR ME FROM " + packet.getIdSrc().getSocket());
             System.out.println(packet.getRequestId() + " " + packet.getChecker().getUrl() + " " + packet.getChecker().getClassName() + " " + packet.getRange().start() + " " + packet.getRange().end() + " " + packet.getMax());
-            compute(packet);
+//            compute(packet); TODO do this correctly
         }
         else {
             System.out.println("RECEIVE A COMPUTATION FROM " + packet.getIdSrc().getSocket() + " FOR " + packet.getIdDst().getSocket());
@@ -101,7 +101,6 @@ public class ServerVisitor implements PacketVisitor {
 
     private void compute(WorkRequestPacket packet) {
         computeWorkHandler.increaseCurrentNumberComputation();
-        computeWorkHandler.processComputation(packet.toComputationEntity());
         var entity = packet.toComputationEntity();
         computeWorkHandler.processComputation(packet.toComputationEntity());
         var responseChecker = Client.checkerFromHTTP(entity.url(), entity.className());

@@ -5,6 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
     <artifactId>core</artifactId>
     <version>0.0.1-SNAPSHOT</version>
+    <groupId>fr.uge.ugegreed</groupId>
     <parent>
         <groupId>fr.ramatellier.greed</groupId>
         <artifactId>greed</artifactId>

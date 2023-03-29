@@ -224,12 +224,12 @@ public class Server {
     }
 
     private void processComputeCommand(ComputeInfo info) {
-        var workers = rootTable.allAddress();
+        var workers = rootTable.allAddress(); //TODO remove this method -> access to all Address is not necessary
 
         for(var worker: workers) {
             var packet = new WorkRequestPacket(address, worker.address(), 0, info.url(), info.className(), info.start(), info.end(), 10000);
-            transfer(worker.address(), packet);
 //            worker.context().queuePacket(packet);
+            rootTable.sendTo(worker.address(), packet);
         }
     }
 

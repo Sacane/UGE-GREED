@@ -34,7 +34,7 @@ public final class ComputeCommandParser {
         var className = split[1];
         var startAsString = split[2];
         var endAsString = split[3];
-        if(!checkUrl(url) || !checkClassName(className) || !checkRange(startAsString, endAsString)){
+        if(!checkUrl(url) || !checkRange(startAsString, endAsString)){
             return false;
         }
         var start = Long.parseLong(startAsString);
@@ -62,9 +62,6 @@ public final class ComputeCommandParser {
             return false;
         }
         return true;
-    }
-    private boolean checkClassName(String className){
-        return className.matches("[a-zA-Z_][a-zA-Z0-9_]*");
     }
     private boolean checkRange(String startAsString, String endAsString){
         try{

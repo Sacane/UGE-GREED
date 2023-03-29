@@ -43,7 +43,7 @@ public class RootTable {
         Objects.requireNonNull(dst);
         Objects.requireNonNull(packet);
         var neighbour = table.get(dst);
-        if(neighbour == null || !isNeighbour(Map.entry(dst, neighbour))) {
+        if(neighbour == null) {
             return;
         }
         neighbour.context().queuePacket(packet);
