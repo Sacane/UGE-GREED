@@ -3,6 +3,7 @@ package fr.ramatellier.greed.server;
 import fr.ramatellier.greed.server.compute.ComputeWorkHandler;
 import fr.ramatellier.greed.server.packet.ConnectPacket;
 import fr.ramatellier.greed.server.packet.FullPacket;
+import fr.ramatellier.greed.server.packet.LogoutRequestPacket;
 import fr.ramatellier.greed.server.packet.WorkRequestPacket;
 import fr.ramatellier.greed.server.util.RootTable;
 import fr.ramatellier.greed.server.util.TramKind;
@@ -31,18 +32,12 @@ public class Server {
     private ServerState state = ServerState.ON_GOING;
     private final ArrayBlockingQueue<CommandArgs> commandQueue = new ArrayBlockingQueue<>(10);
     private final ComputeWorkHandler handler;
-
     // Parent information
     private final SocketChannel parentSocketChannel;
-    private final InetSocketAddress parentSocketAddress;
+    private InetSocketAddress parentSocketAddress;
     private SelectionKey parentKey;
-
-
     // Others
-
     public static final Charset UTF8 = StandardCharsets.UTF_8;
-
-
 
     private enum Command{
         INFO, STOP, SHUTDOWN, COMPUTE
@@ -50,7 +45,7 @@ public class Server {
     private record CommandArgs(Command command, String[] args) {}
 
     private enum ServerState{
-        ON_GOING, STOPPED
+        ON_GOING, SHUTDOWN, STOPPED
     }
 
     private Server(int port) throws IOException {
@@ -63,6 +58,7 @@ public class Server {
         this.isRoot = true;
         this.handler = new ComputeWorkHandler(address.getHostName());
     }
+
     private Server(int hostPort, String IP, int connectPort) throws IOException {
         address = new InetSocketAddress(hostPort);
         serverSocketChannel = ServerSocketChannel.open();
@@ -74,12 +70,17 @@ public class Server {
         this.handler = new ComputeWorkHandler(address.getHostName());
     }
 
+    public void updateParentAddress(InetSocketAddress address) {
+        parentSocketAddress = address;
+    }
+
     private void sendCommand(CommandArgs command) throws InterruptedException {
         synchronized (commandQueue){
             commandQueue.put(command);
             selector.wakeup();
         }
     }
+
     private void sendComputeCommand(String line) throws InterruptedException {
         if(line.split(" ").length != 5){
             logger.warning("Invalid given command : " + line);
@@ -90,7 +91,7 @@ public class Server {
         sendCommand(new CommandArgs(Command.COMPUTE, args));
     }
 
-    private void consoleRun(){
+    private void consoleRun() {
         try{
             try(var scan = new Scanner(System.in)){
                 while(scan.hasNextLine()){
@@ -135,7 +136,7 @@ public class Server {
     }
 
     public boolean isRunning() {
-        return state != ServerState.STOPPED;
+        return state == ServerState.ON_GOING;
     }
 
     public void addRoot(InetSocketAddress src, InetSocketAddress dst, Context context) {
@@ -205,6 +206,8 @@ public class Server {
                 }
                 case SHUTDOWN -> {
                     logger.info("Command SHUTDOWN received");
+                    state = ServerState.SHUTDOWN;
+                    rootTable.sendTo(parentSocketAddress, new LogoutRequestPacket(rootTable.neighbors().stream().filter(n -> !n.equals(parentSocketAddress)).toList()));
                 }
                 case COMPUTE -> {
                     logger.info("Command COMPUTE received");
@@ -357,5 +360,4 @@ public class Server {
         } catch (IOException e) {
         }
     }
-
 }

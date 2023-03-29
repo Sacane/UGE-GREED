@@ -45,6 +45,7 @@ public class ServerVisitor implements PacketVisitor {
     public void visit(ConnectOKPacket packet) {
         logger.info("Connection accepted from " + packet.getAddress() + " on port " + packet.getPort());
         var addressMother = packet.getMotherAddress();
+        server.updateParentAddress(addressMother);
         for(var neighbor: packet.neighbours()) {
             server.addRoot(neighbor, addressMother, context);
         }
@@ -107,6 +108,25 @@ public class ServerVisitor implements PacketVisitor {
 //                System.out.println("WE JUST RECEIVED BAD RESPONSE FROM " + packet.src());
 //            }
 //        }
+    }
+
+    @Override
+    public void visit(LogoutRequestPacket packet) {
+        System.out.println("RECEIVE LOGOUT");
+
+        if(server.isRunning()) {
+            System.out.println(packet.getDaughters().size());
+            for(var daughter: packet.getDaughters()) {
+                System.out.println(daughter.getSocket());
+            }
+
+            context.queuePacket(new LogoutGrantedPacket());
+        }
+    }
+
+    @Override
+    public void visit(LogoutGrantedPacket packet) {
+        System.out.println("LOGOUT ACCEPTED");
     }
 
     private void compute(WorkRequestPacket packet) {

@@ -39,7 +39,7 @@ public class RootTable {
      * @param dst the destination of the packet
      * @param packet the packet to transfer
      */
-    public void sendTo(InetSocketAddress dst, FullPacket packet){
+    public void sendTo(InetSocketAddress dst, FullPacket packet) {
         Objects.requireNonNull(dst);
         Objects.requireNonNull(packet);
         var neighbour = table.get(dst);
@@ -55,6 +55,18 @@ public class RootTable {
      */
     public Set<InetSocketAddress> registeredAddresses() {
         return table.keySet();
+    }
+
+    public List<InetSocketAddress> neighbors() {
+        var neighbors = new ArrayList<InetSocketAddress>();
+
+        for(var entry: table.entrySet()) {
+            if(entry.getKey().equals(entry.getValue().address())) {
+                neighbors.add(entry.getKey());
+            }
+        }
+
+        return neighbors;
     }
 
     /**

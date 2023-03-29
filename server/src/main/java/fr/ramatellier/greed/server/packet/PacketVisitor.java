@@ -8,6 +8,8 @@ public interface PacketVisitor {
     void visit(WorkRequestPacket packet);
     void visit(WorkAssignmentPacket packet);
     void visit(WorkResponsePacket packet);
+    void visit(LogoutRequestPacket packet);
+    void visit(LogoutGrantedPacket packet);
 
     default void visit(FullPacket packet) {
         switch(packet){
@@ -19,6 +21,8 @@ public interface PacketVisitor {
             case WorkAssignmentPacket p -> visit(p);
             case WorkResponsePacket p -> visit(p);
             case WorkRequestResponse p -> visit(p);
+            case LogoutRequestPacket p -> visit(p);
+            case LogoutGrantedPacket p -> visit(p);
         }
     }
 }
