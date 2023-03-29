@@ -208,12 +208,12 @@ public class Server {
                 }
                 case COMPUTE -> {
                     logger.info("Command COMPUTE received");
-                    parseComputeCommand(command.args());
+                    parseAndCompute(command.args());
                 }
             }
         }
     }
-    private void parseComputeCommand(String[] args) {
+    private void parseAndCompute(String[] args) {
         var line = Arrays.stream(args).reduce("", (s, s2) -> s + " " + s2);
         var parser = new ComputeCommandParser(line.trim());
         if(!parser.check()){
@@ -225,9 +225,9 @@ public class Server {
 
     private void processComputeCommand(ComputeInfo info) {
         var workers = rootTable.allAddress(); //TODO remove this method -> access to all Address is not necessary
-
+        var id = handler.nextId();
         for(var worker: workers) {
-            var packet = new WorkRequestPacket(address, worker.address(), 0, info.url(), info.className(), info.start(), info.end(), 10000);
+            var packet = new WorkRequestPacket(address, worker.address(), id.id(), info.url(), info.className(), info.start(), info.end(), 10000);
 //            worker.context().queuePacket(packet);
             rootTable.sendTo(worker.address(), packet);
         }

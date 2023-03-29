@@ -45,6 +45,37 @@ public final class ComputeWorkHandler {
         return currentNumberComputation.get();
     }
 
+    /**
+     * Check if the server is ready to distribute the computation.
+     */
+    public boolean isReadyToDistribute(){
+        synchronized (computationsState) {
+            return computationsState
+                    .values()
+                    .stream()
+                    .allMatch(x -> x);
+        }
+    }
+
+    /**
+     * Initialize a non-ready computation.
+     * @param computation the computation to initialize.
+     */
+    public void createComputation(ComputationEntity computation){
+        synchronized (computationsState) {
+            computationsState.put(computation, false);
+        }
+    }
+
+    public void switchState(ComputationEntity computation, boolean state){
+        synchronized (computationsState) {
+            if(!computationsState.containsKey(computation)){
+                throw new IllegalArgumentException("Computation target does not exists");
+            }
+            computationsState.merge(computation, false, (k, v) -> state);
+        }
+    }
+
     //## computation result
     public void addResult(ComputationEntity computation){
         synchronized (computationResult){
@@ -66,4 +97,5 @@ public final class ComputeWorkHandler {
             return computationResult.get(entity) == 1 + entity.range().delta();
         }
     }
+
 }

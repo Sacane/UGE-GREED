@@ -79,6 +79,11 @@ public class ServerVisitor implements PacketVisitor {
         }
     }
 
+    /**
+     * In case we receive a workResponsePacket, we check if we are the destination of the packet.
+     * If so, we just print the result of the computation.
+     * @param packet the packet to visit
+     */
     @Override
     public void visit(WorkResponsePacket packet) {
         if(packet.onConditionTransfer(
@@ -88,15 +93,15 @@ public class ServerVisitor implements PacketVisitor {
         )){
             return;
         }
-        var responsePacket = packet.responsePacket();
-        switch(packet.responsePacket().getResponseCode()){
-            case 0x00 -> {
-                System.out.println("WE JUST RECEIVED GOOD RESPONSE FROM " + packet.src());
-            }
-            default -> {
-                System.out.println("WE JUST RECEIVED BAD RESPONSE FROM " + packet.src());
-            }
-        }
+//        var responsePacket = packet.responsePacket();
+//        switch(packet.responsePacket().getResponseCode()){
+//            case 0x00 -> {
+//                System.out.println("WE JUST RECEIVED GOOD RESPONSE FROM " + packet.src());
+//            }
+//            default -> {
+//                System.out.println("WE JUST RECEIVED BAD RESPONSE FROM " + packet.src());
+//            }
+//        }
     }
 
     private void compute(WorkRequestPacket packet) {
