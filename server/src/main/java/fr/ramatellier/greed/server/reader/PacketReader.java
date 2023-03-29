@@ -54,7 +54,7 @@ public class PacketReader implements Reader<FullPacket> {
 
                     if(status == ProcessStatus.DONE) {
                         var packet = idReader.get();
-                        value = new ConnectPacket(new InetSocketAddress(packet.getAddress(), packet.getPort()));
+                        value = new ConnectPacket(new InetSocketAddress(packet.getHostname(), packet.getPort()));
                         state = State.DONE;
                     }
                 }
