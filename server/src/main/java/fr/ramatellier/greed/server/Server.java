@@ -1,5 +1,6 @@
 package fr.ramatellier.greed.server;
 
+import fr.ramatellier.greed.server.compute.ComputeWorkHandler;
 import fr.ramatellier.greed.server.packet.ConnectPacket;
 import fr.ramatellier.greed.server.packet.FullPacket;
 import fr.ramatellier.greed.server.packet.WorkRequestPacket;
@@ -29,15 +30,19 @@ public class Server {
     private final RootTable rootTable = new RootTable();
     private ServerState state = ServerState.ON_GOING;
     private final ArrayBlockingQueue<CommandArgs> commandQueue = new ArrayBlockingQueue<>(10);
+    private final ComputeWorkHandler handler;
 
     // Parent information
     private final SocketChannel parentSocketChannel;
     private final InetSocketAddress parentSocketAddress;
     private SelectionKey parentKey;
 
+
     // Others
 
     public static final Charset UTF8 = StandardCharsets.UTF_8;
+
+
 
     private enum Command{
         INFO, STOP, SHUTDOWN, COMPUTE
@@ -56,6 +61,7 @@ public class Server {
         parentSocketAddress = null;
         selector = Selector.open();
         this.isRoot = true;
+        this.handler = new ComputeWorkHandler(address.getHostName());
     }
     private Server(int hostPort, String IP, int connectPort) throws IOException {
         address = new InetSocketAddress(hostPort);
@@ -65,6 +71,7 @@ public class Server {
         parentSocketAddress = new InetSocketAddress(IP, connectPort);
         selector = Selector.open();
         this.isRoot = false;
+        this.handler = new ComputeWorkHandler(address.getHostName());
     }
 
     private void sendCommand(CommandArgs command) throws InterruptedException {
@@ -136,6 +143,10 @@ public class Server {
             logger.info("Root table has been updated");
             rootTable.putOrUpdate(src, dst, context);
         }
+    }
+
+    ComputeWorkHandler getHandler() {
+        return handler;
     }
 
     /**
@@ -217,8 +228,8 @@ public class Server {
 
         for(var worker: workers) {
             var packet = new WorkRequestPacket(address, worker.address(), 0, info.url(), info.className(), info.start(), info.end(), 10000);
-
-            worker.context().queuePacket(packet);
+            transfer(worker.address(), packet);
+//            worker.context().queuePacket(packet);
         }
     }
 
@@ -346,4 +357,5 @@ public class Server {
         } catch (IOException e) {
         }
     }
+
 }

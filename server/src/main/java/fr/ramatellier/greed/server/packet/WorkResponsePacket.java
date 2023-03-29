@@ -34,4 +34,12 @@ public record WorkResponsePacket(
         dst.putInBuffer(buffer);
         responsePacket.putInBuffer(buffer);
     }
+
+    public IDPacket src() {
+        return src;
+    }
+
+    public IDPacket dst() {
+        return dst;
+    }
 }

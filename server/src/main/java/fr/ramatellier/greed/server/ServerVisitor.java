@@ -1,6 +1,9 @@
 package fr.ramatellier.greed.server;
 
+import fr.ramatellier.greed.server.compute.ComputeWorkHandler;
 import fr.ramatellier.greed.server.packet.*;
+import fr.uge.ugegreed.Client;
+
 import java.util.Objects;
 import java.util.logging.Logger;
 
@@ -12,10 +15,12 @@ public class ServerVisitor implements PacketVisitor {
     private final Server server;
     private final Context context;
     private static final Logger logger = Logger.getLogger(ServerVisitor.class.getName());
+    private final ComputeWorkHandler computeWorkHandler;
 
     public ServerVisitor(Server server, Context context) {
         this.server = Objects.requireNonNull(server);
         this.context = Objects.requireNonNull(context);
+        this.computeWorkHandler = server.getHandler();
     }
 
     @Override
@@ -66,6 +71,7 @@ public class ServerVisitor implements PacketVisitor {
         if(server.getAddress().equals(packet.getIdDst().getSocket())) {
             System.out.println("RECEIVE A COMPUTATION FOR ME FROM " + packet.getIdSrc().getSocket());
             System.out.println(packet.getRequestId() + " " + packet.getChecker().getUrl() + " " + packet.getChecker().getClassName() + " " + packet.getRange().start() + " " + packet.getRange().end() + " " + packet.getMax());
+            compute(packet);
         }
         else {
             System.out.println("RECEIVE A COMPUTATION FROM " + packet.getIdSrc().getSocket() + " FOR " + packet.getIdDst().getSocket());
@@ -75,7 +81,58 @@ public class ServerVisitor implements PacketVisitor {
 
     @Override
     public void visit(WorkResponsePacket packet) {
+        if(packet.onConditionTransfer(
+                server.getAddress().equals(packet.dst().getSocket()),
+                packet.dst().getSocket(),
+                server
+        )){
+            return;
+        }
         var responsePacket = packet.responsePacket();
+        switch(packet.responsePacket().getResponseCode()){
+            case 0x00 -> {
+                System.out.println("WE JUST RECEIVED GOOD RESPONSE FROM " + packet.src());
+            }
+            default -> {
+                System.out.println("WE JUST RECEIVED BAD RESPONSE FROM " + packet.src());
+            }
+        }
+    }
 
+    private void compute(WorkRequestPacket packet) {
+        computeWorkHandler.increaseCurrentNumberComputation();
+        computeWorkHandler.processComputation(packet.toComputationEntity());
+        var entity = packet.toComputationEntity();
+        computeWorkHandler.processComputation(packet.toComputationEntity());
+        var responseChecker = Client.checkerFromHTTP(entity.url(), entity.className());
+        if(responseChecker.isEmpty()){
+            logger.severe("INVALID response url or class name");
+            handleBadWorkingResponse(-1L, (byte)0x03, packet);
+            return;
+        }
+        var checker = responseChecker.get();
+        var range = entity.range();
+        for(long i = range.start(); i < range.end() + 1; i++) {
+            try {
+                var checkResponse = checker.check(i);
+                buildAndSendResponsePacket(i, (byte)0x00, checkResponse, packet);
+            } catch (InterruptedException e) {
+                logger.info("Interrupted while computing " + i);
+                return;
+            } catch (Exception e) {
+                handleBadWorkingResponse(i, (byte) 0x01, packet);
+            }
+        }
+        computeWorkHandler.decreaseCurrentNumberComputation();
+    }
+
+    private void buildAndSendResponsePacket(long l, byte responseCode, String response, WorkRequestPacket origin) {
+        var responsePacket = new ResponsePacket(l, response, responseCode);
+        var workResponsePacket = new WorkResponsePacket(origin.getIdSrc(), origin.getIdDst(), origin.getRequestId(), responsePacket);
+        server.transfer(origin.getIdSrc().getSocket(), workResponsePacket);
+    }
+
+    private void handleBadWorkingResponse(long i, byte responseCode, WorkRequestPacket origin) {
+        buildAndSendResponsePacket(i, responseCode, null, origin);
     }
 }
