@@ -1,6 +1,9 @@
 package fr.ramatellier.greed.server;
 
 
+import fr.ramatellier.greed.server.compute.ComputationIdentifier;
+import fr.ramatellier.greed.server.compute.SharingProcessExecutor;
+import fr.ramatellier.greed.server.compute.SocketUcIdentifier;
 import fr.ramatellier.greed.server.packet.*;
 
 import java.io.IOException;
@@ -71,6 +74,11 @@ public class ServerVisitor implements PacketVisitor {
         if(server.getAddress().equals(packet.getIdDst().getSocket())) {
             System.out.println("RECEIVE A COMPUTATION FOR ME FROM " + packet.getIdSrc().getSocket());
             System.out.println("Destination : " + packet.getIdDst().getSocket() + " Source : " + packet.getIdSrc().getSocket());
+            var delta = packet.getMax() - server.currentOnWorkingComputationsValue();
+            if(delta > 0){
+                System.out.println("ENOUGH SPACES FOR COMPUTATION -> " + packet.getRequestId());
+                server.transfer(packet.getIdSrc().getSocket(), new WorkRequestResponsePacket(packet.getIdSrc(), packet.getIdDst(), packet.getRequestId(), delta));
+            }
         }
         else {
             System.out.println("RECEIVE A COMPUTATION FROM " + packet.getIdSrc().getSocket() + " FOR " + packet.getIdDst().getSocket());
@@ -95,6 +103,7 @@ public class ServerVisitor implements PacketVisitor {
                 packet.dst().getSocket(),
                 server
         )){
+            System.out.println("RECEIVE A WORK RESPONSE PACKET TO TRANSFERT FOR " + packet.dst().getSocket());
             return;
         }
 //        var responsePacket = packet.responsePacket();
@@ -164,10 +173,24 @@ public class ServerVisitor implements PacketVisitor {
                 server
         );
         if(transfer){
+            System.out.println("RECEIVE A WORK RESPONSE PACKET TO TRANSFERT FOR " + packet.dst().getSocket());
             return;
         }
+        //Computation sender part
         if(packet.nb_uc() == 0){
             return;
+        }
+        var computeId = new ComputationIdentifier(packet.requestID(), server.getAddress());
+        var store = server.tools().reminder();
+        var room = server.tools().room();
+        room.increment(computeId);
+        store.storeSocketFor(
+                new ComputationIdentifier(computeId.id(), server.getAddress()),
+                new SocketUcIdentifier(packet.src().getSocket(), packet.nb_uc())
+        );
+        if(room.isReady(computeId.id())){
+            //TODO distribute the computation
+            var process = new SharingProcessExecutor(store.availableSockets(computeId), room.getIntendedValue(computeId));
         }
     }
 

@@ -5,7 +5,6 @@ import fr.ramatellier.greed.server.packet.FullPacket;
 
 import java.net.InetSocketAddress;
 import java.util.*;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 /**
@@ -25,16 +24,6 @@ public class RootTable {
         return table.containsKey(socketAddress);
     }
 
-    /**
-     * TODO
-     * @param biFun
-     * @param packet
-     */
-    public void sendToAll(BiConsumer<AddressContext, FullPacket> biFun, FullPacket packet) {
-        for(var entry: table.entrySet()) {
-            biFun.accept(entry.getValue(), packet);
-        }
-    }
     /**
      * Put a new destination address in the table or update the value of an existing one.
      * @param destination the destination to registered or update

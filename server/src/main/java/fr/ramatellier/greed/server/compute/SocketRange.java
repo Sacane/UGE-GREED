@@ -2,4 +2,5 @@ package fr.ramatellier.greed.server.compute;
 
 import java.net.InetSocketAddress;
 
-public record ComputationIdentifier(long id, InetSocketAddress src) {}
+public record SocketRange(InetSocketAddress socketAddress, Range range) {
+}

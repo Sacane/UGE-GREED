@@ -4,16 +4,16 @@ import java.util.ArrayList;
 import java.util.HashMap;
 public final class ComputationRoomHandler {
     private final Object lock = new Object();
-    private final HashMap<Long, CounterIntend> waitingRoom = new HashMap<>();
+    private final HashMap<ComputationIdentifier, CounterIntend> waitingRoom = new HashMap<>();
     private final ArrayList<ComputationEntity> computations = new ArrayList<>();
     public void prepare(ComputationEntity entity, long intendValue) {
         synchronized (lock) {
-            waitingRoom.put(entity.getId(), new CounterIntend(intendValue));
+            waitingRoom.put(entity.id(), new CounterIntend(intendValue));
             computations.add(entity);
         }
     }
 
-    public void increment(long id) {
+    public void increment(ComputationIdentifier id) {
         synchronized (waitingRoom) {
             waitingRoom.merge(id, new CounterIntend(1), (old, newOne) -> {
                 old.increment();
@@ -24,6 +24,12 @@ public final class ComputationRoomHandler {
     public boolean isReady(long id) {
         synchronized (waitingRoom) {
             return waitingRoom.get(id).isReady();
+        }
+    }
+
+    public long getIntendedValue(ComputationIdentifier id){
+        synchronized (waitingRoom) {
+            return waitingRoom.get(id).intendValue;
         }
     }
 
@@ -42,6 +48,17 @@ public final class ComputationRoomHandler {
         }
         private boolean isReady(){
             return countedValue == intendValue;
+        }
+    }
+
+    @Override
+    public String toString() {
+        synchronized (lock) {
+            var builder = new StringBuilder();
+            for (var computation : computations) {
+                builder.append(computation.info());
+            }
+            return builder.toString();
         }
     }
 }

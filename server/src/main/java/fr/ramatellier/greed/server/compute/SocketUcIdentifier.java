@@ -2,5 +2,5 @@ package fr.ramatellier.greed.server.compute;
 
 import java.net.InetSocketAddress;
 
-public record SocketUcIdentifier(long uc, InetSocketAddress address) {
+public record SocketUcIdentifier(InetSocketAddress address, long uc) {
 }

@@ -1,8 +1,10 @@
 package fr.ramatellier.greed.server;
 
+import fr.ramatellier.greed.server.compute.*;
 import fr.ramatellier.greed.server.packet.ConnectPacket;
 import fr.ramatellier.greed.server.packet.FullPacket;
 import fr.ramatellier.greed.server.packet.LogoutRequestPacket;
+import fr.ramatellier.greed.server.packet.WorkRequestPacket;
 import fr.ramatellier.greed.server.util.RootTable;
 import fr.ramatellier.greed.server.util.TramKind;
 
@@ -14,6 +16,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -29,6 +32,10 @@ public class Server {
     private final RootTable rootTable = new RootTable();
     private ServerState state = ServerState.ON_GOING;
     private final ArrayBlockingQueue<CommandArgs> commandQueue = new ArrayBlockingQueue<>(10);
+    private final ServerProcessTool processToolManager;
+    private static long computationIdentifierValue;
+    private final AtomicLong currentOnWorkingComputations = new AtomicLong(0);
+
     public static final long MAXIMUM_COMPUTATION = 1_000_000_000;
 
     // Parent information
@@ -49,6 +56,7 @@ public class Server {
 
     private Server(int port) throws IOException {
         address = new InetSocketAddress(port);
+        this.processToolManager = ServerProcessTool.create();
         serverSocketChannel = ServerSocketChannel.open();
         serverSocketChannel.bind(address);
         parentSocketChannel = null;
@@ -61,6 +69,7 @@ public class Server {
         address = new InetSocketAddress(hostPort);
         serverSocketChannel = ServerSocketChannel.open();
         serverSocketChannel.bind(address);
+        this.processToolManager = ServerProcessTool.create();
         parentSocketChannel = SocketChannel.open();
         parentSocketAddress = new InetSocketAddress(IP, connectPort);
         selector = Selector.open();
@@ -76,6 +85,10 @@ public class Server {
             commandQueue.put(command);
             selector.wakeup();
         }
+    }
+
+    public ServerProcessTool tools(){
+        return processToolManager;
     }
 
     private void sendComputeCommand(String line) throws InterruptedException {
@@ -112,6 +125,10 @@ public class Server {
         } finally {
             logger.info("Console Thread has been stopped");
         }
+    }
+
+    public long currentOnWorkingComputationsValue() {
+        return currentOnWorkingComputations.get();
     }
 
     /**
@@ -166,6 +183,13 @@ public class Server {
      */
     public static void launchRoot(int port) throws IOException {
         new Server(port).launch();
+    }
+
+    public void incrementNbComputation(long value){
+        currentOnWorkingComputations.getAndUpdate(x -> x + value);
+    }
+    public void decrementNbComputation(long value){
+        currentOnWorkingComputations.getAndUpdate(x -> x - value);
     }
 
     /**
@@ -230,8 +254,23 @@ public class Server {
     }
 
     private void processComputeCommand(ComputeInfo info) {
-        var workers = rootTable.allAddress(); //TODO remove this method -> access to all Address is not necessary
-
+        //TODO remove this method -> access to all Address is not necessary
+        var addresses = rootTable.allAddress();
+        var id = new ComputationIdentifier(computationIdentifierValue++, address);
+        var entity = new ComputationEntity(id, info);
+        processToolManager.room().prepare(entity, addresses.size());
+        System.out.println(processToolManager.room());
+        for(var address: addresses){
+            transfer(address.address(), new WorkRequestPacket(
+                    this.address, address.address(),
+                    id.id(),
+                    info.url(),
+                    info.className(),
+                    info.start(),
+                    info.end(),
+                    info.end() - info.start()
+            ));
+        }
     }
 
     public void connectToNewParent(String IP, int connectPort) throws IOException {
