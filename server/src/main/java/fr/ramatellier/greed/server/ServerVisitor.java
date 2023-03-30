@@ -153,9 +153,9 @@ public class ServerVisitor implements PacketVisitor {
     public void visit(PleaseReconnectPacket packet) {
         System.out.println("PLEASE RECONNECT PACKET");
 
-        System.out.println(packet.getId().getAddress() + " " + packet.getId().getPort());
+        System.out.println(packet.getId().getSocket() + " " + packet.getId().getPort());
         try {
-            server.connectToNewParent(packet.getId().getAddress(), packet.getId().getPort());
+            server.connectToNewParent(packet.getId().getHostname(), packet.getId().getPort());
         } catch (IOException e) {
         }
     }
