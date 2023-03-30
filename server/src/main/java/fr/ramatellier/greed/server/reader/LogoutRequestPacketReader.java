@@ -8,9 +8,10 @@ import java.util.ArrayList;
 
 public class LogoutRequestPacketReader implements Reader<LogoutRequestPacket> {
     private enum State {
-        DONE, WAITING_SIZE, WAITING_IDS, ERROR
+        DONE, WAITING_ID, WAITING_SIZE, WAITING_IDS, ERROR
     }
-    private State state = State.WAITING_SIZE;
+    private State state = State.WAITING_ID;
+    private final IDReader idMother = new IDReader();
     private final IntReader sizeReader = new IntReader();
     private final IDReader idReader = new IDReader();
     private ArrayList<IDPacket> ids;
@@ -22,6 +23,13 @@ public class LogoutRequestPacketReader implements Reader<LogoutRequestPacket> {
             throw new IllegalStateException();
         }
 
+        if(state == State.WAITING_ID) {
+            var status = idMother.process(buffer);
+
+            if(status == ProcessStatus.DONE) {
+                state = State.WAITING_SIZE;
+            }
+        }
         if(state == State.WAITING_SIZE) {
             var status = sizeReader.process(buffer);
 
@@ -35,7 +43,7 @@ public class LogoutRequestPacketReader implements Reader<LogoutRequestPacket> {
             if(ids.size() == sizeReader.get()) {
                 state = State.DONE;
 
-                value = new LogoutRequestPacket(ids.stream().map(IDPacket::getSocket).toList());
+                value = new LogoutRequestPacket(idMother.get().getSocket(), ids.stream().map(IDPacket::getSocket).toList());
             }
 
             while(buffer.limit() > 0 && ids.size() != sizeReader.get()) {
@@ -49,7 +57,7 @@ public class LogoutRequestPacketReader implements Reader<LogoutRequestPacket> {
                 if(ids.size() == sizeReader.get()) {
                     state = State.DONE;
 
-                    value = new LogoutRequestPacket(ids.stream().map(IDPacket::getSocket).toList());
+                    value = new LogoutRequestPacket(idMother.get().getSocket(), ids.stream().map(IDPacket::getSocket).toList());
                 }
             }
         }
@@ -72,7 +80,8 @@ public class LogoutRequestPacketReader implements Reader<LogoutRequestPacket> {
 
     @Override
     public void reset() {
-        state = State.WAITING_SIZE;
+        state = State.WAITING_ID;
+        idMother.reset();
         sizeReader.reset();
         idReader.reset();
     }

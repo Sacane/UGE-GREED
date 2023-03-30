@@ -1,12 +1,10 @@
 package fr.ramatellier.greed.server.reader;
 
-import fr.ramatellier.greed.server.packet.ConnectOKPacket;
 import fr.ramatellier.greed.server.packet.IDPacket;
 import fr.ramatellier.greed.server.packet.ReconnectPacket;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.stream.Collectors;
 
 public class ReconnectPacketReader implements Reader<ReconnectPacket> {
     private enum State {
@@ -15,6 +13,7 @@ public class ReconnectPacketReader implements Reader<ReconnectPacket> {
     private State state = State.WAITING_ID;
     private final IDReader idReader = new IDReader();
     private final IntReader sizeReader = new IntReader();
+    private final IDReader ancestorIdReader = new IDReader();
     private ArrayList<IDPacket> ids;
     private ReconnectPacket value;
 
@@ -48,11 +47,11 @@ public class ReconnectPacketReader implements Reader<ReconnectPacket> {
             }
 
             while(buffer.limit() > 0 && ids.size() != sizeReader.get()) {
-                var status = idReader.process(buffer);
+                var status = ancestorIdReader.process(buffer);
 
                 if(status == ProcessStatus.DONE) {
-                    ids.add(idReader.get());
-                    idReader.reset();
+                    ids.add(ancestorIdReader.get());
+                    ancestorIdReader.reset();
                 }
 
                 if(ids.size() == sizeReader.get()) {

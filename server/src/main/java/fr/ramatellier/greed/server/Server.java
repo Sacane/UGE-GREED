@@ -5,6 +5,11 @@ import fr.ramatellier.greed.server.packet.ConnectPacket;
 import fr.ramatellier.greed.server.packet.FullPacket;
 import fr.ramatellier.greed.server.packet.LogoutRequestPacket;
 import fr.ramatellier.greed.server.packet.WorkRequestPacket;
+import fr.ramatellier.greed.server.compute.ComputationExecutor;
+import fr.ramatellier.greed.server.compute.ComputeWorkHandler;
+import fr.ramatellier.greed.server.packet.*;
+import fr.ramatellier.greed.server.util.Helpers;
+import fr.ramatellier.greed.server.util.LogoutInformation;
 import fr.ramatellier.greed.server.util.RootTable;
 import fr.ramatellier.greed.server.util.TramKind;
 
@@ -37,6 +42,8 @@ public class Server {
     private final AtomicLong currentOnWorkingComputations = new AtomicLong(0);
 
     public static final long MAXIMUM_COMPUTATION = 1_000_000_000;
+    private final ComputationExecutor executor = new ComputationExecutor();
+    private LogoutInformation logoutInformation;
 
     // Parent information
     private SocketChannel parentSocketChannel;
@@ -76,8 +83,32 @@ public class Server {
         this.isRoot = false;
     }
 
+    public boolean isLogout() {
+        return state == ServerState.SHUTDOWN;
+    }
+
     public void updateParentAddress(InetSocketAddress address) {
         parentSocketAddress = address;
+    }
+
+    public void deleteAddress(InetSocketAddress address) {
+        rootTable.delete(address);
+    }
+
+    public void newLogoutRequest(InetSocketAddress address, List<InetSocketAddress> daughters) {
+        logoutInformation = new LogoutInformation(address, daughters);
+    }
+
+    public void receiveReconnect(InetSocketAddress address) {
+        logoutInformation.add(address);
+    }
+
+    public boolean allConnected() {
+        return logoutInformation.allConnected();
+    }
+
+    public InetSocketAddress getAddressLogout() {
+        return logoutInformation.getAddress();
     }
 
     private void sendCommand(CommandArgs command) throws InterruptedException {
@@ -234,7 +265,7 @@ public class Server {
                 case SHUTDOWN -> {
                     logger.info("Command SHUTDOWN received");
                     state = ServerState.SHUTDOWN;
-                    rootTable.sendTo(parentSocketAddress, new LogoutRequestPacket(rootTable.neighbors().stream().filter(n -> !n.equals(parentSocketAddress)).toList()));
+                    rootTable.sendTo(parentSocketAddress, new LogoutRequestPacket(address, rootTable.neighbors().stream().filter(n -> !n.equals(parentSocketAddress)).toList()));
                 }
                 case COMPUTE -> {
                     logger.info("Command COMPUTE received");
@@ -274,11 +305,8 @@ public class Server {
     }
 
     public void connectToNewParent(String IP, int connectPort) throws IOException {
-        var ancesters = rootTable.ancesters(parentSocketAddress, address);
-        for(var ancester: ancesters) {
-            System.out.println("ANCESTER " + ancester);
-        }
-
+        deleteAddress(parentSocketAddress);
+        var ancestors = rootTable.ancestors(parentSocketAddress, address);
         parentSocketChannel = SocketChannel.open();
         parentSocketAddress = new InetSocketAddress(IP, connectPort);
         logger.info("Trying to connect to " + parentSocketAddress + " ...");
@@ -286,7 +314,10 @@ public class Server {
         parentSocketChannel.connect(parentSocketAddress);
         parentKey = parentSocketChannel.register(selector, SelectionKey.OP_CONNECT);
         var context = new Context(this, parentKey);
+        context.queuePacket(new ReconnectPacket(address, ancestors));
+        parentKey.interestOps(SelectionKey.OP_CONNECT);
         parentKey.attach(context);
+        addRoot(parentSocketAddress, parentSocketAddress, context);
     }
 
     private void connect() throws IOException {
@@ -319,7 +350,7 @@ public class Server {
                 .daemon()
                 .start(this::consoleRun);
         while (!Thread.interrupted()) {
-//            Helpers.printKeys(selector); // for debug
+            // Helpers.printKeys(selector); // for debug
 //            System.out.println("Starting select");
             try {
                 selector.select(this::treatKey);
@@ -362,8 +393,7 @@ public class Server {
         if (!parentSocketChannel.finishConnect()) {
             return ;
         }
-        /*var context = (Context) key.attachment();
-        context.queuePacket(new ConnectPacket(address));*/
+
         key.interestOps(SelectionKey.OP_WRITE);
         serverSocketChannel.configureBlocking(false);
         serverKey = serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
@@ -418,5 +448,14 @@ public class Server {
 
     public List<Context> daughtersContext() {
         return rootTable.daughtersContext(parentSocketAddress);
+    }
+
+    public void sendToAll() {
+        for (var key : selector.keys()) {
+            if (key.attachment() != null) {
+                var context = (Context) key.attachment();
+                context.queuePacket(new LogoutDeniedPacket());
+            }
+        }
     }
 }
