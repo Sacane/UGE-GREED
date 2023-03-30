@@ -4,6 +4,7 @@ import fr.ramatellier.greed.server.compute.ComputeWorkHandler;
 import fr.ramatellier.greed.server.packet.*;
 import fr.uge.ugegreed.Client;
 
+import java.io.IOException;
 import java.util.Objects;
 import java.util.logging.Logger;
 
@@ -125,8 +126,35 @@ public class ServerVisitor implements PacketVisitor {
     }
 
     @Override
+    public void visit(LogoutDeniedPacket packet) {
+        System.out.println("LOGOUT DENIED");
+    }
+
+    @Override
     public void visit(LogoutGrantedPacket packet) {
         System.out.println("LOGOUT ACCEPTED");
+
+        var daughters = server.daughtersContext();
+
+        for(var daughter: daughters) {
+            daughter.queuePacket(new PleaseReconnectPacket(server.getParentSocketAddress()));
+        }
+    }
+
+    @Override
+    public void visit(PleaseReconnectPacket packet) {
+        System.out.println("PLEASE RECONNECT PACKET");
+
+        System.out.println(packet.getId().getAddress() + " " + packet.getId().getPort());
+        try {
+            server.connectToNewParent(packet.getId().getAddress(), packet.getId().getPort());
+        } catch (IOException e) {
+        }
+    }
+
+    @Override
+    public void visit(ReconnectPacket packet) {
+        System.out.println("RECONNECT PACKET");
     }
 
     private void compute(WorkRequestPacket packet) {
