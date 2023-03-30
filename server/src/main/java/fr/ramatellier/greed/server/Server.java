@@ -1,11 +1,8 @@
 package fr.ramatellier.greed.server;
 
-import fr.ramatellier.greed.server.compute.ComputationExecutor;
-import fr.ramatellier.greed.server.compute.ComputeWorkHandler;
 import fr.ramatellier.greed.server.packet.ConnectPacket;
 import fr.ramatellier.greed.server.packet.FullPacket;
 import fr.ramatellier.greed.server.packet.LogoutRequestPacket;
-import fr.ramatellier.greed.server.packet.WorkRequestPacket;
 import fr.ramatellier.greed.server.util.RootTable;
 import fr.ramatellier.greed.server.util.TramKind;
 
@@ -32,9 +29,7 @@ public class Server {
     private final RootTable rootTable = new RootTable();
     private ServerState state = ServerState.ON_GOING;
     private final ArrayBlockingQueue<CommandArgs> commandQueue = new ArrayBlockingQueue<>(10);
-    private final ComputeWorkHandler handler;
     public static final long MAXIMUM_COMPUTATION = 1_000_000_000;
-    private final ComputationExecutor executor = new ComputationExecutor();
 
     // Parent information
     private SocketChannel parentSocketChannel;
@@ -60,7 +55,6 @@ public class Server {
         parentSocketAddress = null;
         selector = Selector.open();
         this.isRoot = true;
-        this.handler = new ComputeWorkHandler(address);
     }
 
     private Server(int hostPort, String IP, int connectPort) throws IOException {
@@ -71,7 +65,6 @@ public class Server {
         parentSocketAddress = new InetSocketAddress(IP, connectPort);
         selector = Selector.open();
         this.isRoot = false;
-        this.handler = new ComputeWorkHandler(address);
     }
 
     public void updateParentAddress(InetSocketAddress address) {
@@ -151,19 +144,12 @@ public class Server {
         return state == ServerState.ON_GOING;
     }
 
-    public ComputationExecutor getExecutor() {
-        return executor;
-    }
 
     public void addRoot(InetSocketAddress src, InetSocketAddress dst, Context context) {
         if(!src.equals(address)) {
             logger.info("Root table has been updated");
             rootTable.putOrUpdate(src, dst, context);
         }
-    }
-
-    ComputeWorkHandler getHandler() {
-        return handler;
     }
 
     /**
@@ -245,13 +231,7 @@ public class Server {
 
     private void processComputeCommand(ComputeInfo info) {
         var workers = rootTable.allAddress(); //TODO remove this method -> access to all Address is not necessary
-        var id = handler.nextId();
-        handler.initializeComputation(id, rootTable.registeredAddresses().size());
-        for(var worker: workers) {
-            var packet = new WorkRequestPacket(address, worker.address(), id, info.url(), info.className(), info.start(), info.end(), info.end() - info.start());
-//            worker.context().queuePacket(packet);
-            rootTable.sendTo(worker.address(), packet);
-        }
+
     }
 
     public void connectToNewParent(String IP, int connectPort) throws IOException {

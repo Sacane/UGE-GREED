@@ -1,13 +1,10 @@
 package fr.ramatellier.greed.server;
 
-import fr.ramatellier.greed.server.compute.ComputationEntity;
-import fr.ramatellier.greed.server.compute.ComputationIdentifier;
-import fr.ramatellier.greed.server.compute.ComputeWorkHandler;
-import fr.ramatellier.greed.server.packet.*;
-import fr.uge.ugegreed.Client;
 
-import java.net.InetSocketAddress;
+import fr.ramatellier.greed.server.packet.*;
+
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.util.Objects;
 import java.util.logging.Logger;
 
@@ -19,12 +16,10 @@ public class ServerVisitor implements PacketVisitor {
     private final Server server;
     private final Context context;
     private static final Logger logger = Logger.getLogger(ServerVisitor.class.getName());
-    private final ComputeWorkHandler computeWorkHandler;
 
     public ServerVisitor(Server server, Context context) {
         this.server = Objects.requireNonNull(server);
         this.context = Objects.requireNonNull(context);
-        this.computeWorkHandler = server.getHandler();
     }
 
     @Override
@@ -76,12 +71,6 @@ public class ServerVisitor implements PacketVisitor {
         if(server.getAddress().equals(packet.getIdDst().getSocket())) {
             System.out.println("RECEIVE A COMPUTATION FOR ME FROM " + packet.getIdSrc().getSocket());
             System.out.println("Destination : " + packet.getIdDst().getSocket() + " Source : " + packet.getIdSrc().getSocket());
-            var handler = server.getHandler();
-            if(handler.hasEnoughCapacity(packet.getMax())){
-                var entity = packet.toComputationEntity();
-                var responsePacket = new WorkRequestResponsePacket(packet.getIdSrc(), packet.getIdDst(), packet.getRequestId(), handler.delta(entity));
-                server.transfer(packet.getIdSrc().getSocket(), responsePacket);
-            }
         }
         else {
             System.out.println("RECEIVE A COMPUTATION FROM " + packet.getIdSrc().getSocket() + " FOR " + packet.getIdDst().getSocket());
@@ -177,47 +166,34 @@ public class ServerVisitor implements PacketVisitor {
         if(transfer){
             return;
         }
-        var executor = server.getExecutor();
-        var handler = server.getHandler();
-        handler.incrementComputation(packet.requestID());
         if(packet.nb_uc() == 0){
             return;
         }
-        executor.addCapacity(new ComputationIdentifier(packet.requestID(), packet.src().getSocket()), packet.nb_uc());
-        if(handler.hasAllRespondFor(packet.requestID(), server.registeredAddresses().size())){
-            for(var address: server.registeredAddresses()){
-//                var responsePacket = new WorkAssignmentPacket(server.getAddress(), address, packet.requestID(), ));
-//                server.transfer(address, responsePacket);
-            }
-            handler.removeComputation(packet.requestID());
-        }
     }
 
-    private void compute(WorkRequestPacket packet) {
-        computeWorkHandler.increaseCurrentNumberComputation();
-        var entity = packet.toComputationEntity();
-//        computeWorkHandler.processComputation(packet.toComputationEntity());
-        var responseChecker = Client.checkerFromHTTP(entity.url(), entity.className());
-        if(responseChecker.isEmpty()){
-            logger.severe("INVALID response url or class name");
-            handleBadWorkingResponse(-1L, (byte)0x03, packet);
-            return;
-        }
-        var checker = responseChecker.get();
-        var range = entity.range();
-        for(long i = range.start(); i < range.end() + 1; i++) {
-            try {
-                var checkResponse = checker.check(i);
-                buildAndSendResponsePacket(i, (byte)0x00, checkResponse, packet);
-            } catch (InterruptedException e) {
-                logger.info("Interrupted while computing " + i);
-                return;
-            } catch (Exception e) {
-                handleBadWorkingResponse(i, (byte) 0x01, packet);
-            }
-        }
-        computeWorkHandler.decreaseCurrentNumberComputation();
-    }
+//    private void compute(WorkRequestPacket packet) {
+//        var entity = packet.toComputationEntity();
+////        computeWorkHandler.processComputation(packet.toComputationEntity());
+//        var responseChecker = Client.checkerFromHTTP(entity.url(), entity.className());
+//        if(responseChecker.isEmpty()){
+//            logger.severe("INVALID response url or class name");
+//            handleBadWorkingResponse(-1L, (byte)0x03, packet);
+//            return;
+//        }
+//        var checker = responseChecker.get();
+//        var range = entity.range();
+//        for(long i = range.start(); i < range.end() + 1; i++) {
+//            try {
+//                var checkResponse = checker.check(i);
+//                buildAndSendResponsePacket(i, (byte)0x00, checkResponse, packet);
+//            } catch (InterruptedException e) {
+//                logger.info("Interrupted while computing " + i);
+//                return;
+//            } catch (Exception e) {
+//                handleBadWorkingResponse(i, (byte) 0x01, packet);
+//            }
+//        }
+//    }
 
     private void buildAndSendResponsePacket(long l, byte responseCode, String response, WorkRequestPacket origin) {
         var responsePacket = new ResponsePacket(l, response, responseCode);

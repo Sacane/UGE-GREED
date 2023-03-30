@@ -1,8 +1,5 @@
 package fr.ramatellier.greed.server.packet;
 
-import fr.ramatellier.greed.server.compute.ComputationEntity;
-import fr.ramatellier.greed.server.compute.ComputationIdentifier;
-import fr.ramatellier.greed.server.compute.Range;
 import fr.ramatellier.greed.server.util.OpCodes;
 import fr.ramatellier.greed.server.util.TramKind;
 
@@ -69,8 +66,5 @@ public final class WorkRequestPacket implements FullPacket {
         checker.putInBuffer(buffer);
         range.putInBuffer(buffer);
         buffer.putLong(max);
-    }
-    public ComputationEntity toComputationEntity(){
-        return new ComputationEntity(new ComputationIdentifier(requestId, idSrc.getSocket()), new Range(range.start(), range.end()), checker.getClassName(), idDst.getHostname(), checker.getUrl(), getMax());
     }
 }
