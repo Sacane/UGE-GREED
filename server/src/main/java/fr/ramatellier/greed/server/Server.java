@@ -1,5 +1,6 @@
 package fr.ramatellier.greed.server;
 
+import fr.ramatellier.greed.server.compute.ComputationExecutor;
 import fr.ramatellier.greed.server.compute.ComputeWorkHandler;
 import fr.ramatellier.greed.server.packet.ConnectPacket;
 import fr.ramatellier.greed.server.packet.FullPacket;
@@ -33,6 +34,7 @@ public class Server {
     private final ArrayBlockingQueue<CommandArgs> commandQueue = new ArrayBlockingQueue<>(10);
     private final ComputeWorkHandler handler;
     public static final long MAXIMUM_COMPUTATION = 1_000_000_000;
+    private final ComputationExecutor executor = new ComputationExecutor();
 
     // Parent information
     private final SocketChannel parentSocketChannel;
@@ -145,6 +147,10 @@ public class Server {
         return state == ServerState.ON_GOING;
     }
 
+    public ComputationExecutor getExecutor() {
+        return executor;
+    }
+
     public void addRoot(InetSocketAddress src, InetSocketAddress dst, Context context) {
         if(!src.equals(address)) {
             logger.info("Root table has been updated");
@@ -235,8 +241,9 @@ public class Server {
     private void processComputeCommand(ComputeInfo info) {
         var workers = rootTable.allAddress(); //TODO remove this method -> access to all Address is not necessary
         var id = handler.nextId();
+        handler.initializeComputation(id, rootTable.registeredAddresses().size());
         for(var worker: workers) {
-            var packet = new WorkRequestPacket(address, worker.address(), id.id(), info.url(), info.className(), info.start(), info.end(), info.end() - info.start());
+            var packet = new WorkRequestPacket(address, worker.address(), id, info.url(), info.className(), info.start(), info.end(), info.end() - info.start());
 //            worker.context().queuePacket(packet);
             rootTable.sendTo(worker.address(), packet);
         }

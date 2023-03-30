@@ -1,10 +1,12 @@
 package fr.ramatellier.greed.server;
 
+import fr.ramatellier.greed.server.compute.ComputationEntity;
 import fr.ramatellier.greed.server.compute.ComputationIdentifier;
 import fr.ramatellier.greed.server.compute.ComputeWorkHandler;
 import fr.ramatellier.greed.server.packet.*;
 import fr.uge.ugegreed.Client;
 
+import java.net.InetSocketAddress;
 import java.util.Objects;
 import java.util.logging.Logger;
 
@@ -31,7 +33,7 @@ public class ServerVisitor implements PacketVisitor {
             logger.info("Connection accepted");
             var response = new ConnectOKPacket(server.getAddress(), server.registeredAddresses());
             context.queuePacket(response);
-            var socket = packet.getSocket();
+            InetSocketAddress socket = packet.getSocket();
             server.addRoot(socket, socket, context);
             var addNodePacket = new AddNodePacket(new IDPacket(server.getAddress()), new IDPacket(socket));
             server.broadcast(addNodePacket, socket);
@@ -147,10 +149,19 @@ public class ServerVisitor implements PacketVisitor {
         if(transfer){
             return;
         }
+        var executor = server.getExecutor();
         var handler = server.getHandler();
-        handler.createComputation(new ComputationIdentifier(packet.requestID(), packet.dst().getSocket()));
-        if(handler.isReadyToDistribute()){
-
+        handler.incrementComputation(packet.requestID());
+        if(packet.nb_uc() == 0){
+            return;
+        }
+        executor.addCapacity(new ComputationIdentifier(packet.requestID(), packet.src().getSocket()), packet.nb_uc());
+        if(handler.hasAllRespondFor(packet.requestID(), server.registeredAddresses().size())){
+            for(var address: server.registeredAddresses()){
+//                var responsePacket = new WorkAssignmentPacket(server.getAddress(), address, packet.requestID(), ));
+//                server.transfer(address, responsePacket);
+            }
+            handler.removeComputation(packet.requestID());
         }
     }
 
