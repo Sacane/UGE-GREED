@@ -68,6 +68,22 @@ public class RootTable {
         return table.keySet();
     }
 
+    public List<InetSocketAddress> ancesters(InetSocketAddress parentAddress, InetSocketAddress address) {
+        var ancestersList = new ArrayList<InetSocketAddress>();
+
+        for(var entry: table.entrySet()) {
+            if(entry.getKey().equals(entry.getValue().address()) && !parentAddress.equals(entry.getKey())) {
+                ancestersList.add(entry.getKey());
+
+                /*for(var ancester: ancesters(address, entry.getKey())) {
+                    ancestersList.add(ancester);
+                }*/
+            }
+        }
+
+        return ancestersList;
+    }
+
     public List<InetSocketAddress> neighbors() {
         var neighbors = new ArrayList<InetSocketAddress>();
 
@@ -78,6 +94,18 @@ public class RootTable {
         }
 
         return neighbors;
+    }
+
+    public List<Context> daughtersContext(InetSocketAddress parentAddress) {
+        var daughters = new ArrayList<Context>();
+
+        for(var entry: table.entrySet()) {
+            if(entry.getKey().equals(entry.getValue().address()) && !parentAddress.equals(entry.getKey())) {
+                daughters.add(entry.getValue().context());
+            }
+        }
+
+        return daughters;
     }
 
     /**

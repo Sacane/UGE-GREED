@@ -1,9 +1,6 @@
 package fr.ramatellier.greed.server.reader;
 
-import fr.ramatellier.greed.server.packet.ConnectKOPacket;
-import fr.ramatellier.greed.server.packet.ConnectPacket;
-import fr.ramatellier.greed.server.packet.FullPacket;
-import fr.ramatellier.greed.server.packet.LogoutGrantedPacket;
+import fr.ramatellier.greed.server.packet.*;
 import fr.ramatellier.greed.server.util.OpCodes;
 import fr.ramatellier.greed.server.util.TramKind;
 
@@ -24,6 +21,8 @@ public class PacketReader implements Reader<FullPacket> {
     private final WorkAssignmentPacketReader workAssignmentPacketReader = new WorkAssignmentPacketReader();
     private final WorkRequestResponseReader workRequestResponsePacketReader = new WorkRequestResponseReader();
     private final LogoutRequestPacketReader logoutRequestPacketReader = new LogoutRequestPacketReader();
+    private final PleaseReconnectPacketReader pleaseReconnectPacketReader = new PleaseReconnectPacketReader();
+    private final ReconnectPacketReader reconnectPacketReader = new ReconnectPacketReader();
 
     private FullPacket value;
 
@@ -81,10 +80,33 @@ public class PacketReader implements Reader<FullPacket> {
                         value = logoutRequestPacketReader.get();
                     }
                 }
+                else if(codeReader.get() == OpCodes.LOGOUT_DENIED.BYTES) {
+                    state = State.DONE;
+
+                    value = new LogoutDeniedPacket();
+                }
                 else if(codeReader.get() == OpCodes.LOGOUT_GRANTED.BYTES) {
                     state = State.DONE;
 
                     value = new LogoutGrantedPacket();
+                }
+                else if(codeReader.get() == OpCodes.PLEASE_RECONNECT.BYTES) {
+                    var status = pleaseReconnectPacketReader.process(buffer);
+
+                    if(status == ProcessStatus.DONE) {
+                        state = State.DONE;
+
+                        value = pleaseReconnectPacketReader.get();
+                    }
+                }
+                else if(codeReader.get() == OpCodes.RECONNECT.BYTES) {
+                    var status = reconnectPacketReader.process(buffer);
+
+                    if(status == ProcessStatus.DONE) {
+                        state = State.DONE;
+
+                        value = reconnectPacketReader.get();
+                    }
                 }
             }
             else if(locationReader.get() == TramKind.BROADCAST.BYTES) {
@@ -153,6 +175,9 @@ public class PacketReader implements Reader<FullPacket> {
         connectOKPacketReader.reset();
         addNodePacketReader.reset();
         workRequestPacketReader.reset();
+        workAssignmentPacketReader.reset();
+        logoutRequestPacketReader.reset();
+        pleaseReconnectPacketReader.reset();
         workRequestResponsePacketReader.reset();
     }
 }

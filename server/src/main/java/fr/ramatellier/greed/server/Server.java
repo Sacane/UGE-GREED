@@ -37,7 +37,7 @@ public class Server {
     private final ComputationExecutor executor = new ComputationExecutor();
 
     // Parent information
-    private final SocketChannel parentSocketChannel;
+    private SocketChannel parentSocketChannel;
     private InetSocketAddress parentSocketAddress;
     private SelectionKey parentKey;
     // Others
@@ -143,6 +143,10 @@ public class Server {
         return address;
     }
 
+    public InetSocketAddress getParentSocketAddress() {
+        return parentSocketAddress;
+    }
+
     public boolean isRunning() {
         return state == ServerState.ON_GOING;
     }
@@ -189,6 +193,7 @@ public class Server {
         Objects.requireNonNull(IP, "IP can't be null");
         new Server(hostPort, IP, connectPort).connect();
     }
+
     private void printInfo() {
         var root = isRoot ? "ROOT" : "CONNECTED";
         System.out.print("This server is a " + root + " server ");
@@ -249,6 +254,22 @@ public class Server {
         }
     }
 
+    public void connectToNewParent(String IP, int connectPort) throws IOException {
+        var ancesters = rootTable.ancesters(parentSocketAddress, address);
+        for(var ancester: ancesters) {
+            System.out.println("ANCESTER " + ancester);
+        }
+
+        parentSocketChannel = SocketChannel.open();
+        parentSocketAddress = new InetSocketAddress(IP, connectPort);
+        logger.info("Trying to connect to " + parentSocketAddress + " ...");
+        parentSocketChannel.configureBlocking(false);
+        parentSocketChannel.connect(parentSocketAddress);
+        parentKey = parentSocketChannel.register(selector, SelectionKey.OP_CONNECT);
+        var context = new Context(this, parentKey);
+        parentKey.attach(context);
+    }
+
     private void connect() throws IOException {
         if(isRoot || parentSocketAddress == null) {
             throw new IllegalStateException("This server is a root server");
@@ -258,6 +279,8 @@ public class Server {
         parentSocketChannel.connect(parentSocketAddress);
         parentKey = parentSocketChannel.register(selector, SelectionKey.OP_CONNECT);
         var context = new Context(this, parentKey);
+        context.queuePacket(new ConnectPacket(address));
+        parentKey.interestOps(SelectionKey.OP_CONNECT);
         parentKey.attach(context);
         initConnection();
     }
@@ -320,8 +343,8 @@ public class Server {
         if (!parentSocketChannel.finishConnect()) {
             return ;
         }
-        var context = (Context) key.attachment();
-        context.queuePacket(new ConnectPacket(address));
+        /*var context = (Context) key.attachment();
+        context.queuePacket(new ConnectPacket(address));*/
         key.interestOps(SelectionKey.OP_WRITE);
         serverSocketChannel.configureBlocking(false);
         serverKey = serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
@@ -372,5 +395,9 @@ public class Server {
             state = ServerState.STOPPED;
         } catch (IOException e) {
         }
+    }
+
+    public List<Context> daughtersContext() {
+        return rootTable.daughtersContext(parentSocketAddress);
     }
 }

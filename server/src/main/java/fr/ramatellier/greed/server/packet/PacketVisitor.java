@@ -10,10 +10,13 @@ public interface PacketVisitor {
     void visit(WorkResponsePacket packet);
     void visit(WorkRequestResponsePacket packet);
     void visit(LogoutRequestPacket packet);
+    void visit(LogoutDeniedPacket packet);
     void visit(LogoutGrantedPacket packet);
+    void visit(PleaseReconnectPacket packet);
+    void visit(ReconnectPacket packet);
 
     default void visit(FullPacket packet) {
-        switch(packet){
+        switch(packet) {
             case ConnectPacket p -> visit(p);
             case ConnectOKPacket p -> visit(p);
             case ConnectKOPacket p -> visit(p);
@@ -23,7 +26,10 @@ public interface PacketVisitor {
             case WorkResponsePacket p -> visit(p);
             case WorkRequestResponsePacket p -> visit(p);
             case LogoutRequestPacket p -> visit(p);
+            case LogoutDeniedPacket p -> visit(p);
             case LogoutGrantedPacket p -> visit(p);
+            case PleaseReconnectPacket p -> visit(p);
+            case ReconnectPacket p -> visit(p);
         }
     }
 }
