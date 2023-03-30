@@ -1,14 +1,8 @@
 package fr.ramatellier.greed.server;
 
-import fr.ramatellier.greed.server.compute.*;
-import fr.ramatellier.greed.server.packet.ConnectPacket;
-import fr.ramatellier.greed.server.packet.FullPacket;
-import fr.ramatellier.greed.server.packet.LogoutRequestPacket;
-import fr.ramatellier.greed.server.packet.WorkRequestPacket;
-import fr.ramatellier.greed.server.compute.ComputationExecutor;
-import fr.ramatellier.greed.server.compute.ComputeWorkHandler;
+import fr.ramatellier.greed.server.compute.ComputationEntity;
+import fr.ramatellier.greed.server.compute.ComputationIdentifier;
 import fr.ramatellier.greed.server.packet.*;
-import fr.ramatellier.greed.server.util.Helpers;
 import fr.ramatellier.greed.server.util.LogoutInformation;
 import fr.ramatellier.greed.server.util.RootTable;
 import fr.ramatellier.greed.server.util.TramKind;
@@ -42,7 +36,6 @@ public class Server {
     private final AtomicLong currentOnWorkingComputations = new AtomicLong(0);
 
     public static final long MAXIMUM_COMPUTATION = 1_000_000_000;
-    private final ComputationExecutor executor = new ComputationExecutor();
     private LogoutInformation logoutInformation;
 
     // Parent information
