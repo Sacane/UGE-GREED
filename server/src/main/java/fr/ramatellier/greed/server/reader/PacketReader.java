@@ -23,7 +23,7 @@ public class PacketReader implements Reader<FullPacket> {
     private final LogoutRequestPacketReader logoutRequestPacketReader = new LogoutRequestPacketReader();
     private final PleaseReconnectPacketReader pleaseReconnectPacketReader = new PleaseReconnectPacketReader();
     private final ReconnectPacketReader reconnectPacketReader = new ReconnectPacketReader();
-
+    private final DisconnectedPacketReader disconnectedPacketReader = new DisconnectedPacketReader();
     private FullPacket value;
 
     @Override
@@ -119,6 +119,15 @@ public class PacketReader implements Reader<FullPacket> {
                         value = addNodePacketReader.get();
                     }
                 }
+                else if(codeReader.get() == OpCodes.DISCONNECTED.BYTES) {
+                    var status = disconnectedPacketReader.process(buffer);
+
+                    if(status == ProcessStatus.DONE) {
+                        state = State.DONE;
+
+                        value = disconnectedPacketReader.get();
+                    }
+                }
             }
             else if(locationReader.get() == TramKind.TRANSFERT.BYTES) {
                 if(codeReader.get() == OpCodes.WORK.BYTES) {
@@ -179,5 +188,7 @@ public class PacketReader implements Reader<FullPacket> {
         logoutRequestPacketReader.reset();
         pleaseReconnectPacketReader.reset();
         workRequestResponsePacketReader.reset();
+        disconnectedPacketReader.reset();
+        reconnectPacketReader.reset();
     }
 }

@@ -45,6 +45,22 @@ public class RootTable {
         table.merge(destination, new AddressContext(value, context), (old, newValue) -> newValue);
     }
 
+    public void delete(InetSocketAddress address) {
+        table.remove(address);
+    }
+
+    public InetSocketAddress getAddressFromContext(Context context) {
+        InetSocketAddress address = null;
+
+        for(var entry: table.entrySet()) {
+            if(entry.getKey().equals(entry.getValue().address()) && context.equals(entry.getValue().context())) {
+                address = entry.getKey();
+            }
+        }
+
+        return address;
+    }
+
     /**
      * Transfer the given packet to the closest neighbour of the destination.
      * @param dst the destination of the packet
@@ -68,20 +84,36 @@ public class RootTable {
         return table.keySet();
     }
 
-    public List<InetSocketAddress> ancesters(InetSocketAddress parentAddress, InetSocketAddress address) {
-        var ancestersList = new ArrayList<InetSocketAddress>();
+    public List<InetSocketAddress> ancestors(InetSocketAddress parentAddress, InetSocketAddress address) {
+        var ancestorsList = new ArrayList<InetSocketAddress>();
 
         for(var entry: table.entrySet()) {
             if(entry.getKey().equals(entry.getValue().address()) && !parentAddress.equals(entry.getKey())) {
-                ancestersList.add(entry.getKey());
+                ancestorsList.add(entry.getKey());
 
-                /*for(var ancester: ancesters(address, entry.getKey())) {
-                    ancestersList.add(ancester);
-                }*/
+                for(var ancestor: ancestorsOf(entry.getKey())) {
+                    ancestorsList.add(ancestor);
+                }
             }
         }
 
-        return ancestersList;
+        return ancestorsList;
+    }
+
+    private List<InetSocketAddress> ancestorsOf(InetSocketAddress address) {
+        var ancestors = new ArrayList<InetSocketAddress>();
+
+        for(var entry: table.entrySet()) {
+            if(address.equals(entry.getValue().address()) && !entry.getKey().equals(entry.getValue().address())) {
+                ancestors.add(entry.getKey());
+
+                for(var ancestor: ancestorsOf(entry.getKey())) {
+                    ancestors.add(ancestor);
+                }
+            }
+        }
+
+        return ancestors;
     }
 
     public List<InetSocketAddress> neighbors() {

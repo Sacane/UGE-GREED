@@ -28,10 +28,6 @@ public class Context {
         this.visitor = new ServerVisitor(server, this);
     }
 
-    public ByteBuffer getBufferOut() {
-        return bufferOut;
-    }
-
     private void processIn() {
         for (;;) {
             Reader.ProcessStatus status = packetReader.process(bufferIn);

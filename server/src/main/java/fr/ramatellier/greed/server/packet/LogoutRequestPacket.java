@@ -9,12 +9,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 public final class LogoutRequestPacket implements FullPacket {
+    private final IDPacket id;
     private final ArrayList<IDPacket> daughters = new ArrayList<>();
 
-    public LogoutRequestPacket(List<InetSocketAddress> daughters) {
+    public LogoutRequestPacket(InetSocketAddress address, List<InetSocketAddress> daughters) {
+        id = new IDPacket(address);
         for(var daughter: daughters) {
             this.daughters.add(new IDPacket(daughter));
         }
+    }
+
+    public IDPacket getId() {
+        return id;
     }
 
     public ArrayList<IDPacket> getDaughters() {
@@ -34,6 +40,7 @@ public final class LogoutRequestPacket implements FullPacket {
     @Override
     public void putInBuffer(ByteBuffer buffer) {
         putHeader(buffer);
+        id.putInBuffer(buffer);
         buffer.putInt(daughters.size());
         for(var daughter: daughters) {
             daughter.putInBuffer(buffer);

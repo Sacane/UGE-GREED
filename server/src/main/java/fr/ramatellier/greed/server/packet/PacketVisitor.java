@@ -14,6 +14,7 @@ public interface PacketVisitor {
     void visit(LogoutGrantedPacket packet);
     void visit(PleaseReconnectPacket packet);
     void visit(ReconnectPacket packet);
+    void visit(DisconnectedPacket packet);
 
     default void visit(FullPacket packet) {
         switch(packet) {
@@ -30,6 +31,7 @@ public interface PacketVisitor {
             case LogoutGrantedPacket p -> visit(p);
             case PleaseReconnectPacket p -> visit(p);
             case ReconnectPacket p -> visit(p);
+            case DisconnectedPacket p -> visit(p);
         }
     }
 }

@@ -10,14 +10,22 @@ import java.util.List;
 
 public final class ReconnectPacket implements FullPacket {
     private final IDPacket id;
-    private final List<IDPacket> ancesters = new ArrayList<>();
+    private final List<IDPacket> ancestors = new ArrayList<>();
 
     public ReconnectPacket(InetSocketAddress idAddress, List<InetSocketAddress> addresses) {
         id = new IDPacket(idAddress);
 
         for(var address: addresses) {
-            ancesters.add(new IDPacket(address));
+            ancestors.add(new IDPacket(address));
         }
+    }
+
+    public IDPacket getId() {
+        return id;
+    }
+
+    public List<IDPacket> getAncestors() {
+        return ancestors;
     }
 
     @Override
@@ -34,8 +42,8 @@ public final class ReconnectPacket implements FullPacket {
     public void putInBuffer(ByteBuffer buffer) {
         putHeader(buffer);
         id.putInBuffer(buffer);
-        buffer.putInt(ancesters.size());
-        for(var ancestor: ancesters) {
+        buffer.putInt(ancestors.size());
+        for(var ancestor: ancestors) {
             ancestor.putInBuffer(buffer);
         }
     }

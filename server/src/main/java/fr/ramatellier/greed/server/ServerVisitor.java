@@ -1,6 +1,5 @@
 package fr.ramatellier.greed.server;
 
-import fr.ramatellier.greed.server.compute.ComputationEntity;
 import fr.ramatellier.greed.server.compute.ComputationIdentifier;
 import fr.ramatellier.greed.server.compute.ComputeWorkHandler;
 import fr.ramatellier.greed.server.packet.*;
@@ -124,11 +123,8 @@ public class ServerVisitor implements PacketVisitor {
         System.out.println("RECEIVE LOGOUT");
 
         if(server.isRunning()) {
-            System.out.println(packet.getDaughters().size());
-            for(var daughter: packet.getDaughters()) {
-                System.out.println(daughter.getSocket());
-            }
-
+            // server.deleteAddress(packet.getId().getSocket());
+            server.newLogoutRequest(packet.getId().getSocket(), packet.getDaughters().stream().map(d -> d.getSocket()).toList());
             context.queuePacket(new LogoutGrantedPacket());
         }
     }
@@ -152,8 +148,8 @@ public class ServerVisitor implements PacketVisitor {
     @Override
     public void visit(PleaseReconnectPacket packet) {
         System.out.println("PLEASE RECONNECT PACKET");
+        System.out.println("TO " + packet.getId().getSocket());
 
-        System.out.println(packet.getId().getSocket() + " " + packet.getId().getPort());
         try {
             server.connectToNewParent(packet.getId().getHostname(), packet.getId().getPort());
         } catch (IOException e) {
@@ -163,6 +159,33 @@ public class ServerVisitor implements PacketVisitor {
     @Override
     public void visit(ReconnectPacket packet) {
         System.out.println("RECONNECT PACKET");
+        System.out.println("FROM " + packet.getId().getSocket());
+
+        server.receiveReconnect(packet.getId().getSocket());
+        server.addRoot(packet.getId().getSocket(), packet.getId().getSocket(), context);
+
+        for(var id: packet.getAncestors()) {
+            server.addRoot(id.getSocket(), packet.getId().getSocket(), context);
+        }
+
+        if(server.allConnected()) {
+            System.out.println("TOUT LE MONDE EST CONNECT");
+            server.broadcast(new DisconnectedPacket(server.getAddress(), server.getAddressLogout()), server.getAddress());
+            server.deleteAddress(server.getAddressLogout());
+        }
+    }
+
+    @Override
+    public void visit(DisconnectedPacket packet) {
+        System.out.println("DISCONNECTED PACKET");
+
+        if(server.isLogout()) {
+            server.shutdown();
+        }
+        else {
+            server.deleteAddress(packet.getId().getSocket());
+            server.broadcast(new DisconnectedPacket(server.getAddress(), packet.getId().getSocket()), packet.getIdSrc().getSocket());
+        }
     }
 
     @Override
