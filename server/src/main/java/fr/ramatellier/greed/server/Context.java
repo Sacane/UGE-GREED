@@ -28,16 +28,6 @@ public class Context {
         this.visitor = new ServerVisitor(server, this);
     }
 
-    public InetSocketAddress src() {
-        InetSocketAddress address = null;
-        try {
-            address = (InetSocketAddress) sc.getLocalAddress();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        return address;
-    }
-
     private void processIn() {
         for (;;) {
             Reader.ProcessStatus status = packetReader.process(bufferIn);
@@ -55,7 +45,6 @@ public class Context {
             }
         }
     }
-
 
     public void queuePacket(FullPacket packet) {
         queue.add(packet);

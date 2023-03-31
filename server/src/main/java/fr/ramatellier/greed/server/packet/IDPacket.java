@@ -4,18 +4,18 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
 public class IDPacket implements Packet {
-    private final IpAddress ipAddress;
+    private final IpAddressPacket ipAddressPacket;
     private final int port;
     private final InetSocketAddress address;
 
     public IDPacket(InetSocketAddress address) {
-        ipAddress = new IpAddress(address.getHostName());
+        ipAddressPacket = new IpAddressPacket(address.getHostName());
         this.port = address.getPort();
         this.address = address;
     }
 
-    public String getAddress() {
-        return ipAddress.getAddress();
+    public String getHostname() {
+        return address.getHostName();
     }
 
     public int getPort() {
@@ -28,7 +28,15 @@ public class IDPacket implements Packet {
 
     @Override
     public void putInBuffer(ByteBuffer buffer) {
-        ipAddress.putInBuffer(buffer);
+        ipAddressPacket.putInBuffer(buffer);
         buffer.putInt(port);
+    }
+
+    @Override
+    public String toString() {
+        return "IDPacket{" +
+                "port=" + port +
+                ", address=" + address +
+                '}';
     }
 }

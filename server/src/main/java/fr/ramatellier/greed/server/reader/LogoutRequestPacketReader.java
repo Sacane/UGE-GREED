@@ -1,22 +1,21 @@
 package fr.ramatellier.greed.server.reader;
 
-import fr.ramatellier.greed.server.packet.ConnectOKPacket;
 import fr.ramatellier.greed.server.packet.IDPacket;
+import fr.ramatellier.greed.server.packet.LogoutRequestPacket;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.stream.Collectors;
 
-public class ConnectOKPacketReader implements Reader<ConnectOKPacket> {
+public class LogoutRequestPacketReader implements Reader<LogoutRequestPacket> {
     private enum State {
-        DONE, WAITING_IDMOTHER, WAITING_SIZEID, WAITING_IDS, ERROR
+        DONE, WAITING_ID, WAITING_SIZE, WAITING_IDS, ERROR
     }
-    private State state = State.WAITING_IDMOTHER;
-    private final IDReader idReader = new IDReader();
+    private State state = State.WAITING_ID;
+    private final IDReader idMother = new IDReader();
     private final IntReader sizeReader = new IntReader();
-    private IDPacket idMother;
+    private final IDReader idReader = new IDReader();
     private ArrayList<IDPacket> ids;
-    private ConnectOKPacket value;
+    private LogoutRequestPacket value;
 
     @Override
     public ProcessStatus process(ByteBuffer buffer) {
@@ -24,16 +23,14 @@ public class ConnectOKPacketReader implements Reader<ConnectOKPacket> {
             throw new IllegalStateException();
         }
 
-        if(state == State.WAITING_IDMOTHER) {
-            var status = idReader.process(buffer);
+        if(state == State.WAITING_ID) {
+            var status = idMother.process(buffer);
 
             if(status == ProcessStatus.DONE) {
-                state = State.WAITING_SIZEID;
-                idMother = idReader.get();
-                idReader.reset();
+                state = State.WAITING_SIZE;
             }
         }
-        if(state == State.WAITING_SIZEID) {
+        if(state == State.WAITING_SIZE) {
             var status = sizeReader.process(buffer);
 
             if(status == ProcessStatus.DONE) {
@@ -46,7 +43,7 @@ public class ConnectOKPacketReader implements Reader<ConnectOKPacket> {
             if(ids.size() == sizeReader.get()) {
                 state = State.DONE;
 
-                value = new ConnectOKPacket(idMother.getSocket(), ids.stream().map(IDPacket::getSocket).collect(Collectors.toSet()));
+                value = new LogoutRequestPacket(idMother.get().getSocket(), ids.stream().map(IDPacket::getSocket).toList());
             }
 
             while(buffer.limit() > 0 && ids.size() != sizeReader.get()) {
@@ -60,7 +57,7 @@ public class ConnectOKPacketReader implements Reader<ConnectOKPacket> {
                 if(ids.size() == sizeReader.get()) {
                     state = State.DONE;
 
-                    value = new ConnectOKPacket(idMother.getSocket(), ids.stream().map(IDPacket::getSocket).collect(Collectors.toSet()));
+                    value = new LogoutRequestPacket(idMother.get().getSocket(), ids.stream().map(IDPacket::getSocket).toList());
                 }
             }
         }
@@ -73,7 +70,7 @@ public class ConnectOKPacketReader implements Reader<ConnectOKPacket> {
     }
 
     @Override
-    public ConnectOKPacket get() {
+    public LogoutRequestPacket get() {
         if (state != State.DONE) {
             throw new IllegalStateException();
         }
@@ -83,8 +80,9 @@ public class ConnectOKPacketReader implements Reader<ConnectOKPacket> {
 
     @Override
     public void reset() {
-        state = State.WAITING_IDMOTHER;
-        idReader.reset();
+        state = State.WAITING_ID;
+        idMother.reset();
         sizeReader.reset();
+        idReader.reset();
     }
 }

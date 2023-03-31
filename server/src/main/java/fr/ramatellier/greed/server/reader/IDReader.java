@@ -58,5 +58,6 @@ public class IDReader implements Reader<IDPacket> {
         state = State.WAITING_IP;
         ipReader.reset();
         portReader.reset();
+        value = null;
     }
 }

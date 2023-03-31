@@ -4,11 +4,11 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 
-public class IpAddress implements Packet {
+public class IpAddressPacket implements Packet {
     private final byte size;
     private final String address;
 
-    public IpAddress(String address) {
+    public IpAddressPacket(String address) {
         this.size = address.contains(".") ? (byte)0x04 : (byte)0x06;
         this.address = address;
     }

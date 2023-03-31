@@ -1,8 +1,9 @@
 package fr.ramatellier.greed.server;
 
-import fr.ramatellier.greed.server.packet.ConnectPacket;
-import fr.ramatellier.greed.server.packet.FullPacket;
-import fr.ramatellier.greed.server.packet.WorkRequestPacket;
+import fr.ramatellier.greed.server.compute.ComputationEntity;
+import fr.ramatellier.greed.server.compute.ComputationIdentifier;
+import fr.ramatellier.greed.server.packet.*;
+import fr.ramatellier.greed.server.util.LogoutInformation;
 import fr.ramatellier.greed.server.util.RootTable;
 import fr.ramatellier.greed.server.util.TramKind;
 
@@ -14,6 +15,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -29,14 +31,18 @@ public class Server {
     private final RootTable rootTable = new RootTable();
     private ServerState state = ServerState.ON_GOING;
     private final ArrayBlockingQueue<CommandArgs> commandQueue = new ArrayBlockingQueue<>(10);
+    private final ServerProcessTool processToolManager;
+    private static long computationIdentifierValue;
+    private final AtomicLong currentOnWorkingComputations = new AtomicLong(0);
+
+    public static final long MAXIMUM_COMPUTATION = 1_000_000_000;
+    private LogoutInformation logoutInformation;
 
     // Parent information
-    private final SocketChannel parentSocketChannel;
-    private final InetSocketAddress parentSocketAddress;
+    private SocketChannel parentSocketChannel;
+    private InetSocketAddress parentSocketAddress;
     private SelectionKey parentKey;
-
     // Others
-
     public static final Charset UTF8 = StandardCharsets.UTF_8;
 
     private enum Command{
@@ -45,11 +51,12 @@ public class Server {
     private record CommandArgs(Command command, String[] args) {}
 
     private enum ServerState{
-        ON_GOING, STOPPED
+        ON_GOING, SHUTDOWN, STOPPED
     }
 
     private Server(int port) throws IOException {
         address = new InetSocketAddress(port);
+        this.processToolManager = ServerProcessTool.create();
         serverSocketChannel = ServerSocketChannel.open();
         serverSocketChannel.bind(address);
         parentSocketChannel = null;
@@ -57,14 +64,44 @@ public class Server {
         selector = Selector.open();
         this.isRoot = true;
     }
+
     private Server(int hostPort, String IP, int connectPort) throws IOException {
         address = new InetSocketAddress(hostPort);
         serverSocketChannel = ServerSocketChannel.open();
         serverSocketChannel.bind(address);
+        this.processToolManager = ServerProcessTool.create();
         parentSocketChannel = SocketChannel.open();
         parentSocketAddress = new InetSocketAddress(IP, connectPort);
         selector = Selector.open();
         this.isRoot = false;
+    }
+
+    public boolean isLogout() {
+        return state == ServerState.SHUTDOWN;
+    }
+
+    public void updateParentAddress(InetSocketAddress address) {
+        parentSocketAddress = address;
+    }
+
+    public void deleteAddress(InetSocketAddress address) {
+        rootTable.delete(address);
+    }
+
+    public void newLogoutRequest(InetSocketAddress address, List<InetSocketAddress> daughters) {
+        logoutInformation = new LogoutInformation(address, daughters);
+    }
+
+    public void receiveReconnect(InetSocketAddress address) {
+        logoutInformation.add(address);
+    }
+
+    public boolean allConnected() {
+        return logoutInformation.allConnected();
+    }
+
+    public InetSocketAddress getAddressLogout() {
+        return logoutInformation.getAddress();
     }
 
     private void sendCommand(CommandArgs command) throws InterruptedException {
@@ -73,7 +110,12 @@ public class Server {
             selector.wakeup();
         }
     }
-    private void sendCommandWithArgs(String line) throws InterruptedException {
+
+    public ServerProcessTool tools(){
+        return processToolManager;
+    }
+
+    private void sendComputeCommand(String line) throws InterruptedException {
         if(line.split(" ").length != 5){
             logger.warning("Invalid given command : " + line);
             System.out.println("Expected " + (5 - 1) + " arguments");
@@ -82,6 +124,11 @@ public class Server {
         var args = Arrays.stream(line.split(" ")).skip(1).toArray(String[]::new);
         sendCommand(new CommandArgs(Command.COMPUTE, args));
     }
+
+    /**
+     * Exemple for compute :
+     * COMPUTE http://www-igm.univ-mlv.fr/~carayol/Factorizer.jar fr.uge.factors.Factorizer 10 1000
+     */
     private void consoleRun(){
         try{
             try(var scan = new Scanner(System.in)){
@@ -92,7 +139,7 @@ public class Server {
                         case "INFO" -> sendCommand(new CommandArgs(Command.INFO, null));
                         case "STOP" -> sendCommand(new CommandArgs(Command.STOP, null));
                         case "SHUTDOWN" -> sendCommand(new CommandArgs(Command.SHUTDOWN, null));
-                        case "COMPUTE" -> sendCommandWithArgs(line);
+                        case "COMPUTE" -> sendComputeCommand(line);
                         default -> System.out.println("Unknown command");
                     }
                 }
@@ -102,6 +149,10 @@ public class Server {
         } finally {
             logger.info("Console Thread has been stopped");
         }
+    }
+
+    public long currentOnWorkingComputationsValue() {
+        return currentOnWorkingComputations.get();
     }
 
     /**
@@ -126,9 +177,14 @@ public class Server {
         return address;
     }
 
-    public boolean isRunning() {
-        return state != ServerState.STOPPED;
+    public InetSocketAddress getParentSocketAddress() {
+        return parentSocketAddress;
     }
+
+    public boolean isRunning() {
+        return state == ServerState.ON_GOING;
+    }
+
 
     public void addRoot(InetSocketAddress src, InetSocketAddress dst, Context context) {
         if(!src.equals(address)) {
@@ -153,6 +209,13 @@ public class Server {
         new Server(port).launch();
     }
 
+    public void incrementNbComputation(long value){
+        currentOnWorkingComputations.getAndUpdate(x -> x + value);
+    }
+    public void decrementNbComputation(long value){
+        currentOnWorkingComputations.getAndUpdate(x -> x - value);
+    }
+
     /**
      * Launch a server on the given hostPort, connected to another server.
      * @param hostPort port of the current server
@@ -164,6 +227,7 @@ public class Server {
         Objects.requireNonNull(IP, "IP can't be null");
         new Server(hostPort, IP, connectPort).connect();
     }
+
     private void printInfo() {
         var root = isRoot ? "ROOT" : "CONNECTED";
         System.out.print("This server is a " + root + " server ");
@@ -193,15 +257,17 @@ public class Server {
                 }
                 case SHUTDOWN -> {
                     logger.info("Command SHUTDOWN received");
+                    state = ServerState.SHUTDOWN;
+                    rootTable.sendTo(parentSocketAddress, new LogoutRequestPacket(address, rootTable.neighbors().stream().filter(n -> !n.equals(parentSocketAddress)).toList()));
                 }
                 case COMPUTE -> {
                     logger.info("Command COMPUTE received");
-                    parseComputeCommand(command.args());
+                    parseAndCompute(command.args());
                 }
             }
         }
     }
-    private void parseComputeCommand(String[] args) {
+    private void parseAndCompute(String[] args) {
         var line = Arrays.stream(args).reduce("", (s, s2) -> s + " " + s2);
         var parser = new ComputeCommandParser(line.trim());
         if(!parser.check()){
@@ -212,13 +278,40 @@ public class Server {
     }
 
     private void processComputeCommand(ComputeInfo info) {
-        var workers = rootTable.allAddress();
-
-        for(var worker: workers) {
-            var packet = new WorkRequestPacket(address, worker.address(), 0, info.url(), info.className(), info.start(), info.end(), 10000);
-
-            worker.context().queuePacket(packet);
+        //TODO remove this method -> access to all Address is not necessary
+        var addresses = rootTable.allAddress();
+        var id = new ComputationIdentifier(computationIdentifierValue++, address);
+        var entity = new ComputationEntity(id, info);
+        processToolManager.room().prepare(entity, addresses.size());
+        System.out.println(processToolManager.room());
+        for(var address: addresses){
+            transfer(address.address(), new WorkRequestPacket(
+                    this.address, address.address(),
+                    id.id(),
+                    info.url(),
+                    info.className(),
+                    info.start(),
+                    info.end(),
+                    info.end() - info.start()
+            ));
         }
+    }
+
+    public void connectToNewParent(IDPacket packet) throws IOException {
+        var oldParentAddress = parentSocketAddress;
+        var ancestors = rootTable.ancestors(parentSocketAddress, address);
+        parentSocketChannel = SocketChannel.open();
+        parentSocketAddress = new InetSocketAddress(packet.getHostname(), packet.getPort());
+        logger.info("Trying to connect to " + parentSocketAddress + " ...");
+        parentSocketChannel.configureBlocking(false);
+        parentSocketChannel.connect(parentSocketAddress);
+        parentKey = parentSocketChannel.register(selector, SelectionKey.OP_CONNECT);
+        var context = new Context(this, parentKey);
+        context.queuePacket(new ReconnectPacket(address, ancestors));
+        parentKey.interestOps(SelectionKey.OP_CONNECT);
+        parentKey.attach(context);
+        deleteAddress(oldParentAddress);
+        rootTable.updateToContext(oldParentAddress, parentSocketAddress, context);
     }
 
     private void connect() throws IOException {
@@ -230,6 +323,8 @@ public class Server {
         parentSocketChannel.connect(parentSocketAddress);
         parentKey = parentSocketChannel.register(selector, SelectionKey.OP_CONNECT);
         var context = new Context(this, parentKey);
+        context.queuePacket(new ConnectPacket(address));
+        parentKey.interestOps(SelectionKey.OP_CONNECT);
         parentKey.attach(context);
         initConnection();
     }
@@ -249,7 +344,7 @@ public class Server {
                 .daemon()
                 .start(this::consoleRun);
         while (!Thread.interrupted()) {
-//            Helpers.printKeys(selector); // for debug
+            // Helpers.printKeys(selector); // for debug
 //            System.out.println("Starting select");
             try {
                 selector.select(this::treatKey);
@@ -292,8 +387,7 @@ public class Server {
         if (!parentSocketChannel.finishConnect()) {
             return ;
         }
-        var context = (Context) key.attachment();
-        context.queuePacket(new ConnectPacket(address));
+
         key.interestOps(SelectionKey.OP_WRITE);
         serverSocketChannel.configureBlocking(false);
         serverKey = serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
@@ -343,6 +437,19 @@ public class Server {
             if(!isRoot) silentlyClose(parentKey);
             state = ServerState.STOPPED;
         } catch (IOException e) {
+        }
+    }
+
+    public List<Context> daughtersContext() {
+        return rootTable.daughtersContext(parentSocketAddress);
+    }
+
+    public void sendToAll() {
+        for (var key : selector.keys()) {
+            if (key.attachment() != null) {
+                var context = (Context) key.attachment();
+                context.queuePacket(new LogoutDeniedPacket());
+            }
         }
     }
 }

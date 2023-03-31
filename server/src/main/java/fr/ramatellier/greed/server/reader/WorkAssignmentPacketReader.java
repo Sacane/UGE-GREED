@@ -1,21 +1,23 @@
 package fr.ramatellier.greed.server.reader;
 
-import fr.ramatellier.greed.server.packet.WorkRequestPacket;
+import fr.ramatellier.greed.server.packet.RangePacket;
+import fr.ramatellier.greed.server.packet.WorkAssignmentPacket;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 
-public class WorkRequestPacketReader implements Reader<WorkRequestPacket> {
+public class WorkAssignmentPacketReader implements Reader<WorkAssignmentPacket> {
     private enum State {
-        DONE, WAITING_IDSRC, WAITING_IDDST, WAITING_REQUESTID, WAITING_CHECKER, WAITING_RANGE, WAITING_MAX, ERROR
+        DONE, WAITING_IDSRC, WAITING_IDDST, WAITING_REQUESTID, WAITING_SIZE, WAITING_RANGES, ERROR
     }
     private State state = State.WAITING_IDSRC;
     private final IDReader idSrcReader = new IDReader();
     private final IDReader idDstReader = new IDReader();
     private final LongReader requestIdReader = new LongReader();
-    private final CheckerPacketReader checkerPacketReader = new CheckerPacketReader();
+    private final IntReader sizeReader = new IntReader();
     private final RangePacketReader rangePacketReader = new RangePacketReader();
-    private final LongReader maxReader = new LongReader();
-    private WorkRequestPacket value;
+    private ArrayList<RangePacket> ranges;
+    private WorkAssignmentPacket value;
 
     @Override
     public ProcessStatus process(ByteBuffer buffer) {
@@ -41,30 +43,36 @@ public class WorkRequestPacketReader implements Reader<WorkRequestPacket> {
             var status = requestIdReader.process(buffer);
 
             if(status == ProcessStatus.DONE) {
-                state = State.WAITING_CHECKER;
+                state = State.WAITING_SIZE;
             }
         }
-        if(state == State.WAITING_CHECKER) {
-            var status = checkerPacketReader.process(buffer);
+        if(state == State.WAITING_SIZE) {
+            var status = sizeReader.process(buffer);
 
             if(status == ProcessStatus.DONE) {
-                state = State.WAITING_RANGE;
+                state = State.WAITING_RANGES;
             }
         }
-        if(state == State.WAITING_RANGE) {
-            var status = rangePacketReader.process(buffer);
-
-            if(status == ProcessStatus.DONE) {
-                state = State.WAITING_MAX;
-            }
-        }
-        if(state == State.WAITING_MAX) {
-            var status = maxReader.process(buffer);
-
-            if(status == ProcessStatus.DONE) {
+        if(state == State.WAITING_RANGES) {
+            if(ranges.size() == sizeReader.get()) {
                 state = State.DONE;
 
-                value = new WorkRequestPacket(idSrcReader.get().getSocket(), idDstReader.get().getSocket(), requestIdReader.get(), checkerPacketReader.get().getUrl(), checkerPacketReader.get().getClassName(), rangePacketReader.get().start(), rangePacketReader.get().end(), maxReader.get());
+                value = new WorkAssignmentPacket(idSrcReader.get().getSocket(), idDstReader.get().getSocket(), requestIdReader.get(), ranges);
+            }
+
+            while(buffer.limit() > 0 && ranges.size() != sizeReader.get()) {
+                var status = rangePacketReader.process(buffer);
+
+                if(status == ProcessStatus.DONE) {
+                    ranges.add(rangePacketReader.get());
+                    rangePacketReader.reset();
+                }
+
+                if(ranges.size() == sizeReader.get()) {
+                    state = State.DONE;
+
+                    value = new WorkAssignmentPacket(idSrcReader.get().getSocket(), idDstReader.get().getSocket(), requestIdReader.get(), ranges);
+                }
             }
         }
 
@@ -76,7 +84,7 @@ public class WorkRequestPacketReader implements Reader<WorkRequestPacket> {
     }
 
     @Override
-    public WorkRequestPacket get() {
+    public WorkAssignmentPacket get() {
         if (state != State.DONE) {
             throw new IllegalStateException();
         }
@@ -90,8 +98,8 @@ public class WorkRequestPacketReader implements Reader<WorkRequestPacket> {
         idSrcReader.reset();
         idDstReader.reset();
         requestIdReader.reset();
-        checkerPacketReader.reset();
+        sizeReader.reset();
         rangePacketReader.reset();
-        maxReader.reset();
+        ranges = new ArrayList<>();
     }
 }

@@ -1,15 +1,20 @@
 package fr.ramatellier.greed.server.packet;
 
 import java.nio.ByteBuffer;
-import java.util.Objects;
 
 public final class ResponsePacket implements Packet{
     private final byte responseCode;
     private final StringPacket response;
     private final long value;
+
+    /**
+     *
+     * @param value
+     * @param response
+     * @param responseCode
+     */
     public ResponsePacket(long value, String response, byte responseCode) {
-        Objects.requireNonNull(response);
-        this.response = new StringPacket(response);
+        this.response = (response != null) ? new StringPacket(response) : null;
         this.responseCode = responseCode;
         this.value = value;
     }
@@ -20,5 +25,17 @@ public final class ResponsePacket implements Packet{
         if(responseCode == 0){
             response.putInBuffer(buffer);
         }
+    }
+
+    public byte getResponseCode() {
+        return responseCode;
+    }
+
+    public StringPacket getResponse() {
+        return response;
+    }
+
+    public long getValue() {
+        return value;
     }
 }

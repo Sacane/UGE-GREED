@@ -1,22 +1,21 @@
 package fr.ramatellier.greed.server.reader;
 
-import fr.ramatellier.greed.server.packet.ConnectOKPacket;
 import fr.ramatellier.greed.server.packet.IDPacket;
+import fr.ramatellier.greed.server.packet.ReconnectPacket;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.stream.Collectors;
 
-public class ConnectOKPacketReader implements Reader<ConnectOKPacket> {
+public class ReconnectPacketReader implements Reader<ReconnectPacket> {
     private enum State {
-        DONE, WAITING_IDMOTHER, WAITING_SIZEID, WAITING_IDS, ERROR
+        DONE, WAITING_ID, WAITING_SIZE, WAITING_IDS, ERROR
     }
-    private State state = State.WAITING_IDMOTHER;
+    private State state = State.WAITING_ID;
     private final IDReader idReader = new IDReader();
     private final IntReader sizeReader = new IntReader();
-    private IDPacket idMother;
+    private final IDReader ancestorIdReader = new IDReader();
     private ArrayList<IDPacket> ids;
-    private ConnectOKPacket value;
+    private ReconnectPacket value;
 
     @Override
     public ProcessStatus process(ByteBuffer buffer) {
@@ -24,16 +23,14 @@ public class ConnectOKPacketReader implements Reader<ConnectOKPacket> {
             throw new IllegalStateException();
         }
 
-        if(state == State.WAITING_IDMOTHER) {
+        if(state == State.WAITING_ID) {
             var status = idReader.process(buffer);
 
             if(status == ProcessStatus.DONE) {
-                state = State.WAITING_SIZEID;
-                idMother = idReader.get();
-                idReader.reset();
+                state = State.WAITING_SIZE;
             }
         }
-        if(state == State.WAITING_SIZEID) {
+        if(state == State.WAITING_SIZE) {
             var status = sizeReader.process(buffer);
 
             if(status == ProcessStatus.DONE) {
@@ -46,21 +43,21 @@ public class ConnectOKPacketReader implements Reader<ConnectOKPacket> {
             if(ids.size() == sizeReader.get()) {
                 state = State.DONE;
 
-                value = new ConnectOKPacket(idMother.getSocket(), ids.stream().map(IDPacket::getSocket).collect(Collectors.toSet()));
+                value = new ReconnectPacket(idReader.get().getSocket(), ids.stream().map(IDPacket::getSocket).toList());
             }
 
             while(buffer.limit() > 0 && ids.size() != sizeReader.get()) {
-                var status = idReader.process(buffer);
+                var status = ancestorIdReader.process(buffer);
 
                 if(status == ProcessStatus.DONE) {
-                    ids.add(idReader.get());
-                    idReader.reset();
+                    ids.add(ancestorIdReader.get());
+                    ancestorIdReader.reset();
                 }
 
                 if(ids.size() == sizeReader.get()) {
                     state = State.DONE;
 
-                    value = new ConnectOKPacket(idMother.getSocket(), ids.stream().map(IDPacket::getSocket).collect(Collectors.toSet()));
+                    value = new ReconnectPacket(idReader.get().getSocket(), ids.stream().map(IDPacket::getSocket).toList());
                 }
             }
         }
@@ -73,7 +70,7 @@ public class ConnectOKPacketReader implements Reader<ConnectOKPacket> {
     }
 
     @Override
-    public ConnectOKPacket get() {
+    public ReconnectPacket get() {
         if (state != State.DONE) {
             throw new IllegalStateException();
         }
@@ -83,7 +80,7 @@ public class ConnectOKPacketReader implements Reader<ConnectOKPacket> {
 
     @Override
     public void reset() {
-        state = State.WAITING_IDMOTHER;
+        state = State.WAITING_ID;
         idReader.reset();
         sizeReader.reset();
     }

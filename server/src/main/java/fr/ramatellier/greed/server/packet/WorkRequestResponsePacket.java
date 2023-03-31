@@ -6,16 +6,11 @@ import fr.ramatellier.greed.server.util.TramKind;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
-public record WorkResponsePacket(
-    IDPacket src,
-    IDPacket dst,
-    long requestID,
-    ResponsePacket responsePacket
-) implements FullPacket{
-    public WorkResponsePacket{
-        Objects.requireNonNull(src);
+public record WorkRequestResponsePacket(IDPacket dst, IDPacket src, long requestID, long nb_uc) implements FullPacket{
+
+    public WorkRequestResponsePacket{
         Objects.requireNonNull(dst);
-        Objects.requireNonNull(responsePacket);
+        Objects.requireNonNull(src);
     }
     @Override
     public TramKind kind() {
@@ -24,22 +19,16 @@ public record WorkResponsePacket(
 
     @Override
     public byte opCode() {
-        return OpCodes.WORK_RESPONSE.BYTES;
+        return OpCodes.WORK_REQUEST_RESPONSE.BYTES;
     }
 
     @Override
     public void putInBuffer(ByteBuffer buffer) {
         putHeader(buffer);
-        src.putInBuffer(buffer);
         dst.putInBuffer(buffer);
-        responsePacket.putInBuffer(buffer);
+        src.putInBuffer(buffer);
+        buffer.putLong(requestID);
+        buffer.putLong(nb_uc);
     }
 
-    public IDPacket src() {
-        return src;
-    }
-
-    public IDPacket dst() {
-        return dst;
-    }
 }

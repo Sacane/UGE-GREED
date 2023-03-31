@@ -15,6 +15,7 @@
     </properties>
     <modules>
         <module>server</module>
+        <module>core</module>
     </modules>
     <build>
         <plugins>

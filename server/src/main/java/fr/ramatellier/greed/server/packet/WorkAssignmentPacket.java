@@ -5,26 +5,19 @@ import fr.ramatellier.greed.server.util.TramKind;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.util.List;
 
-public final class WorkRequestPacket implements FullPacket {
+public final class WorkAssignmentPacket implements FullPacket {
     private final IDPacket idSrc;
     private final IDPacket idDst;
     private final long requestId;
-    private final CheckerPacket checker;
-    private final RangePacket range;
-    private final long max;
+    private final List<RangePacket> ranges;
 
-    public WorkRequestPacket(InetSocketAddress src, InetSocketAddress dst, long requestId, String url, String className, long start, long end, long max) {
+    public WorkAssignmentPacket(InetSocketAddress src, InetSocketAddress dst, long requestId, List<RangePacket> ranges) {
         idSrc = new IDPacket(src);
         idDst = new IDPacket(dst);
         this.requestId = requestId;
-        checker = new CheckerPacket(url, className);
-        range = new RangePacket(start, end);
-        this.max = max;
-    }
-
-    public IDPacket getIdSrc() {
-        return idSrc;
+        this.ranges = List.copyOf(ranges);
     }
 
     public IDPacket getIdDst() {
@@ -35,16 +28,12 @@ public final class WorkRequestPacket implements FullPacket {
         return requestId;
     }
 
-    public CheckerPacket getChecker() {
-        return checker;
+    public IDPacket getIdSrc() {
+        return idSrc;
     }
 
-    public RangePacket getRange() {
-        return range;
-    }
-
-    public long getMax() {
-        return max;
+    public List<RangePacket> getRanges() {
+        return ranges;
     }
 
     @Override
@@ -54,7 +43,7 @@ public final class WorkRequestPacket implements FullPacket {
 
     @Override
     public byte opCode() {
-        return OpCodes.WORK.BYTES;
+        return OpCodes.WORK_ASSIGNEMENT.BYTES;
     }
 
     @Override
@@ -63,8 +52,9 @@ public final class WorkRequestPacket implements FullPacket {
         idSrc.putInBuffer(buffer);
         idDst.putInBuffer(buffer);
         buffer.putLong(requestId);
-        checker.putInBuffer(buffer);
-        range.putInBuffer(buffer);
-        buffer.putLong(max);
+        buffer.putInt(ranges.size());
+        for(var range: ranges) {
+            range.putInBuffer(buffer);
+        }
     }
 }
