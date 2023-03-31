@@ -118,7 +118,6 @@ public class Server {
     private void sendComputeCommand(String line) throws InterruptedException {
         if(line.split(" ").length != 5){
             logger.warning("Invalid given command : " + line);
-            System.out.println("Expected " + (5 - 1) + " arguments");
             return;
         }
         var args = Arrays.stream(line.split(" ")).skip(1).toArray(String[]::new);
@@ -128,6 +127,7 @@ public class Server {
     /**
      * Exemple for compute :
      * COMPUTE http://www-igm.univ-mlv.fr/~carayol/Factorizer.jar fr.uge.factors.Factorizer 10 1000
+     * COMPUTE http://www-igm.univ-mlv.fr/~carayol/SlowChecker.jar fr.uge.slow.SlowChecker 10 20
      */
     private void consoleRun(){
         try{
@@ -299,7 +299,7 @@ public class Server {
 
     public void connectToNewParent(IDPacket packet) throws IOException {
         var oldParentAddress = parentSocketAddress;
-        var ancestors = rootTable.ancestors(parentSocketAddress, address);
+        var ancestors = rootTable.ancestors(parentSocketAddress);
         parentSocketChannel = SocketChannel.open();
         parentSocketAddress = new InetSocketAddress(packet.getHostname(), packet.getPort());
         logger.info("Trying to connect to " + parentSocketAddress + " ...");
@@ -442,14 +442,5 @@ public class Server {
 
     public List<Context> daughtersContext() {
         return rootTable.daughtersContext(parentSocketAddress);
-    }
-
-    public void sendToAll() {
-        for (var key : selector.keys()) {
-            if (key.attachment() != null) {
-                var context = (Context) key.attachment();
-                context.queuePacket(new LogoutDeniedPacket());
-            }
-        }
     }
 }

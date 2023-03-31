@@ -27,6 +27,7 @@ public class ResponsePacketReader implements Reader<ResponsePacket>{
             if(status == ProcessStatus.DONE) {
                 state = State.WAITING_RESPONSE_CODE;
             } else if(status == ProcessStatus.ERROR) {
+                System.out.println("ERROR READING VALUE");
                 return ProcessStatus.ERROR;
             }
         }
@@ -35,6 +36,7 @@ public class ResponsePacketReader implements Reader<ResponsePacket>{
             if(status == ProcessStatus.DONE) {
                 state = State.WAITING_RESPONSE;
             } else if(status == ProcessStatus.ERROR) {
+                System.out.println("ERROR READING RESPONSE CODE");
                 return ProcessStatus.ERROR;
             }
         }
@@ -43,6 +45,7 @@ public class ResponsePacketReader implements Reader<ResponsePacket>{
             if(status == ProcessStatus.DONE) {
                 state = State.DONE;
             } else if(status == ProcessStatus.ERROR) {
+                System.out.println("ERROR READING RESPONSE");
                 return ProcessStatus.ERROR;
             }
         }
@@ -57,7 +60,9 @@ public class ResponsePacketReader implements Reader<ResponsePacket>{
         if(state != State.DONE) {
             throw new IllegalStateException();
         }
-        return new ResponsePacket(longReader.get(), stringReader.get(), byteReader.get());
+        var responsePacket = new ResponsePacket(longReader.get(), stringReader.get(), byteReader.get());
+        System.out.println("RESPONSE FROM READER -> " + responsePacket);
+        return responsePacket;
     }
 
     @Override

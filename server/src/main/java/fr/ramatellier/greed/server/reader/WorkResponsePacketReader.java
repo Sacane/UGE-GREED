@@ -18,7 +18,8 @@ public class WorkResponsePacketReader implements Reader<WorkResponsePacket>{
         DONE,
     }
     private State state = State.WAITING_SRC_ID;
-    private final IDReader idReader = new IDReader();
+    private final IDReader srcReader = new IDReader();
+    private final IDReader dstReader = new IDReader();
     private final LongReader longReader = new LongReader();
     private final ResponsePacketReader responsePacketReader = new ResponsePacketReader();
 
@@ -28,7 +29,7 @@ public class WorkResponsePacketReader implements Reader<WorkResponsePacket>{
             throw new IllegalStateException();
         }
         if(state == State.WAITING_SRC_ID) {
-            var status = idReader.process(bb);
+            var status = srcReader.process(bb);
             if(status == ProcessStatus.DONE) {
                 state = State.WAITING_DST_ID;
             } else if(status == ProcessStatus.ERROR) {
@@ -36,7 +37,7 @@ public class WorkResponsePacketReader implements Reader<WorkResponsePacket>{
             }
         }
         if(state == State.WAITING_DST_ID) {
-            var status = idReader.process(bb);
+            var status = dstReader.process(bb);
             if(status == ProcessStatus.DONE) {
                 state = State.WAITING_REQUEST_ID;
             } else if(status == ProcessStatus.ERROR) {
@@ -56,6 +57,7 @@ public class WorkResponsePacketReader implements Reader<WorkResponsePacket>{
             if(status == ProcessStatus.DONE) {
                 state = State.DONE;
             } else if(status == ProcessStatus.ERROR) {
+                System.out.println("ERROR READING RESPONSE PACKET");
                 return ProcessStatus.ERROR;
             }
         }
@@ -67,13 +69,17 @@ public class WorkResponsePacketReader implements Reader<WorkResponsePacket>{
 
     @Override
     public WorkResponsePacket get() {
-        return new WorkResponsePacket(idReader.get(), idReader.get(), longReader.get(), responsePacketReader.get());
+        if(state != State.DONE) {
+            throw new IllegalStateException();
+        }
+        return new WorkResponsePacket(srcReader.get(), dstReader.get(), longReader.get(), responsePacketReader.get());
     }
 
     @Override
     public void reset() {
         state = State.WAITING_SRC_ID;
-        idReader.reset();
+        srcReader.reset();
+        dstReader.reset();
         longReader.reset();
         responsePacketReader.reset();
     }

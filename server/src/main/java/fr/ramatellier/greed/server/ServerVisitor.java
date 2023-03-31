@@ -13,6 +13,7 @@ import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Objects;
 import java.util.logging.Logger;
+import java.util.stream.LongStream;
 
 /**
  * Visitor for packets received by the server.
@@ -122,7 +123,8 @@ public class ServerVisitor implements PacketVisitor {
         var targetRange = packet.getRanges().get(0); //TODO REMOVE LIST
         var result = Client.checkerFromHTTP(entity.info().url(), entity.info().className());
         if(result.isEmpty()){
-            logger.severe("INVALID CHECKER INFORMATION");
+            logger.severe("CANNOT GET THE CHECKER");
+            LongStream.range(targetRange.start(), targetRange.end()).forEach(i -> sendResponseWithOPCode(packet, i, "CANNOT GET THE CHECKER", (byte) 0x03));
             return;
         }
         var checker = result.get();
@@ -130,32 +132,54 @@ public class ServerVisitor implements PacketVisitor {
             try{
                 var checkerResult = checker.check(i);
                 System.out.println(checkerResult);
+                sendResponseWithOPCode(packet, i, checkerResult, (byte) 0x00);
             } catch (InterruptedException e) {
                 logger.severe("INTERRUPTED EXCEPTION");
+                sendResponseWithOPCode(packet, i, "INTERRUPTED EXCEPTION", (byte) 0x01);
                 return; //TODO treat this disconnexion
+            }catch (Exception e){
+                sendResponseWithOPCode(packet, i, "EXCEPTION OCCURED", (byte) 0x01);
             }
         }
     }
-
+    private void sendResponseWithOPCode(WorkAssignmentPacket origin, long index,String result, byte opcode){
+        server.transfer(origin.getIdSrc().getSocket(), new WorkResponsePacket(
+                origin.getIdDst(),
+                origin.getIdSrc(),
+                origin.getRequestId(),
+                new ResponsePacket(index, result, opcode)
+        ));
+    }
     @Override
     public void visit(WorkResponsePacket packet) {
+        System.out.println("RECEIVE A WORK RESPONSE PACKET FROM VISITOR");
         if(packet.onConditionTransfer(
-                server.getAddress().equals(packet.dst().getSocket()),
+                !server.getAddress().equals(packet.dst().getSocket()),
                 packet.dst().getSocket(),
                 server
         )){
             System.out.println("RECEIVE A WORK RESPONSE PACKET TO TRANSFERT FOR " + packet.dst().getSocket());
             return;
         }
-//        var responsePacket = packet.responsePacket();
-//        switch(packet.responsePacket().getResponseCode()){
-//            case 0x00 -> {
-//                System.out.println("WE JUST RECEIVED GOOD RESPONSE FROM " + packet.src());
-//            }
-//            default -> {
-//                System.out.println("WE JUST RECEIVED BAD RESPONSE FROM " + packet.src());
-//            }
-//        }
+        System.out.println("RECEIVED A RESULT FROM " + packet.src().getSocket() + "FOR COMPUTATION " + packet.requestID());
+        var responsePacket = packet.responsePacket();
+        switch(packet.responsePacket().getResponseCode()){
+            case 0x00 -> {
+                System.out.println(responsePacket.getResponse().value());
+            }
+            case 0x01 -> {
+                System.out.println("An exception has occur while computing the value : " + responsePacket.getValue());
+            }
+            case 0x02 -> {
+                System.out.println("Time out while computing the value : " + responsePacket.getValue());
+            }
+            case 0x03 -> {
+                System.out.println("Cannot get the checker");
+            }
+            default -> {
+                logger.severe("UNKNOWN RESPONSE CODE");
+            }
+        }
     }
 
     @Override
@@ -289,39 +313,5 @@ public class ServerVisitor implements PacketVisitor {
                 server.transfer(socketRange.socketAddress(), workAssignmentPacket);
             }
         }
-    }
-
-//    private void compute(WorkRequestPacket packet) {
-//        var entity = packet.toComputationEntity();
-////        computeWorkHandler.processComputation(packet.toComputationEntity());
-//        var responseChecker = Client.checkerFromHTTP(entity.url(), entity.className());
-//        if(responseChecker.isEmpty()){
-//            logger.severe("INVALID response url or class name");
-//            handleBadWorkingResponse(-1L, (byte)0x03, packet);
-//            return;
-//        }
-//        var checker = responseChecker.get();
-//        var range = entity.range();
-//        for(long i = range.start(); i < range.end() + 1; i++) {
-//            try {
-//                var checkResponse = checker.check(i);
-//                buildAndSendResponsePacket(i, (byte)0x00, checkResponse, packet);
-//            } catch (InterruptedException e) {
-//                logger.info("Interrupted while computing " + i);
-//                return;
-//            } catch (Exception e) {
-//                handleBadWorkingResponse(i, (byte) 0x01, packet);
-//            }
-//        }
-//    }
-
-    private void buildAndSendResponsePacket(long l, byte responseCode, String response, WorkRequestPacket origin) {
-        var responsePacket = new ResponsePacket(l, response, responseCode);
-        var workResponsePacket = new WorkResponsePacket(origin.getIdSrc(), origin.getIdDst(), origin.getRequestId(), responsePacket);
-        server.transfer(origin.getIdSrc().getSocket(), workResponsePacket);
-    }
-
-    private void handleBadWorkingResponse(long i, byte responseCode, WorkRequestPacket origin) {
-        buildAndSendResponsePacket(i, responseCode, null, origin);
     }
 }

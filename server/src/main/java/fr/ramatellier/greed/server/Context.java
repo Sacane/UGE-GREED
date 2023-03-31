@@ -5,14 +5,13 @@ import fr.ramatellier.greed.server.reader.PacketReader;
 import fr.ramatellier.greed.server.reader.Reader;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayDeque;
 
 public class Context {
-    private static final int BUFFER_SIZE = 1_024;
+    private static final int BUFFER_SIZE = 1_000_000;
     private final SelectionKey key;
     private final SocketChannel sc;
     private final ServerVisitor visitor;

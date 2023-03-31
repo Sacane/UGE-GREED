@@ -24,6 +24,7 @@ public class PacketReader implements Reader<FullPacket> {
     private final PleaseReconnectPacketReader pleaseReconnectPacketReader = new PleaseReconnectPacketReader();
     private final ReconnectPacketReader reconnectPacketReader = new ReconnectPacketReader();
     private final DisconnectedPacketReader disconnectedPacketReader = new DisconnectedPacketReader();
+    private final WorkResponsePacketReader workResponsePacketReader = new WorkResponsePacketReader();
     private FullPacket value;
 
     @Override
@@ -142,10 +143,8 @@ public class PacketReader implements Reader<FullPacket> {
                 else if(codeReader.get() == OpCodes.WORK_ASSIGNEMENT.BYTES) {
                     System.out.println("TRYING TO READ ASSIGNMENT PACKET");
                     var status = workAssignmentPacketReader.process(buffer);
-
                     if(status == ProcessStatus.DONE) {
                         state = State.DONE;
-
                         value = workAssignmentPacketReader.get();
                     }
                 }
@@ -155,6 +154,16 @@ public class PacketReader implements Reader<FullPacket> {
                         state = State.DONE;
                         value = workRequestResponsePacketReader.get();
                     }
+                }
+                else if(codeReader.get() == OpCodes.WORK_RESPONSE.BYTES){
+                    System.out.println("TRYING TO READ WORK RESPONSE PACKET FROM READER");
+                    var status = workResponsePacketReader.process(buffer);
+                    System.out.println(status);
+                    if(status == ProcessStatus.DONE) {
+                        state = State.DONE;
+                        value = workResponsePacketReader.get();
+                    }
+                    workResponsePacketReader.reset();
                 }
             }
         }

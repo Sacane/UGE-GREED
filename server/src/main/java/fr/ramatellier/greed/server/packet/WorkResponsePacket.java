@@ -32,6 +32,7 @@ public record WorkResponsePacket(
         putHeader(buffer);
         src.putInBuffer(buffer);
         dst.putInBuffer(buffer);
+        buffer.putLong(requestID);
         responsePacket.putInBuffer(buffer);
     }
 

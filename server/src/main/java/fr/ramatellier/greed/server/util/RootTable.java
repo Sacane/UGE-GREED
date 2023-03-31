@@ -69,32 +69,30 @@ public class RootTable {
         return table.keySet();
     }
 
-    public List<InetSocketAddress> ancestors(InetSocketAddress parentAddress, InetSocketAddress address) {
+    public List<InetSocketAddress> ancestors(InetSocketAddress parentAddress) {
         var ancestorsList = new ArrayList<InetSocketAddress>();
 
         for(var entry: table.entrySet()) {
             if(entry.getKey().equals(entry.getValue().address()) && !parentAddress.equals(entry.getKey())) {
                 ancestorsList.add(entry.getKey());
-
-                for(var ancestor: ancestorsOf(entry.getKey())) {
-                    ancestorsList.add(ancestor);
-                }
+                ancestorsList.addAll(ancestorsOf(entry.getKey()));
+//                for(var ancestor: ancestorsOf(entry.getKey())) {
+//                    ancestorsList.add(ancestor);
+//                }
             }
         }
-
         return ancestorsList;
     }
 
     private List<InetSocketAddress> ancestorsOf(InetSocketAddress address) {
         var ancestors = new ArrayList<InetSocketAddress>();
-
         for(var entry: table.entrySet()) {
             if(address.equals(entry.getValue().address()) && !entry.getKey().equals(entry.getValue().address())) {
                 ancestors.add(entry.getKey());
-
-                for(var ancestor: ancestorsOf(entry.getKey())) {
-                    ancestors.add(ancestor);
-                }
+                ancestors.addAll(ancestorsOf(entry.getKey()));
+//                for(var ancestor: ancestorsOf(entry.getKey())) {
+//                    ancestors.add(ancestor);
+//                }
             }
         }
 
