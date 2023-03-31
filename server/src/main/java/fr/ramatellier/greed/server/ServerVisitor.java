@@ -163,9 +163,18 @@ public class ServerVisitor implements PacketVisitor {
         System.out.println("RECEIVE LOGOUT");
 
         if(server.isRunning()) {
-            // server.deleteAddress(packet.getId().getSocket());
-            server.newLogoutRequest(packet.getId().getSocket(), packet.getDaughters().stream().map(d -> d.getSocket()).toList());
             context.queuePacket(new LogoutGrantedPacket());
+
+            if(packet.getDaughters().size() == 0) {
+                server.broadcast(new DisconnectedPacket(server.getAddress(), packet.getId().getSocket()), server.getAddress());
+                server.deleteAddress(packet.getId().getSocket());
+            }
+            else {
+                server.newLogoutRequest(packet.getId().getSocket(), packet.getDaughters().stream().map(d -> d.getSocket()).toList());
+            }
+        }
+        else {
+            context.queuePacket(new LogoutDeniedPacket());
         }
     }
 
@@ -178,10 +187,10 @@ public class ServerVisitor implements PacketVisitor {
     public void visit(LogoutGrantedPacket packet) {
         System.out.println("LOGOUT ACCEPTED");
 
-        var daughters = server.daughtersContext();
+        var daughtersContext = server.daughtersContext();
 
-        for(var daughter: daughters) {
-            daughter.queuePacket(new PleaseReconnectPacket(server.getParentSocketAddress()));
+        for(var daughterContext: daughtersContext) {
+            daughterContext.queuePacket(new PleaseReconnectPacket(server.getParentSocketAddress()));
         }
     }
 
@@ -191,7 +200,7 @@ public class ServerVisitor implements PacketVisitor {
         System.out.println("TO " + packet.getId().getSocket());
 
         try {
-            server.connectToNewParent(packet.getId().getHostname(), packet.getId().getPort());
+            server.connectToNewParent(packet.getId());
         } catch (IOException e) {
         }
     }
@@ -219,7 +228,7 @@ public class ServerVisitor implements PacketVisitor {
     public void visit(DisconnectedPacket packet) {
         System.out.println("DISCONNECTED PACKET");
 
-        if(server.isLogout()) {
+        if(server.getAddress().equals(packet.getId().getSocket())) {
             server.shutdown();
         }
         else {

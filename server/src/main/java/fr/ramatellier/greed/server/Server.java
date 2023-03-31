@@ -297,11 +297,11 @@ public class Server {
         }
     }
 
-    public void connectToNewParent(String IP, int connectPort) throws IOException {
-        deleteAddress(parentSocketAddress);
+    public void connectToNewParent(IDPacket packet) throws IOException {
+        var oldParentAddress = parentSocketAddress;
         var ancestors = rootTable.ancestors(parentSocketAddress, address);
         parentSocketChannel = SocketChannel.open();
-        parentSocketAddress = new InetSocketAddress(IP, connectPort);
+        parentSocketAddress = new InetSocketAddress(packet.getHostname(), packet.getPort());
         logger.info("Trying to connect to " + parentSocketAddress + " ...");
         parentSocketChannel.configureBlocking(false);
         parentSocketChannel.connect(parentSocketAddress);
@@ -310,7 +310,8 @@ public class Server {
         context.queuePacket(new ReconnectPacket(address, ancestors));
         parentKey.interestOps(SelectionKey.OP_CONNECT);
         parentKey.attach(context);
-        addRoot(parentSocketAddress, parentSocketAddress, context);
+        deleteAddress(oldParentAddress);
+        rootTable.updateToContext(oldParentAddress, parentSocketAddress, context);
     }
 
     private void connect() throws IOException {
