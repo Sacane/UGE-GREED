@@ -2,7 +2,6 @@ package fr.ramatellier.greed.server.util;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 public class LogoutInformation {

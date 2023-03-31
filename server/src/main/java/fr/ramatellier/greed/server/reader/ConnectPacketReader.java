@@ -1,17 +1,16 @@
 package fr.ramatellier.greed.server.reader;
 
-import fr.ramatellier.greed.server.packet.DisconnectedPacket;
+import fr.ramatellier.greed.server.packet.ConnectPacket;
 
 import java.nio.ByteBuffer;
 
-public class DisconnectedPacketReader implements Reader<DisconnectedPacket> {
+public class ConnectPacketReader implements Reader<ConnectPacket> {
     private enum State {
-        DONE, WAITING_ID_SRC, WAITING_ID, ERROR
+        DONE, WAITING_ID, ERROR
     }
-    private State state = State.WAITING_ID_SRC;
-    private final IDReader idSrcReader = new IDReader();
+    private State state = State.WAITING_ID;
     private final IDReader idReader = new IDReader();
-    private DisconnectedPacket value;
+    private ConnectPacket value;
 
     @Override
     public ProcessStatus process(ByteBuffer buffer) {
@@ -19,20 +18,13 @@ public class DisconnectedPacketReader implements Reader<DisconnectedPacket> {
             throw new IllegalStateException();
         }
 
-        if(state == State.WAITING_ID_SRC) {
-            var status = idSrcReader.process(buffer);
-
-            if(status == ProcessStatus.DONE) {
-                state = State.WAITING_ID;
-            }
-        }
         if(state == State.WAITING_ID) {
             var status = idReader.process(buffer);
 
             if(status == ProcessStatus.DONE) {
                 state = State.DONE;
 
-                value = new DisconnectedPacket(idSrcReader.get().getSocket(), idReader.get().getSocket());
+                value = new ConnectPacket(idReader.get().getSocket());
             }
         }
 
@@ -44,7 +36,7 @@ public class DisconnectedPacketReader implements Reader<DisconnectedPacket> {
     }
 
     @Override
-    public DisconnectedPacket get() {
+    public ConnectPacket get() {
         if (state != State.DONE) {
             throw new IllegalStateException();
         }
@@ -54,8 +46,7 @@ public class DisconnectedPacketReader implements Reader<DisconnectedPacket> {
 
     @Override
     public void reset() {
-        state = State.WAITING_ID_SRC;
-        idSrcReader.reset();
+        state = State.WAITING_ID;
         idReader.reset();
     }
 }

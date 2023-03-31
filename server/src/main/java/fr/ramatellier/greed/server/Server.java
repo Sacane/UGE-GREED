@@ -161,7 +161,7 @@ public class Server {
      * @param packet packet to transfer
      */
     public void transfer(InetSocketAddress dst, FullPacket packet) {
-        if(packet.kind() != TramKind.TRANSFERT){
+        if(packet.kind() != TramKind.TRANSFER){
             throw new AssertionError("Only transfer packet can be transferred");
         }
         if(dst.equals(address)){

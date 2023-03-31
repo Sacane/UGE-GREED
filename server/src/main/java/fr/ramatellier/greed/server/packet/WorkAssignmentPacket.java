@@ -38,12 +38,12 @@ public final class WorkAssignmentPacket implements FullPacket {
 
     @Override
     public TramKind kind() {
-        return TramKind.TRANSFERT;
+        return TramKind.TRANSFER;
     }
 
     @Override
     public byte opCode() {
-        return OpCodes.WORK_ASSIGNEMENT.BYTES;
+        return OpCodes.WORK_ASSIGNMENT.BYTES;
     }
 
     @Override

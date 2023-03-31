@@ -5,7 +5,6 @@ import fr.ramatellier.greed.server.reader.PacketReader;
 import fr.ramatellier.greed.server.reader.Reader;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
@@ -32,16 +31,18 @@ public class Context {
         for (;;) {
             Reader.ProcessStatus status = packetReader.process(bufferIn);
             switch (status) {
-                case DONE:
+                case DONE -> {
                     var packet = packetReader.get();
                     packetReader.reset();
                     packet.accept(visitor);
-                    break;
-                case REFILL:
+                }
+                case REFILL -> {
                     return;
-                case ERROR:
+                }
+                case ERROR -> {
                     silentlyClose();
                     return;
+                }
             }
         }
     }
