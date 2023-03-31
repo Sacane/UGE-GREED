@@ -140,12 +140,13 @@ public class PacketReader implements Reader<FullPacket> {
                     }
                 }
                 else if(codeReader.get() == OpCodes.WORK_ASSIGNEMENT.BYTES) {
+                    System.out.println("TRYING TO READ ASSIGNMENT PACKET");
                     var status = workAssignmentPacketReader.process(buffer);
 
                     if(status == ProcessStatus.DONE) {
                         state = State.DONE;
 
-                        value = workRequestPacketReader.get();
+                        value = workAssignmentPacketReader.get();
                     }
                 }
                 else if(codeReader.get() == OpCodes.WORK_REQUEST_RESPONSE.BYTES){

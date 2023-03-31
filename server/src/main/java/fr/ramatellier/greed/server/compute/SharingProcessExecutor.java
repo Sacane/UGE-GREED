@@ -9,6 +9,8 @@ public class SharingProcessExecutor {
     private final HashMap<SocketUcIdentifier, Long> availableSocketMap = new HashMap<>();
     private final long nbWorkingComputation;
     public SharingProcessExecutor(List<SocketUcIdentifier> availableSocketList, long nbWorkingComputation) {
+        if(availableSocketList.isEmpty())
+            throw new IllegalArgumentException("availableSocketList can't be empty");
         this.nbWorkingComputation = nbWorkingComputation;
         for(var availableSocket : availableSocketList){
             if(availableSocket.uc() > 0) {
@@ -20,7 +22,8 @@ public class SharingProcessExecutor {
     private void incrementUc(SocketUcIdentifier socketUcIdentifier){
         availableSocketMap.merge(socketUcIdentifier, 0L, (old, newOne) -> old + 1);
     }
-    public List<SocketRange> shareAndGet(){
+    public List<SocketRange> shareAndGet(long start){
+        System.out.println("COMPUTING " + nbWorkingComputation);
         var socketRangeList = new ArrayList<SocketRange>();
         var computingLeft = nbWorkingComputation;
         while(computingLeft > 0){
@@ -31,11 +34,12 @@ public class SharingProcessExecutor {
                 }
             }
         }
-        var start = 0L;
+        var startRange = start;
         for(var socketUcIdentifier : availableSocketMap.keySet()){
-            var end = start + availableSocketMap.get(socketUcIdentifier);
-            var socketRange = new SocketRange(socketUcIdentifier.address(), new Range(start, end));
-            start = end;
+            var end = startRange + availableSocketMap.get(socketUcIdentifier);
+            System.out.println(end);
+            var socketRange = new SocketRange(socketUcIdentifier.address(), new Range(startRange, end));
+            startRange = end;
             socketRangeList.add(socketRange);
         }
         return socketRangeList;

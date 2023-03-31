@@ -17,7 +17,23 @@ public final class WorkAssignmentPacket implements FullPacket {
         idSrc = new IDPacket(src);
         idDst = new IDPacket(dst);
         this.requestId = requestId;
-        this.ranges = ranges;
+        this.ranges = List.copyOf(ranges);
+    }
+
+    public IDPacket getIdDst() {
+        return idDst;
+    }
+
+    public long getRequestId() {
+        return requestId;
+    }
+
+    public IDPacket getIdSrc() {
+        return idSrc;
+    }
+
+    public List<RangePacket> getRanges() {
+        return ranges;
     }
 
     @Override

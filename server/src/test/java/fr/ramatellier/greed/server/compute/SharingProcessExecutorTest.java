@@ -24,7 +24,7 @@ public class SharingProcessExecutorTest {
                 new SocketUcIdentifier(new InetSocketAddress("localhost", 8089), 10)
         );
         var sharingProcessExecutor = new SharingProcessExecutor(availableSocketList, 100);
-        var socketRangeList = sharingProcessExecutor.shareAndGet();
+        var socketRangeList = sharingProcessExecutor.shareAndGet(0);
         assertEquals(socketRangeList.size(), 10);
     }
 
@@ -43,7 +43,7 @@ public class SharingProcessExecutorTest {
                 new SocketUcIdentifier(new InetSocketAddress("localhost", 8089), 100)
         );
         var sharingProcessExecutor = new SharingProcessExecutor(availableSocketList, 100);
-        var socketRangeList = sharingProcessExecutor.shareAndGet();
+        var socketRangeList = sharingProcessExecutor.shareAndGet(0);
         assertEquals(socketRangeList.size(), 9);
     }
     @Test
@@ -55,11 +55,11 @@ public class SharingProcessExecutorTest {
                 new SocketUcIdentifier(new InetSocketAddress("localhost", 8083), 100)
 
         );
-        var sharingProcessExecutor = new SharingProcessExecutor(availableSocketList, 99);
-        var result = sharingProcessExecutor.shareAndGet();
+        var sharingProcessExecutor = new SharingProcessExecutor(availableSocketList, 100);
+        var result = sharingProcessExecutor.shareAndGet(0);
         assertTrue(
                 result.stream().
-                allMatch(socketRange -> socketRange.range().delta(false) >= 23)
+                allMatch(socketRange -> socketRange.range().delta(false) == 25)
         );
     }
     @Test
@@ -71,7 +71,8 @@ public class SharingProcessExecutorTest {
                 new SocketUcIdentifier(new InetSocketAddress("localhost", 8083), 15)
         );
         var sharingProcessExecutor = new SharingProcessExecutor(availableSocketList, 50);
-        var result = sharingProcessExecutor.shareAndGet();
+        var result = sharingProcessExecutor.shareAndGet(0);
+        System.out.println(result);
         assertEquals(50,
                 result.stream().
                         mapToLong(socketRange -> socketRange.range().delta(false)).sum()

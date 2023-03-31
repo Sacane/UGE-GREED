@@ -1,13 +1,16 @@
 package fr.ramatellier.greed.server;
 
 
+import fr.ramatellier.greed.server.compute.ComputationEntity;
 import fr.ramatellier.greed.server.compute.ComputationIdentifier;
 import fr.ramatellier.greed.server.compute.SharingProcessExecutor;
 import fr.ramatellier.greed.server.compute.SocketUcIdentifier;
 import fr.ramatellier.greed.server.packet.*;
+import fr.uge.ugegreed.Client;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.List;
 import java.util.Objects;
 import java.util.logging.Logger;
 
@@ -72,12 +75,19 @@ public class ServerVisitor implements PacketVisitor {
     @Override
     public void visit(WorkRequestPacket packet) {
         if(server.getAddress().equals(packet.getIdDst().getSocket())) {
-            System.out.println("RECEIVE A COMPUTATION FOR ME FROM " + packet.getIdSrc().getSocket());
-            System.out.println("Destination : " + packet.getIdDst().getSocket() + " Source : " + packet.getIdSrc().getSocket());
-            var delta = packet.getMax() - server.currentOnWorkingComputationsValue();
-            if(delta > 0){
-                System.out.println("ENOUGH SPACES FOR COMPUTATION -> " + packet.getRequestId());
-                server.transfer(packet.getIdSrc().getSocket(), new WorkRequestResponsePacket(packet.getIdSrc(), packet.getIdDst(), packet.getRequestId(), delta));
+            System.out.println("RECEIVE A WORK REQUEST PACKET FOR ME");
+            var deltaComputingPossibility = Server.MAXIMUM_COMPUTATION - server.currentOnWorkingComputationsValue();
+            if(deltaComputingPossibility > 0) { //He is accepting the computation
+                server.tools().room().add(
+                        new ComputationEntity(new ComputationIdentifier(packet.getRequestId(), packet.getIdSrc().getSocket()),
+                                new ComputeInfo(packet.getChecker().getUrl(), packet.getChecker().getClassName(), packet.getRange().start(), packet.getRange().end()))
+                );
+                server.transfer(packet.getIdSrc().getSocket(), new WorkRequestResponsePacket(
+                        packet.getIdSrc(),
+                        packet.getIdDst(),
+                        packet.getRequestId(),
+                        deltaComputingPossibility
+                ));
             }
         }
         else {
@@ -93,7 +103,38 @@ public class ServerVisitor implements PacketVisitor {
      */
     @Override
     public void visit(WorkAssignmentPacket packet) {
-        System.out.println("WORK ASSIGNMENT");
+        System.out.println("ASSIGNMENT PACKET");
+        var hasBeenTransfer = packet.onConditionTransfer(!packet.getIdDst().getSocket().equals(server.getAddress()), packet.getIdDst().getSocket(), server);
+        if(hasBeenTransfer){
+            System.out.println("RECEIVE A WORK ASSIGNMENT PACKET TO TRANSFER FOR " + packet.getIdDst().getSocket());
+            return;
+        }
+        System.out.println("I RECEIVE THE ASSIGNMENT");
+        System.out.println("ID :" + packet.getRequestId());
+        System.out.println("Range : " + packet.getRanges().get(0));
+        var idContext = new ComputationIdentifier(packet.getRequestId(), packet.getIdSrc().getSocket());
+        var entityResponse = server.tools().room().findById(idContext);
+        if(entityResponse.isEmpty()){
+            System.out.println("I DON'T HAVE THIS COMPUTATION");
+            return;
+        }
+        var entity = entityResponse.get();
+        var targetRange = packet.getRanges().get(0); //TODO REMOVE LIST
+        var result = Client.checkerFromHTTP(entity.info().url(), entity.info().className());
+        if(result.isEmpty()){
+            logger.severe("INVALID CHECKER INFORMATION");
+            return;
+        }
+        var checker = result.get();
+        for(var i = targetRange.start(); i < targetRange.end(); i++){
+            try{
+                var checkerResult = checker.check(i);
+                System.out.println(checkerResult);
+            } catch (InterruptedException e) {
+                logger.severe("INTERRUPTED EXCEPTION");
+                return; //TODO treat this disconnexion
+            }
+        }
     }
 
     @Override
@@ -189,7 +230,7 @@ public class ServerVisitor implements PacketVisitor {
 
     @Override
     public void visit(WorkRequestResponsePacket packet) {
-        System.out.println("WORK REQUEST REPONSE PACKET RECEIVED");
+        System.out.println("WORK REQUEST RESPONSE PACKET RECEIVED");
         System.out.println(packet);
         var transfer = packet.onConditionTransfer(
                 !server.getAddress().equals(packet.dst().getSocket()),
@@ -207,14 +248,37 @@ public class ServerVisitor implements PacketVisitor {
         var computeId = new ComputationIdentifier(packet.requestID(), server.getAddress());
         var store = server.tools().reminder();
         var room = server.tools().room();
+        var entityResponse = room.findById(computeId);
+        if(entityResponse.isEmpty()){
+            logger.severe("No computation found for id " + computeId);
+            return;
+        }
+        var entity = entityResponse.get();
         room.increment(computeId);
+
         store.storeSocketFor(
-                new ComputationIdentifier(computeId.id(), server.getAddress()),
+                computeId,
                 new SocketUcIdentifier(packet.src().getSocket(), packet.nb_uc())
         );
-        if(room.isReady(computeId.id())){
-            //TODO distribute the computation
-            var process = new SharingProcessExecutor(store.availableSockets(computeId), room.getIntendedValue(computeId));
+        store.print(computeId);
+        if(room.isReady(computeId)){
+            //TODO distribute the computationaz
+            store.print(computeId);
+            var process = new SharingProcessExecutor(
+                    store.availableSockets(computeId), entity.info().end() - entity.info().start()
+            );
+
+            var socketRangeList = process.shareAndGet(entity.info().start());
+            for(var socketRange: socketRangeList){
+                System.out.println(socketRange);
+                var workAssignmentPacket = new WorkAssignmentPacket(
+                        server.getAddress(),
+                        socketRange.socketAddress(),
+                        packet.requestID(),
+                        List.of(new RangePacket(socketRange.range().start(), socketRange.range().end()))
+                );
+                server.transfer(socketRange.socketAddress(), workAssignmentPacket);
+            }
         }
     }
 
