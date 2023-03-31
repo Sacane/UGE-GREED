@@ -158,8 +158,7 @@ public class ServerVisitor implements PacketVisitor {
                 packet.dst().getSocket(),
                 server
         )){
-            System.out.println("RECEIVE A WORK RESPONSE PACKET TO TRANSFERT FOR " + packet.dst().getSocket());
-            return;
+            System.out.println("RECEIVE A WORK RESPONSE PACKET TO TRANSFER FOR " + packet.dst().getSocket());
         }
         System.out.println("RECEIVED A RESULT FROM " + packet.src().getSocket() + "FOR COMPUTATION " + packet.requestID());
         var responsePacket = packet.responsePacket();
@@ -194,7 +193,7 @@ public class ServerVisitor implements PacketVisitor {
                 server.deleteAddress(packet.getId().getSocket());
             }
             else {
-                server.newLogoutRequest(packet.getId().getSocket(), packet.getDaughters().stream().map(d -> d.getSocket()).toList());
+                server.newLogoutRequest(packet.getId().getSocket(), packet.getDaughters().stream().map(IDPacket::getSocket).toList());
             }
         }
         else {
@@ -226,6 +225,7 @@ public class ServerVisitor implements PacketVisitor {
         try {
             server.connectToNewParent(packet.getId());
         } catch (IOException e) {
+            System.out.println("FAIL RECONNECT TO NEW PARENT");
         }
     }
 
@@ -271,7 +271,7 @@ public class ServerVisitor implements PacketVisitor {
                 server
         );
         if(transfer){
-            System.out.println("RECEIVE A WORK RESPONSE PACKET TO TRANSFERT FOR " + packet.dst().getSocket());
+            System.out.println("RECEIVE A WORK RESPONSE PACKET TO TRANSFER FOR " + packet.dst().getSocket());
             return;
         }
         //Computation sender part
@@ -295,7 +295,7 @@ public class ServerVisitor implements PacketVisitor {
         );
         store.print(computeId);
         if(room.isReady(computeId)){
-            //TODO distribute the computationaz
+            //TODO distribute the computation
             store.print(computeId);
             var process = new SharingProcessExecutor(
                     store.availableSockets(computeId), entity.info().end() - entity.info().start()

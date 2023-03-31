@@ -49,7 +49,7 @@ public final class WorkRequestPacket implements FullPacket {
 
     @Override
     public TramKind kind() {
-        return TramKind.TRANSFERT;
+        return TramKind.TRANSFER;
     }
 
     @Override

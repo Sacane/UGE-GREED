@@ -19,7 +19,7 @@ public record WorkResponsePacket(
     }
     @Override
     public TramKind kind() {
-        return TramKind.TRANSFERT;
+        return TramKind.TRANSFER;
     }
 
     @Override

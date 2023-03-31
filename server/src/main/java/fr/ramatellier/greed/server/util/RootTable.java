@@ -16,15 +16,6 @@ public class RootTable {
     private final HashMap<InetSocketAddress, AddressContext> table = new HashMap<>();
 
     /**
-     * Check if the table has registered the destination address.
-     * @param socketAddress the address to check
-     * @return true if the address is registered, false otherwise.
-     */
-    public boolean exists(InetSocketAddress socketAddress) {
-        return table.containsKey(socketAddress);
-    }
-
-    /**
      * Put a new destination address in the table or update the value of an existing one.
      * @param destination the destination to registered or update
      * @param value the value of the entry

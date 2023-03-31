@@ -20,10 +20,13 @@ public class IPReader implements Reader<IpAddressPacket> {
         if (state == State.DONE || state == State.ERROR) {
             throw new IllegalStateException();
         }
+
         if(state == State.WAITING_SIZE) {
             var status = sizeReader.process(buffer);
+
             if(status == ProcessStatus.DONE) {
                 state = State.WAITING_ADDRESS;
+
                 addressBuffer = ByteBuffer.allocate(sizeReader.get() == 4 ? 4 : 16);
             }
         }
@@ -34,17 +37,19 @@ public class IPReader implements Reader<IpAddressPacket> {
                 addressBuffer.flip();
                 try {
                     var bytes = new byte[addressBuffer.remaining()];
-                    var addres = InetAddress.getByAddress(bytes);
-                    value = new IpAddressPacket(addres.getHostAddress());
+                    var address = InetAddress.getByAddress(bytes);
+                    value = new IpAddressPacket(address.getHostAddress());
                     state = State.DONE;
                 } catch (UnknownHostException e) {
                     return ProcessStatus.ERROR;
                 }
             }
         }
+
         if (state != State.DONE) {
             return ProcessStatus.REFILL;
         }
+
         return ProcessStatus.DONE;
     }
 

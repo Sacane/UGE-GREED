@@ -31,6 +31,7 @@ public class CheckerPacketReader implements Reader<CheckerPacket> {
 
             if(status == ProcessStatus.DONE) {
                 state = State.DONE;
+
                 value = new CheckerPacket(urlReader.get(), classNameReader.get());
             }
         }

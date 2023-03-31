@@ -4,7 +4,6 @@ import fr.ramatellier.greed.server.packet.*;
 import fr.ramatellier.greed.server.util.OpCodes;
 import fr.ramatellier.greed.server.util.TramKind;
 
-import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
 public class PacketReader implements Reader<FullPacket> {
@@ -14,7 +13,7 @@ public class PacketReader implements Reader<FullPacket> {
     private State state = State.WAITING_LOCATION;
     private final ByteReader locationReader = new ByteReader();
     private final ByteReader codeReader = new ByteReader();
-    private final IDReader idReader = new IDReader();
+    private final ConnectPacketReader connectPacketReader = new ConnectPacketReader();
     private final ConnectOKPacketReader connectOKPacketReader = new ConnectOKPacketReader();
     private final AddNodePacketReader addNodePacketReader = new AddNodePacketReader();
     private final WorkRequestPacketReader workRequestPacketReader = new WorkRequestPacketReader();
@@ -50,12 +49,12 @@ public class PacketReader implements Reader<FullPacket> {
         if(state == State.WAITING_PACKET) {
             if(locationReader.get() == TramKind.LOCAL.BYTES) {
                 if(codeReader.get() == OpCodes.CONNECT.BYTES) {
-                    var status = idReader.process(buffer);
+                    var status = connectPacketReader.process(buffer);
 
                     if(status == ProcessStatus.DONE) {
-                        var packet = idReader.get();
-                        value = new ConnectPacket(new InetSocketAddress(packet.getHostname(), packet.getPort()));
                         state = State.DONE;
+
+                        value = connectPacketReader.get();
                     }
                 }
                 else if(codeReader.get() == OpCodes.OK.BYTES) {
@@ -130,7 +129,7 @@ public class PacketReader implements Reader<FullPacket> {
                     }
                 }
             }
-            else if(locationReader.get() == TramKind.TRANSFERT.BYTES) {
+            else if(locationReader.get() == TramKind.TRANSFER.BYTES) {
                 if(codeReader.get() == OpCodes.WORK.BYTES) {
                     var status = workRequestPacketReader.process(buffer);
 
@@ -140,18 +139,19 @@ public class PacketReader implements Reader<FullPacket> {
                         value = workRequestPacketReader.get();
                     }
                 }
-                else if(codeReader.get() == OpCodes.WORK_ASSIGNEMENT.BYTES) {
-                    System.out.println("TRYING TO READ ASSIGNMENT PACKET");
+                else if(codeReader.get() == OpCodes.WORK_ASSIGNMENT.BYTES) {
                     var status = workAssignmentPacketReader.process(buffer);
                     if(status == ProcessStatus.DONE) {
                         state = State.DONE;
                         value = workAssignmentPacketReader.get();
                     }
                 }
-                else if(codeReader.get() == OpCodes.WORK_REQUEST_RESPONSE.BYTES){
+                else if(codeReader.get() == OpCodes.WORK_REQUEST_RESPONSE.BYTES) {
                     var status = workRequestResponsePacketReader.process(buffer);
+
                     if(status == ProcessStatus.DONE) {
                         state = State.DONE;
+
                         value = workRequestResponsePacketReader.get();
                     }
                 }
@@ -190,7 +190,7 @@ public class PacketReader implements Reader<FullPacket> {
         state = State.WAITING_LOCATION;
         locationReader.reset();
         codeReader.reset();
-        idReader.reset();
+        connectPacketReader.reset();
         connectOKPacketReader.reset();
         addNodePacketReader.reset();
         workRequestPacketReader.reset();

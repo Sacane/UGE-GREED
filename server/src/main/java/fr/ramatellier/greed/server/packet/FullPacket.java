@@ -14,7 +14,7 @@ public sealed interface FullPacket extends Packet permits AddNodePacket, Connect
     byte opCode();
 
     default boolean onConditionTransfer(boolean condition, InetSocketAddress to, Server server){
-        if(kind() == TramKind.TRANSFERT && condition){
+        if(kind() == TramKind.TRANSFER && condition){
             server.transfer(to, this);
             return true;
         }

@@ -14,7 +14,7 @@ public record WorkRequestResponsePacket(IDPacket dst, IDPacket src, long request
     }
     @Override
     public TramKind kind() {
-        return TramKind.TRANSFERT;
+        return TramKind.TRANSFER;
     }
 
     @Override

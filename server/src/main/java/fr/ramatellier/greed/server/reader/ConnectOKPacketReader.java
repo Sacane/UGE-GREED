@@ -9,12 +9,12 @@ import java.util.stream.Collectors;
 
 public class ConnectOKPacketReader implements Reader<ConnectOKPacket> {
     private enum State {
-        DONE, WAITING_IDMOTHER, WAITING_SIZEID, WAITING_IDS, ERROR
+        DONE, WAITING_ID, WAITING_SIZE, WAITING_IDS, ERROR
     }
-    private State state = State.WAITING_IDMOTHER;
-    private final IDReader idReader = new IDReader();
+    private State state = State.WAITING_ID;
+    private final IDReader idMotherReader = new IDReader();
     private final IntReader sizeReader = new IntReader();
-    private IDPacket idMother;
+    private final IDReader idReader = new IDReader();
     private ArrayList<IDPacket> ids;
     private ConnectOKPacket value;
 
@@ -24,16 +24,14 @@ public class ConnectOKPacketReader implements Reader<ConnectOKPacket> {
             throw new IllegalStateException();
         }
 
-        if(state == State.WAITING_IDMOTHER) {
-            var status = idReader.process(buffer);
+        if(state == State.WAITING_ID) {
+            var status = idMotherReader.process(buffer);
 
             if(status == ProcessStatus.DONE) {
-                state = State.WAITING_SIZEID;
-                idMother = idReader.get();
-                idReader.reset();
+                state = State.WAITING_SIZE;
             }
         }
-        if(state == State.WAITING_SIZEID) {
+        if(state == State.WAITING_SIZE) {
             var status = sizeReader.process(buffer);
 
             if(status == ProcessStatus.DONE) {
@@ -46,7 +44,7 @@ public class ConnectOKPacketReader implements Reader<ConnectOKPacket> {
             if(ids.size() == sizeReader.get()) {
                 state = State.DONE;
 
-                value = new ConnectOKPacket(idMother.getSocket(), ids.stream().map(IDPacket::getSocket).collect(Collectors.toSet()));
+                value = new ConnectOKPacket(idMotherReader.get().getSocket(), ids.stream().map(IDPacket::getSocket).collect(Collectors.toSet()));
             }
 
             while(buffer.limit() > 0 && ids.size() != sizeReader.get()) {
@@ -60,7 +58,7 @@ public class ConnectOKPacketReader implements Reader<ConnectOKPacket> {
                 if(ids.size() == sizeReader.get()) {
                     state = State.DONE;
 
-                    value = new ConnectOKPacket(idMother.getSocket(), ids.stream().map(IDPacket::getSocket).collect(Collectors.toSet()));
+                    value = new ConnectOKPacket(idMotherReader.get().getSocket(), ids.stream().map(IDPacket::getSocket).collect(Collectors.toSet()));
                 }
             }
         }
@@ -83,8 +81,9 @@ public class ConnectOKPacketReader implements Reader<ConnectOKPacket> {
 
     @Override
     public void reset() {
-        state = State.WAITING_IDMOTHER;
-        idReader.reset();
+        state = State.WAITING_ID;
+        idMotherReader.reset();
         sizeReader.reset();
+        idReader.reset();
     }
 }

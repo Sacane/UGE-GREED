@@ -31,16 +31,18 @@ public class Context {
         for (;;) {
             Reader.ProcessStatus status = packetReader.process(bufferIn);
             switch (status) {
-                case DONE:
+                case DONE -> {
                     var packet = packetReader.get();
                     packetReader.reset();
                     packet.accept(visitor);
-                    break;
-                case REFILL:
+                }
+                case REFILL -> {
                     return;
-                case ERROR:
+                }
+                case ERROR -> {
                     silentlyClose();
                     return;
+                }
             }
         }
     }
