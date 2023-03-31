@@ -34,20 +34,16 @@ public class RootTable {
         table.merge(destination, new AddressContext(value, context), (old, newValue) -> newValue);
     }
 
-    public void delete(InetSocketAddress address) {
-        table.remove(address);
-    }
-
-    public InetSocketAddress getAddressFromContext(Context context) {
-        InetSocketAddress address = null;
-
+    public void updateToContext(InetSocketAddress oldAddress, InetSocketAddress newAddress, Context context) {
         for(var entry: table.entrySet()) {
-            if(entry.getKey().equals(entry.getValue().address()) && context.equals(entry.getValue().context())) {
-                address = entry.getKey();
+            if(oldAddress.equals(entry.getValue().address())) {
+                putOrUpdate(entry.getKey(), newAddress, context);
             }
         }
+    }
 
-        return address;
+    public void delete(InetSocketAddress address) {
+        table.remove(address);
     }
 
     /**
