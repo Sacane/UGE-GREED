@@ -2,7 +2,6 @@ package fr.ramatellier.greed.server;
 
 import fr.ramatellier.greed.server.packet.FullPacket;
 import fr.ramatellier.greed.server.reader.PacketReader;
-import fr.ramatellier.greed.server.reader.Reader;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -11,7 +10,7 @@ import java.nio.channels.SocketChannel;
 import java.util.ArrayDeque;
 
 public class Context {
-    private static final int BUFFER_SIZE = 1_000_000;
+    private static final int BUFFER_SIZE = 32_560;
     private final SelectionKey key;
     private final SocketChannel sc;
     private final ServerVisitor visitor;
@@ -29,7 +28,7 @@ public class Context {
 
     private void processIn() {
         for (;;) {
-            Reader.ProcessStatus status = packetReader.process(bufferIn);
+            var status = packetReader.process(bufferIn);
             switch (status) {
                 case DONE -> {
                     var packet = packetReader.get();
@@ -40,29 +39,40 @@ public class Context {
                     return;
                 }
                 case ERROR -> {
+                    System.out.println("ERROR IN CONTEXT");
                     silentlyClose();
-                    return;
                 }
             }
         }
     }
 
     public void queuePacket(FullPacket packet) {
-        queue.add(packet);
-
+        System.out.println("QUEUE PACKET");
+        queue.offer(packet);
         processOut();
         updateInterestOps();
     }
 
     private void processOut() {
         while(!queue.isEmpty()) {
-            var packet = queue.poll();
-
-            packet.putInBuffer(bufferOut);
+            var packet = queue.peek();
+            if(packet == null){
+                return;
+            }
+            var buffer = ByteBuffer.allocate(BUFFER_SIZE);
+            packet.putInBuffer(buffer);
+            buffer.flip();
+            System.out.println(packet);
+            if(buffer.remaining() <= bufferOut.remaining()) {
+                bufferOut.put(buffer);
+                queue.poll();
+            } else {
+                return;
+            }
         }
     }
 
-    private void updateInterestOps() {
+    public void updateInterestOps() {
         var op = 0;
 
         if (bufferOut.position() > 0) {
@@ -90,7 +100,7 @@ public class Context {
 
     public void doRead() throws IOException {
         var readValue = sc.read(bufferIn);
-
+        System.out.println("DO READ"); // Ne s'applique qu'une fois par serveur lors d'une réponse à un calcul...
         if (readValue == -1) {
             closed = true;
         }

@@ -104,19 +104,16 @@ public class ServerVisitor implements PacketVisitor {
      */
     @Override
     public void visit(WorkAssignmentPacket packet) {
-        System.out.println("ASSIGNMENT PACKET");
         var hasBeenTransfer = packet.onConditionTransfer(!packet.getIdDst().getSocket().equals(server.getAddress()), packet.getIdDst().getSocket(), server);
         if(hasBeenTransfer){
             System.out.println("RECEIVE A WORK ASSIGNMENT PACKET TO TRANSFER FOR " + packet.getIdDst().getSocket());
             return;
         }
-        System.out.println("I RECEIVE THE ASSIGNMENT");
-        System.out.println("ID :" + packet.getRequestId());
-        System.out.println("Range : " + packet.getRanges().get(0));
+        System.out.println("RECEIVE PACKET ASSIGNMENT");
         var idContext = new ComputationIdentifier(packet.getRequestId(), packet.getIdSrc().getSocket());
         var entityResponse = server.tools().room().findById(idContext);
         if(entityResponse.isEmpty()){
-            System.out.println("I DON'T HAVE THIS COMPUTATION");
+            System.out.println("THIS SERVER DOES NOT HANDLE THIS COMPUTATION");
             return;
         }
         var entity = entityResponse.get();
@@ -131,15 +128,14 @@ public class ServerVisitor implements PacketVisitor {
         for(var i = targetRange.start(); i < targetRange.end(); i++){
             try{
                 var checkerResult = checker.check(i);
-                System.out.println(checkerResult);
                 sendResponseWithOPCode(packet, i, checkerResult, (byte) 0x00);
             } catch (InterruptedException e) {
                 logger.severe("INTERRUPTED EXCEPTION");
-                sendResponseWithOPCode(packet, i, "INTERRUPTED EXCEPTION", (byte) 0x01);
-                return; //TODO treat this disconnexion
+                sendResponseWithOPCode(packet, i, null, (byte) 0x01);
             }catch (Exception e){
-                sendResponseWithOPCode(packet, i, "EXCEPTION OCCURED", (byte) 0x01);
+                sendResponseWithOPCode(packet, i, null, (byte) 0x01);
             }
+            System.out.println("Checker sent for " + i); //TODO REMOVE IT LATER
         }
     }
     private void sendResponseWithOPCode(WorkAssignmentPacket origin, long index,String result, byte opcode){
@@ -152,15 +148,15 @@ public class ServerVisitor implements PacketVisitor {
     }
     @Override
     public void visit(WorkResponsePacket packet) {
-        System.out.println("RECEIVE A WORK RESPONSE PACKET FROM VISITOR");
         if(packet.onConditionTransfer(
                 !server.getAddress().equals(packet.dst().getSocket()),
                 packet.dst().getSocket(),
                 server
         )){
             System.out.println("RECEIVE A WORK RESPONSE PACKET TO TRANSFER FOR " + packet.dst().getSocket());
+            return;
         }
-        System.out.println("RECEIVED A RESULT FROM " + packet.src().getSocket() + "FOR COMPUTATION " + packet.requestID());
+        System.out.println("RECEIVED A RESULT FROM " + packet.src().getSocket() + " FOR COMPUTATION " + packet.requestID());
         var responsePacket = packet.responsePacket();
         switch(packet.responsePacket().getResponseCode()){
             case 0x00 -> {
@@ -263,8 +259,6 @@ public class ServerVisitor implements PacketVisitor {
 
     @Override
     public void visit(WorkRequestResponsePacket packet) {
-        System.out.println("WORK REQUEST RESPONSE PACKET RECEIVED");
-        System.out.println(packet);
         var transfer = packet.onConditionTransfer(
                 !server.getAddress().equals(packet.dst().getSocket()),
                 packet.dst().getSocket(),
@@ -295,15 +289,13 @@ public class ServerVisitor implements PacketVisitor {
         );
         store.print(computeId);
         if(room.isReady(computeId)){
-            //TODO distribute the computation
-            store.print(computeId);
             var process = new SharingProcessExecutor(
-                    store.availableSockets(computeId), entity.info().end() - entity.info().start()
+                    store.availableSockets(computeId),
+                    entity.info().end() - entity.info().start()
             );
-
             var socketRangeList = process.shareAndGet(entity.info().start());
             for(var socketRange: socketRangeList){
-                System.out.println(socketRange);
+                System.out.println("DISTRIBUTING TO " + socketRange.socketAddress());
                 var workAssignmentPacket = new WorkAssignmentPacket(
                         server.getAddress(),
                         socketRange.socketAddress(),

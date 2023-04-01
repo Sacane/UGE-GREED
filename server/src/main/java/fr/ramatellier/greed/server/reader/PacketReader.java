@@ -156,14 +156,12 @@ public class PacketReader implements Reader<FullPacket> {
                     }
                 }
                 else if(codeReader.get() == OpCodes.WORK_RESPONSE.BYTES){
-                    System.out.println("TRYING TO READ WORK RESPONSE PACKET FROM READER");
                     var status = workResponsePacketReader.process(buffer);
-                    System.out.println(status);
                     if(status == ProcessStatus.DONE) {
                         state = State.DONE;
                         value = workResponsePacketReader.get();
                     }
-                    workResponsePacketReader.reset();
+                   // workResponsePacketReader.reset();
                 }
             }
         }
@@ -200,5 +198,6 @@ public class PacketReader implements Reader<FullPacket> {
         workRequestResponsePacketReader.reset();
         disconnectedPacketReader.reset();
         reconnectPacketReader.reset();
+        workResponsePacketReader.reset();
     }
 }

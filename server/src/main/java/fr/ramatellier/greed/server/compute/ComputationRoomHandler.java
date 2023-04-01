@@ -21,7 +21,7 @@ public final class ComputationRoomHandler {
     }
 
     public void increment(ComputationIdentifier id) {
-        synchronized (waitingRoom) {
+        synchronized (lock) {
             waitingRoom.merge(id, new CounterIntend(1), (old, newOne) -> {
                 old.increment();
                 return old;
@@ -29,16 +29,11 @@ public final class ComputationRoomHandler {
         }
     }
     public boolean isReady(ComputationIdentifier id) {
-        synchronized (waitingRoom) {
+        synchronized (lock) {
             return waitingRoom.get(id).isReady();
         }
     }
 
-    public long getIntendedValue(ComputationIdentifier id){
-        synchronized (waitingRoom) {
-            return waitingRoom.get(id).intendValue;
-        }
-    }
     public Optional<ComputationEntity> findById(ComputationIdentifier id){
         synchronized (lock) {
             return computations.stream().filter(computation -> computation.id().equals(id)).findFirst();
@@ -65,7 +60,7 @@ public final class ComputationRoomHandler {
         }
         private void increment() {
             if(countedValue == intendValue){
-                throw new IllegalStateException("CounterIntend is already full");
+                return;
             }
             countedValue++;
         }

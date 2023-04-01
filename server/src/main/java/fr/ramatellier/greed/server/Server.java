@@ -126,8 +126,9 @@ public class Server {
 
     /**
      * Exemple for compute :
+     * COMPUTE C:/Users/johan/Documents/dev_project/SlowChecker.jar fr.uge.slow.SlowChecker 10 20
      * COMPUTE http://www-igm.univ-mlv.fr/~carayol/Factorizer.jar fr.uge.factors.Factorizer 10 1000
-     * COMPUTE http://www-igm.univ-mlv.fr/~carayol/SlowChecker.jar fr.uge.slow.SlowChecker 10 20
+     * START http://www-igm.univ-mlv.fr/~carayol/SlowChecker.jar fr.uge.slow.SlowChecker 10 20
      */
     private void consoleRun(){
         try{
@@ -139,7 +140,7 @@ public class Server {
                         case "INFO" -> sendCommand(new CommandArgs(Command.INFO, null));
                         case "STOP" -> sendCommand(new CommandArgs(Command.STOP, null));
                         case "SHUTDOWN" -> sendCommand(new CommandArgs(Command.SHUTDOWN, null));
-                        case "COMPUTE" -> sendComputeCommand(line);
+                        case "COMPUTE", "START" -> sendComputeCommand(line);
                         default -> System.out.println("Unknown command");
                     }
                 }
