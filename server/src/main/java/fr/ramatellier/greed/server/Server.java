@@ -2,7 +2,8 @@ package fr.ramatellier.greed.server;
 
 import fr.ramatellier.greed.server.compute.ComputationEntity;
 import fr.ramatellier.greed.server.compute.ComputationIdentifier;
-import fr.ramatellier.greed.server.packet.*;
+import fr.ramatellier.greed.server.packet.full.*;
+import fr.ramatellier.greed.server.packet.sub.IDPacket;
 import fr.ramatellier.greed.server.util.LogoutInformation;
 import fr.ramatellier.greed.server.util.RootTable;
 import fr.ramatellier.greed.server.util.TramKind;

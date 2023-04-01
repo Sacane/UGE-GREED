@@ -1,7 +1,7 @@
 package fr.ramatellier.greed.server.util;
 
 import fr.ramatellier.greed.server.Context;
-import fr.ramatellier.greed.server.packet.FullPacket;
+import fr.ramatellier.greed.server.packet.full.FullPacket;
 
 import java.net.InetSocketAddress;
 import java.util.*;

@@ -1,6 +1,7 @@
 package fr.ramatellier.greed.server.reader;
 
 
+import fr.ramatellier.greed.server.reader.sub.StringReader;
 import org.junit.jupiter.api.Test;
 
 import java.nio.ByteBuffer;

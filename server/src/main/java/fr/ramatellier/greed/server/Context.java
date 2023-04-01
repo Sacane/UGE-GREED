@@ -1,6 +1,6 @@
 package fr.ramatellier.greed.server;
 
-import fr.ramatellier.greed.server.packet.FullPacket;
+import fr.ramatellier.greed.server.packet.full.FullPacket;
 import fr.ramatellier.greed.server.reader.PacketReader;
 
 import java.io.IOException;
@@ -13,7 +13,7 @@ public class Context {
     private static final int BUFFER_SIZE = 32_560;
     private final SelectionKey key;
     private final SocketChannel sc;
-    private final ServerVisitor visitor;
+    private final ReceivePacketVisitor visitor;
     private final ByteBuffer bufferIn = ByteBuffer.allocate(BUFFER_SIZE);
     private final ByteBuffer bufferOut = ByteBuffer.allocate(BUFFER_SIZE);
     private final PacketReader packetReader = new PacketReader();
@@ -23,7 +23,7 @@ public class Context {
     public Context(Server server, SelectionKey key) {
         this.key = key;
         this.sc = (SocketChannel) key.channel();
-        this.visitor = new ServerVisitor(server, this);
+        this.visitor = new ReceivePacketVisitor(server, this);
     }
 
     private void processIn() {
