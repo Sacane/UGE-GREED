@@ -30,8 +30,8 @@ public final class DisconnectedPacket implements FullPacket {
     }
 
     @Override
-    public byte opCode() {
-        return OpCodes.DISCONNECTED.BYTES;
+    public OpCodes opCode() {
+        return OpCodes.DISCONNECTED;
     }
 
     @Override

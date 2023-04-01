@@ -1,4 +1,4 @@
-package fr.ramatellier.greed.server;
+package fr.ramatellier.greed.server.visitor;
 
 import fr.ramatellier.greed.server.packet.full.*;
 

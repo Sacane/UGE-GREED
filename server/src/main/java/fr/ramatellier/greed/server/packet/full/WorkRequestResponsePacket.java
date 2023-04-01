@@ -19,8 +19,8 @@ public record WorkRequestResponsePacket(IDPacket dst, IDPacket src, long request
     }
 
     @Override
-    public byte opCode() {
-        return OpCodes.WORK_REQUEST_RESPONSE.BYTES;
+    public OpCodes opCode() {
+        return OpCodes.WORK_REQUEST_RESPONSE;
     }
 
     @Override

@@ -19,14 +19,13 @@ public record AddNodePacket(IDPacket src, IDPacket daughter) implements FullPack
     }
 
     @Override
-    public byte opCode() {
-        return OpCodes.ADD_NODE.BYTES;
+    public OpCodes opCode() {
+        return OpCodes.ADD_NODE;
     }
 
     @Override
     public void putInBuffer(ByteBuffer buffer) {
-        buffer.put(kind().BYTES);
-        buffer.put(opCode());
+        putHeader(buffer);
         src.putInBuffer(buffer);
         daughter.putInBuffer(buffer);
     }

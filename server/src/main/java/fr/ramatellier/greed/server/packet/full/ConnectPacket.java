@@ -32,8 +32,8 @@ public final class ConnectPacket implements FullPacket {
     }
 
     @Override
-    public byte opCode() {
-        return OpCodes.CONNECT.BYTES;
+    public OpCodes opCode() {
+        return OpCodes.CONNECT;
     }
 
     public void putInBuffer(ByteBuffer buffer) {

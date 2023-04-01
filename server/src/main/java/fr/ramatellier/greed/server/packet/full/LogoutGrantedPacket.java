@@ -16,8 +16,8 @@ public final class LogoutGrantedPacket implements FullPacket {
     }
 
     @Override
-    public byte opCode() {
-        return OpCodes.LOGOUT_GRANTED.BYTES;
+    public OpCodes opCode() {
+        return OpCodes.LOGOUT_GRANTED;
     }
 
     @Override

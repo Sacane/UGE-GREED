@@ -12,8 +12,8 @@ public final class ConnectKOPacket implements FullPacket {
     }
 
     @Override
-    public byte opCode() {
-        return OpCodes.KO.BYTES;
+    public OpCodes opCode() {
+        return OpCodes.KO;
     }
     @Override
     public void putInBuffer(ByteBuffer buffer) {

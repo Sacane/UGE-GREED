@@ -2,6 +2,7 @@ package fr.ramatellier.greed.server;
 
 import fr.ramatellier.greed.server.packet.full.FullPacket;
 import fr.ramatellier.greed.server.reader.PacketReader;
+import fr.ramatellier.greed.server.visitor.ReceivePacketVisitor;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

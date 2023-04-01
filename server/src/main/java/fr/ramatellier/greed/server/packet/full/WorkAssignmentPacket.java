@@ -44,8 +44,8 @@ public final class WorkAssignmentPacket implements FullPacket {
     }
 
     @Override
-    public byte opCode() {
-        return OpCodes.WORK_ASSIGNMENT.BYTES;
+    public OpCodes opCode() {
+        return OpCodes.WORK_ASSIGNMENT;
     }
 
     @Override

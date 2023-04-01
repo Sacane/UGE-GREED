@@ -34,8 +34,8 @@ public final class LogoutRequestPacket implements FullPacket {
     }
 
     @Override
-    public byte opCode() {
-        return OpCodes.LOGOUT_REQUEST.BYTES;
+    public OpCodes opCode() {
+        return OpCodes.LOGOUT_REQUEST;
     }
 
     @Override

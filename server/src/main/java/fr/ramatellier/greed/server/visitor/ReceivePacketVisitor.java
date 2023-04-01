@@ -1,6 +1,9 @@
-package fr.ramatellier.greed.server;
+package fr.ramatellier.greed.server.visitor;
 
 
+import fr.ramatellier.greed.server.ComputeInfo;
+import fr.ramatellier.greed.server.Context;
+import fr.ramatellier.greed.server.Server;
 import fr.ramatellier.greed.server.compute.ComputationEntity;
 import fr.ramatellier.greed.server.compute.ComputationIdentifier;
 import fr.ramatellier.greed.server.compute.SharingProcessExecutor;

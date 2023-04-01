@@ -25,8 +25,8 @@ public record WorkResponsePacket(
     }
 
     @Override
-    public byte opCode() {
-        return OpCodes.WORK_RESPONSE.BYTES;
+    public OpCodes opCode() {
+        return OpCodes.WORK_RESPONSE;
     }
 
     @Override

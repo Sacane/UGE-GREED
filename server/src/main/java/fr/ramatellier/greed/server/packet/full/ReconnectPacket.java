@@ -35,8 +35,8 @@ public final class ReconnectPacket implements FullPacket {
     }
 
     @Override
-    public byte opCode() {
-        return OpCodes.RECONNECT.BYTES;
+    public OpCodes opCode() {
+        return OpCodes.RECONNECT;
     }
 
     @Override

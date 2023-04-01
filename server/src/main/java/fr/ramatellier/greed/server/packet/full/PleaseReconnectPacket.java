@@ -24,8 +24,8 @@ public final class PleaseReconnectPacket implements FullPacket {
     }
 
     @Override
-    public byte opCode() {
-        return OpCodes.PLEASE_RECONNECT.BYTES;
+    public OpCodes opCode() {
+        return OpCodes.PLEASE_RECONNECT;
     }
 
     @Override

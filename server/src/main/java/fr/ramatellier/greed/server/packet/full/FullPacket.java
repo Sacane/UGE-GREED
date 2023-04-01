@@ -1,6 +1,7 @@
 package fr.ramatellier.greed.server.packet.full;
 
-import fr.ramatellier.greed.server.PacketVisitor;
+import fr.ramatellier.greed.server.util.OpCodes;
+import fr.ramatellier.greed.server.visitor.PacketVisitor;
 import fr.ramatellier.greed.server.Server;
 import fr.ramatellier.greed.server.packet.*;
 import fr.ramatellier.greed.server.util.TramKind;
@@ -13,7 +14,7 @@ public sealed interface FullPacket extends Packet permits AddNodePacket, Connect
         visitor.visit(this);
     }
     TramKind kind();
-    byte opCode();
+    OpCodes opCode();
 
     default boolean onConditionTransfer(boolean condition, InetSocketAddress to, Server server){
         if(kind() == TramKind.TRANSFER && condition){
@@ -25,6 +26,6 @@ public sealed interface FullPacket extends Packet permits AddNodePacket, Connect
 
     default void putHeader(ByteBuffer buffer) {
         buffer.put(kind().BYTES);
-        buffer.put(opCode());
+        buffer.put(opCode().BYTES);
     }
 }

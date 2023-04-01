@@ -13,8 +13,8 @@ public final class LogoutDeniedPacket implements FullPacket {
     }
 
     @Override
-    public byte opCode() {
-        return OpCodes.LOGOUT_DENIED.BYTES;
+    public OpCodes opCode() {
+        return OpCodes.LOGOUT_DENIED;
     }
 
     @Override
