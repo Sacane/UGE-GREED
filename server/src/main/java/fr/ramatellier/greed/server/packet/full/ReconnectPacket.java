@@ -9,7 +9,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-public final class ReconnectPacket implements FullPacket {
+public final class ReconnectPacket implements FullPacket, LocalPacket {
     private final IDPacket id;
     private final List<IDPacket> ancestors = new ArrayList<>();
 
@@ -27,11 +27,6 @@ public final class ReconnectPacket implements FullPacket {
 
     public List<IDPacket> getAncestors() {
         return ancestors;
-    }
-
-    @Override
-    public TramKind kind() {
-        return TramKind.LOCAL;
     }
 
     @Override

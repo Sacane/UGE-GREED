@@ -1,6 +1,7 @@
 package fr.ramatellier.greed.server.reader.full;
 
 import fr.ramatellier.greed.server.packet.full.WorkRequestPacket;
+import fr.ramatellier.greed.server.reader.FullPacketReader;
 import fr.ramatellier.greed.server.reader.sub.IDReader;
 import fr.ramatellier.greed.server.reader.sub.RangePacketReader;
 import fr.ramatellier.greed.server.reader.Reader;
@@ -9,7 +10,7 @@ import fr.ramatellier.greed.server.reader.sub.CheckerPacketReader;
 
 import java.nio.ByteBuffer;
 
-public class WorkRequestPacketReader implements Reader<WorkRequestPacket> {
+public class WorkRequestPacketReader implements FullPacketReader {
     private enum State {
         DONE, WAITING_IDSRC, WAITING_IDDST, WAITING_REQUESTID, WAITING_CHECKER, WAITING_RANGE, WAITING_MAX, ERROR
     }

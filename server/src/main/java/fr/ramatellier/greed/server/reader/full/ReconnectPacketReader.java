@@ -2,6 +2,7 @@ package fr.ramatellier.greed.server.reader.full;
 
 import fr.ramatellier.greed.server.packet.sub.IDPacket;
 import fr.ramatellier.greed.server.packet.full.ReconnectPacket;
+import fr.ramatellier.greed.server.reader.FullPacketReader;
 import fr.ramatellier.greed.server.reader.sub.IDReader;
 import fr.ramatellier.greed.server.reader.Reader;
 import fr.ramatellier.greed.server.reader.primitive.IntReader;
@@ -9,7 +10,7 @@ import fr.ramatellier.greed.server.reader.primitive.IntReader;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 
-public class ReconnectPacketReader implements Reader<ReconnectPacket> {
+public class ReconnectPacketReader implements FullPacketReader {
     private enum State {
         DONE, WAITING_ID, WAITING_SIZE, WAITING_IDS, ERROR
     }

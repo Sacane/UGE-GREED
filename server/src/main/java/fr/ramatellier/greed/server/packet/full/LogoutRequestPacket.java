@@ -9,7 +9,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-public final class LogoutRequestPacket implements FullPacket {
+public final class LogoutRequestPacket implements FullPacket, LocalPacket {
     private final IDPacket id;
     private final ArrayList<IDPacket> daughters = new ArrayList<>();
 
@@ -26,11 +26,6 @@ public final class LogoutRequestPacket implements FullPacket {
 
     public ArrayList<IDPacket> getDaughters() {
         return daughters;
-    }
-
-    @Override
-    public TramKind kind() {
-        return TramKind.LOCAL;
     }
 
     @Override

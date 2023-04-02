@@ -1,6 +1,7 @@
 package fr.ramatellier.greed.server;
 
 import fr.ramatellier.greed.server.packet.full.FullPacket;
+import fr.ramatellier.greed.server.reader.FullPacketReader;
 import fr.ramatellier.greed.server.reader.PacketReader;
 import fr.ramatellier.greed.server.visitor.ReceivePacketVisitor;
 
@@ -11,7 +12,7 @@ import java.nio.channels.SocketChannel;
 import java.util.ArrayDeque;
 
 public class Context {
-    private static final int BUFFER_SIZE = 32_560;
+    private static final int BUFFER_SIZE = 32_768;
     private final SelectionKey key;
     private final SocketChannel sc;
     private final ReceivePacketVisitor visitor;
@@ -29,26 +30,23 @@ public class Context {
 
     private void processIn() {
         for (;;) {
-            var status = packetReader.process(bufferIn);
-            switch (status) {
-                case DONE -> {
-                    var packet = packetReader.get();
-                    packetReader.reset();
-                    packet.accept(visitor);
-                }
-                case REFILL -> {
-                    return;
-                }
-                case ERROR -> {
-                    System.out.println("ERROR IN CONTEXT");
+            var state = packetReader.process(bufferIn);
+            switch (state) {
+                case ERROR:
                     silentlyClose();
-                }
+                case REFILL:
+                    return;
+                case DONE:
+                    var frame = packetReader.get();
+                    packetReader.reset();
+                    frame.accept(visitor);
+                    break;
             }
         }
     }
 
     public void queuePacket(FullPacket packet) {
-        System.out.println("QUEUE PACKET");
+        System.out.println("QUEUE PACKET " + packet);
         queue.offer(packet);
         processOut();
         updateInterestOps();

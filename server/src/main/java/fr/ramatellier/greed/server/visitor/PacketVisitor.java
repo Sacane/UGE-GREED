@@ -34,6 +34,9 @@ public interface PacketVisitor {
             case PleaseReconnectPacket p -> visit(p);
             case ReconnectPacket p -> visit(p);
             case DisconnectedPacket p -> visit(p);
+            case BroadcastPacket p -> visit(p);
+            case LocalPacket p -> visit(p);
+            case TransferPacket p -> visit(p);
         }
     }
 }

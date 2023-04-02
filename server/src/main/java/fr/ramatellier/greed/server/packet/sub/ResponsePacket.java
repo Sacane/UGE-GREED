@@ -25,6 +25,7 @@ public final class ResponsePacket implements Packet {
         buffer.putLong(value);
         buffer.put(responseCode);
         if(responseCode == 0){
+            System.out.println("ResponsePacket.putInBuffer: responseCode == 0");
             response.putInBuffer(buffer);
         }
     }

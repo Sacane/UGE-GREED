@@ -2,6 +2,7 @@ package fr.ramatellier.greed.server.reader.full;
 
 import fr.ramatellier.greed.server.packet.full.ConnectOKPacket;
 import fr.ramatellier.greed.server.packet.sub.IDPacket;
+import fr.ramatellier.greed.server.reader.FullPacketReader;
 import fr.ramatellier.greed.server.reader.sub.IDReader;
 import fr.ramatellier.greed.server.reader.Reader;
 import fr.ramatellier.greed.server.reader.primitive.IntReader;
@@ -10,7 +11,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
 
-public class ConnectOKPacketReader implements Reader<ConnectOKPacket> {
+public class ConnectOKPacketReader implements FullPacketReader {
     private enum State {
         DONE, WAITING_ID, WAITING_SIZE, WAITING_IDS, ERROR
     }

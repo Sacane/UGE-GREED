@@ -4,7 +4,6 @@ import fr.ramatellier.greed.server.packet.sub.ResponsePacket;
 import fr.ramatellier.greed.server.reader.Reader;
 import fr.ramatellier.greed.server.reader.primitive.ByteReader;
 import fr.ramatellier.greed.server.reader.primitive.LongReader;
-import fr.ramatellier.greed.server.reader.sub.StringReader;
 
 import java.nio.ByteBuffer;
 
@@ -12,6 +11,8 @@ public class ResponsePacketReader implements Reader<ResponsePacket> {
     private final LongReader longReader = new LongReader();
     private final ByteReader byteReader = new ByteReader();
     private final StringReader stringReader = new StringReader();
+
+    private ResponsePacket packet;
 
     enum State {
         ERROR,
@@ -48,6 +49,7 @@ public class ResponsePacketReader implements Reader<ResponsePacket> {
             var status = stringReader.process(bb);
             if(status == ProcessStatus.DONE) {
                 state = State.DONE;
+                packet = new ResponsePacket(longReader.get(), stringReader.get(), byteReader.get());
             } else if(status == ProcessStatus.ERROR) {
                 System.out.println("ERROR READING RESPONSE");
                 return ProcessStatus.ERROR;
@@ -64,9 +66,8 @@ public class ResponsePacketReader implements Reader<ResponsePacket> {
         if(state != State.DONE) {
             throw new IllegalStateException();
         }
-        var responsePacket = new ResponsePacket(longReader.get(), stringReader.get(), byteReader.get());
-        System.out.println("RESPONSE FROM READER -> " + responsePacket);
-        return responsePacket;
+        System.out.println("RESPONSE FROM READER -> " + packet);
+        return packet;
     }
 
     @Override

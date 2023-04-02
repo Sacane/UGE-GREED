@@ -1,12 +1,13 @@
 package fr.ramatellier.greed.server.reader.full;
 
 import fr.ramatellier.greed.server.packet.full.PleaseReconnectPacket;
+import fr.ramatellier.greed.server.reader.FullPacketReader;
 import fr.ramatellier.greed.server.reader.sub.IDReader;
 import fr.ramatellier.greed.server.reader.Reader;
 
 import java.nio.ByteBuffer;
 
-public class PleaseReconnectPacketReader implements Reader<PleaseReconnectPacket> {
+public class PleaseReconnectPacketReader implements FullPacketReader {
     private enum State {
         DONE, WAITING_ID, ERROR
     }

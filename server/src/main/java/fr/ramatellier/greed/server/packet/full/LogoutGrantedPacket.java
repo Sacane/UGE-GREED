@@ -6,14 +6,7 @@ import fr.ramatellier.greed.server.util.TramKind;
 
 import java.nio.ByteBuffer;
 
-public final class LogoutGrantedPacket implements FullPacket {
-    public LogoutGrantedPacket() {
-    }
-
-    @Override
-    public TramKind kind() {
-        return TramKind.LOCAL;
-    }
+public final class LogoutGrantedPacket implements FullPacket, LocalPacket {
 
     @Override
     public OpCodes opCode() {

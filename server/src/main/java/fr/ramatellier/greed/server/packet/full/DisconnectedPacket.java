@@ -1,13 +1,13 @@
 package fr.ramatellier.greed.server.packet.full;
 
 import fr.ramatellier.greed.server.packet.sub.IDPacket;
+import fr.ramatellier.greed.server.reader.Reader;
 import fr.ramatellier.greed.server.util.OpCodes;
-import fr.ramatellier.greed.server.util.TramKind;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
-public final class DisconnectedPacket implements FullPacket {
+public final class DisconnectedPacket implements BroadcastPacket, FullPacket {
     private final IDPacket idSrc;
     private final IDPacket id;
 
@@ -16,19 +16,14 @@ public final class DisconnectedPacket implements FullPacket {
         this.id = new IDPacket(id);
     }
 
-    public IDPacket getIdSrc() {
+    @Override
+    public IDPacket src() {
         return idSrc;
     }
 
     public IDPacket getId() {
         return id;
     }
-
-    @Override
-    public TramKind kind() {
-        return TramKind.BROADCAST;
-    }
-
     @Override
     public OpCodes opCode() {
         return OpCodes.DISCONNECTED;
@@ -40,4 +35,6 @@ public final class DisconnectedPacket implements FullPacket {
         idSrc.putInBuffer(buffer);
         id.putInBuffer(buffer);
     }
+
+
 }

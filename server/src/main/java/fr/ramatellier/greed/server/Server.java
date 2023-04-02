@@ -244,27 +244,31 @@ public class Server {
         System.out.println("Root table : \n" + rootTable);
     }
     void processCommand(){
-        for(;;){
-            var command = commandQueue.poll();
-            if(command == null){
-                return;
-            }
-            switch(command.command()){
-                case INFO -> {
-                    printInfo();
+        for(;;) {
+            synchronized (commandQueue) {
+                var command = commandQueue.poll();
+                if (command == null) {
+                    return;
                 }
-                case STOP -> {
-                    logger.info("Command STOP received");
-                    state = (state == ServerState.ON_GOING) ? ServerState.STOPPED : ServerState.ON_GOING;
-                }
-                case SHUTDOWN -> {
-                    logger.info("Command SHUTDOWN received");
-                    state = ServerState.SHUTDOWN;
-                    rootTable.sendTo(parentSocketAddress, new LogoutRequestPacket(address, rootTable.neighbors().stream().filter(n -> !n.equals(parentSocketAddress)).toList()));
-                }
-                case COMPUTE -> {
-                    logger.info("Command COMPUTE received");
-                    parseAndCompute(command.args());
+                switch (command.command()) {
+                    case INFO -> printInfo();
+                    case STOP -> {
+                        logger.info("Command STOP received");
+                        state = (state == ServerState.ON_GOING) ? ServerState.STOPPED : ServerState.ON_GOING;
+                    }
+                    case SHUTDOWN -> {
+                        if (isRoot) {
+                            logger.warning("You can't shutdown a root server manually");
+                            continue;
+                        }
+                        logger.info("Command SHUTDOWN received");
+                        state = ServerState.SHUTDOWN;
+                        rootTable.sendTo(parentSocketAddress, new LogoutRequestPacket(address, rootTable.neighbors().stream().filter(n -> !n.equals(parentSocketAddress)).toList()));
+                    }
+                    case COMPUTE -> {
+                        logger.info("Command COMPUTE received");
+                        parseAndCompute(command.args());
+                    }
                 }
             }
         }

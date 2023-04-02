@@ -3,8 +3,6 @@ package fr.ramatellier.greed.server.packet.full;
 import fr.ramatellier.greed.server.packet.sub.ResponsePacket;
 import fr.ramatellier.greed.server.packet.sub.IDPacket;
 import fr.ramatellier.greed.server.util.OpCodes;
-import fr.ramatellier.greed.server.util.TramKind;
-
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
@@ -13,15 +11,11 @@ public record WorkResponsePacket(
     IDPacket dst,
     long requestID,
     ResponsePacket responsePacket
-) implements FullPacket {
+) implements FullPacket, TransferPacket {
     public WorkResponsePacket{
         Objects.requireNonNull(src);
         Objects.requireNonNull(dst);
         Objects.requireNonNull(responsePacket);
-    }
-    @Override
-    public TramKind kind() {
-        return TramKind.TRANSFER;
     }
 
     @Override

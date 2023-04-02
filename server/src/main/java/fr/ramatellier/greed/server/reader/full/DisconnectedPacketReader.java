@@ -1,12 +1,13 @@
 package fr.ramatellier.greed.server.reader.full;
 
 import fr.ramatellier.greed.server.packet.full.DisconnectedPacket;
+import fr.ramatellier.greed.server.reader.FullPacketReader;
 import fr.ramatellier.greed.server.reader.sub.IDReader;
 import fr.ramatellier.greed.server.reader.Reader;
 
 import java.nio.ByteBuffer;
 
-public class DisconnectedPacketReader implements Reader<DisconnectedPacket> {
+public class DisconnectedPacketReader implements FullPacketReader {
     private enum State {
         DONE, WAITING_ID_SRC, WAITING_ID, ERROR
     }

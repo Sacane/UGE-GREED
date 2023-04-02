@@ -2,13 +2,14 @@ package fr.ramatellier.greed.server.reader.full;
 
 import fr.ramatellier.greed.server.packet.sub.IDPacket;
 import fr.ramatellier.greed.server.packet.full.WorkRequestResponsePacket;
+import fr.ramatellier.greed.server.reader.FullPacketReader;
 import fr.ramatellier.greed.server.reader.sub.IDReader;
 import fr.ramatellier.greed.server.reader.Reader;
 import fr.ramatellier.greed.server.reader.primitive.LongReader;
 
 import java.nio.ByteBuffer;
 
-public class WorkRequestResponseReader implements Reader<WorkRequestResponsePacket> {
+public class WorkRequestResponseReader implements FullPacketReader {
 
     private enum State{
         ERROR,

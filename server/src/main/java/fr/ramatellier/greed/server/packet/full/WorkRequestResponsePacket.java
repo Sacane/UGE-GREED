@@ -7,15 +7,11 @@ import fr.ramatellier.greed.server.util.TramKind;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
-public record WorkRequestResponsePacket(IDPacket dst, IDPacket src, long requestID, long nb_uc) implements FullPacket {
+public record WorkRequestResponsePacket(IDPacket dst, IDPacket src, long requestID, long nb_uc) implements FullPacket, TransferPacket {
 
     public WorkRequestResponsePacket{
         Objects.requireNonNull(dst);
         Objects.requireNonNull(src);
-    }
-    @Override
-    public TramKind kind() {
-        return TramKind.TRANSFER;
     }
 
     @Override

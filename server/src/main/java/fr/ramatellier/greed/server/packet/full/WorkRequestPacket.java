@@ -9,7 +9,7 @@ import fr.ramatellier.greed.server.util.TramKind;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
-public final class WorkRequestPacket implements FullPacket {
+public final class WorkRequestPacket implements FullPacket, TransferPacket {
     private final IDPacket idSrc;
     private final IDPacket idDst;
     private final long requestId;
@@ -26,11 +26,11 @@ public final class WorkRequestPacket implements FullPacket {
         this.max = max;
     }
 
-    public IDPacket getIdSrc() {
+    public IDPacket src() {
         return idSrc;
     }
 
-    public IDPacket getIdDst() {
+    public IDPacket dst() {
         return idDst;
     }
 

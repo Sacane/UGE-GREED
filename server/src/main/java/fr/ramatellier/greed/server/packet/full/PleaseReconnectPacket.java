@@ -7,7 +7,7 @@ import fr.ramatellier.greed.server.util.TramKind;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
-public final class PleaseReconnectPacket implements FullPacket {
+public final class PleaseReconnectPacket implements FullPacket, LocalPacket {
     private final IDPacket id;
 
     public PleaseReconnectPacket(InetSocketAddress address) {
@@ -16,11 +16,6 @@ public final class PleaseReconnectPacket implements FullPacket {
 
     public IDPacket getId() {
         return id;
-    }
-
-    @Override
-    public TramKind kind() {
-        return TramKind.LOCAL;
     }
 
     @Override

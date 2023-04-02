@@ -5,11 +5,7 @@ import fr.ramatellier.greed.server.util.TramKind;
 
 import java.nio.ByteBuffer;
 
-public final class ConnectKOPacket implements FullPacket {
-    @Override
-    public TramKind kind() {
-        return TramKind.LOCAL;
-    }
+public final class ConnectKOPacket implements FullPacket, LocalPacket {
 
     @Override
     public OpCodes opCode() {

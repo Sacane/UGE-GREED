@@ -1,9 +1,6 @@
 package fr.ramatellier.greed.server.reader;
 
-import fr.ramatellier.greed.server.packet.full.ConnectKOPacket;
-import fr.ramatellier.greed.server.packet.full.FullPacket;
-import fr.ramatellier.greed.server.packet.full.LogoutDeniedPacket;
-import fr.ramatellier.greed.server.packet.full.LogoutGrantedPacket;
+import fr.ramatellier.greed.server.packet.full.*;
 import fr.ramatellier.greed.server.reader.full.*;
 import fr.ramatellier.greed.server.reader.primitive.ByteReader;
 import fr.ramatellier.greed.server.util.OpCodes;
@@ -11,11 +8,15 @@ import fr.ramatellier.greed.server.util.TramKind;
 
 import java.nio.ByteBuffer;
 
-public class PacketReader implements Reader<FullPacket> {
+import static fr.ramatellier.greed.server.util.OpCodes.LOGOUT_DENIED;
+import static fr.ramatellier.greed.server.util.OpCodes.LOGOUT_GRANTED;
+
+public class PacketReader implements FullPacketReader {
     private enum State {
         DONE, WAITING_LOCATION, WAITING_CODE, WAITING_PACKET, ERROR
     }
     private State state = State.WAITING_LOCATION;
+
     private final ByteReader locationReader = new ByteReader();
     private final ByteReader codeReader = new ByteReader();
     private final ConnectPacketReader connectPacketReader = new ConnectPacketReader();
@@ -52,125 +53,50 @@ public class PacketReader implements Reader<FullPacket> {
             }
         }
         if(state == State.WAITING_PACKET) {
-            if(locationReader.get() == TramKind.LOCAL.BYTES) {
-                if(codeReader.get() == OpCodes.CONNECT.BYTES) {
-                    var status = connectPacketReader.process(buffer);
-
-                    if(status == ProcessStatus.DONE) {
-                        state = State.DONE;
-
-                        value = connectPacketReader.get();
-                    }
-                }
-                else if(codeReader.get() == OpCodes.OK.BYTES) {
-                    var status = connectOKPacketReader.process(buffer);
-
-                    if(status == ProcessStatus.DONE) {
-                        state = State.DONE;
-
-                        value = connectOKPacketReader.get();
-                    }
-                }
-                else if(codeReader.get() == OpCodes.KO.BYTES) {
+            var tramKind = TramKind.toTramKind(locationReader.get());
+            if (tramKind == null) return ProcessStatus.ERROR;
+            var opcodeValue = codeReader.get();
+            var opcode = OpCodes.fromByte(opcodeValue);
+            if (opcode == null) return ProcessStatus.ERROR;
+            if (tramKind == TramKind.LOCAL) {
+                LocalPacket valueTmp = switch(opcode){
+                    case LOGOUT_GRANTED  ->
+                        new LogoutGrantedPacket();
+                    case LOGOUT_DENIED ->
+                        new LogoutDeniedPacket();
+                    case KO ->
+                        new ConnectKOPacket();
+                    default ->
+                        null;
+                };
+                if (valueTmp != null) {
                     state = State.DONE;
-
-                    value = new ConnectKOPacket();
+                    value = valueTmp;
+                    return ProcessStatus.DONE;
                 }
-                else if(codeReader.get() == OpCodes.LOGOUT_REQUEST.BYTES) {
-                    var status = logoutRequestPacketReader.process(buffer);
-
-                    if(status == ProcessStatus.DONE) {
-                        state = State.DONE;
-
-                        value = logoutRequestPacketReader.get();
-                    }
-                }
-                else if(codeReader.get() == OpCodes.LOGOUT_DENIED.BYTES) {
+                /*if (opcodeValue == LOGOUT_DENIED.BYTES) {
                     state = State.DONE;
-
                     value = new LogoutDeniedPacket();
-                }
-                else if(codeReader.get() == OpCodes.LOGOUT_GRANTED.BYTES) {
+                    return ProcessStatus.DONE;
+                } else if (opcodeValue == LOGOUT_GRANTED.BYTES) {
                     state = State.DONE;
-
                     value = new LogoutGrantedPacket();
-                }
-                else if(codeReader.get() == OpCodes.PLEASE_RECONNECT.BYTES) {
-                    var status = pleaseReconnectPacketReader.process(buffer);
-
-                    if(status == ProcessStatus.DONE) {
-                        state = State.DONE;
-
-                        value = pleaseReconnectPacketReader.get();
-                    }
-                }
-                else if(codeReader.get() == OpCodes.RECONNECT.BYTES) {
-                    var status = reconnectPacketReader.process(buffer);
-
-                    if(status == ProcessStatus.DONE) {
-                        state = State.DONE;
-
-                        value = reconnectPacketReader.get();
-                    }
-                }
+                    return ProcessStatus.DONE;
+                } else if (codeReader.get() == OpCodes.KO.BYTES) {
+                    state = State.DONE;
+                    value = new ConnectKOPacket();
+                    return ProcessStatus.DONE;
+                }*/
             }
-            else if(locationReader.get() == TramKind.BROADCAST.BYTES) {
-                if(codeReader.get() == OpCodes.ADD_NODE.BYTES) {
-                    var status = addNodePacketReader.process(buffer);
+            var reader = fromOpCode(opcode);
+            if (reader == null) return ProcessStatus.ERROR;
 
-                    if(status == ProcessStatus.DONE) {
-                        state = State.DONE;
-
-                        value = addNodePacketReader.get();
-                    }
-                }
-                else if(codeReader.get() == OpCodes.DISCONNECTED.BYTES) {
-                    var status = disconnectedPacketReader.process(buffer);
-
-                    if(status == ProcessStatus.DONE) {
-                        state = State.DONE;
-
-                        value = disconnectedPacketReader.get();
-                    }
-                }
-            }
-            else if(locationReader.get() == TramKind.TRANSFER.BYTES) {
-                if(codeReader.get() == OpCodes.WORK.BYTES) {
-                    var status = workRequestPacketReader.process(buffer);
-
-                    if(status == ProcessStatus.DONE) {
-                        state = State.DONE;
-
-                        value = workRequestPacketReader.get();
-                    }
-                }
-                else if(codeReader.get() == OpCodes.WORK_ASSIGNMENT.BYTES) {
-                    var status = workAssignmentPacketReader.process(buffer);
-                    if(status == ProcessStatus.DONE) {
-                        state = State.DONE;
-                        value = workAssignmentPacketReader.get();
-                    }
-                }
-                else if(codeReader.get() == OpCodes.WORK_REQUEST_RESPONSE.BYTES) {
-                    var status = workRequestResponsePacketReader.process(buffer);
-
-                    if(status == ProcessStatus.DONE) {
-                        state = State.DONE;
-
-                        value = workRequestResponsePacketReader.get();
-                    }
-                }
-                else if(codeReader.get() == OpCodes.WORK_RESPONSE.BYTES){
-                    var status = workResponsePacketReader.process(buffer);
-                    if(status == ProcessStatus.DONE) {
-                        state = State.DONE;
-                        value = workResponsePacketReader.get();
-                    }
-                   // workResponsePacketReader.reset();
-                }
+            var status = reader.process(buffer);
+            if (status == ProcessStatus.DONE) {
+                state = State.DONE;
+                value = reader.get();
             }
         }
-
         if (state != State.DONE) {
             return ProcessStatus.REFILL;
         }
@@ -184,7 +110,6 @@ public class PacketReader implements Reader<FullPacket> {
         if (state != State.DONE) {
             throw new IllegalStateException();
         }
-
         return value;
     }
 
@@ -204,5 +129,21 @@ public class PacketReader implements Reader<FullPacket> {
         disconnectedPacketReader.reset();
         reconnectPacketReader.reset();
         workResponsePacketReader.reset();
+    }
+    private FullPacketReader fromOpCode(OpCodes opcode){
+        return switch(opcode){
+            case CONNECT -> connectPacketReader;
+            case OK -> connectOKPacketReader;
+            case ADD_NODE -> addNodePacketReader;
+            case WORK -> workRequestPacketReader;
+            case WORK_ASSIGNMENT -> workAssignmentPacketReader;
+            case LOGOUT_REQUEST -> logoutRequestPacketReader;
+            case PLEASE_RECONNECT -> pleaseReconnectPacketReader;
+            case WORK_REQUEST_RESPONSE -> workRequestResponsePacketReader;
+            case DISCONNECTED -> disconnectedPacketReader;
+            case RECONNECT -> reconnectPacketReader;
+            case WORK_RESPONSE -> workResponsePacketReader;
+            default -> null;
+        };
     }
 }

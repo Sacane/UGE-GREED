@@ -81,25 +81,25 @@ public class ReceivePacketVisitor implements PacketVisitor {
 
     @Override
     public void visit(WorkRequestPacket packet) {
-        if(server.getAddress().equals(packet.getIdDst().getSocket())) {
+        if(server.getAddress().equals(packet.dst().getSocket())) {
             System.out.println("RECEIVE A WORK REQUEST PACKET FOR ME");
             var deltaComputingPossibility = Server.MAXIMUM_COMPUTATION - server.currentOnWorkingComputationsValue();
             if(deltaComputingPossibility > 0) { //He is accepting the computation
                 server.tools().room().add(
-                        new ComputationEntity(new ComputationIdentifier(packet.getRequestId(), packet.getIdSrc().getSocket()),
+                        new ComputationEntity(new ComputationIdentifier(packet.getRequestId(), packet.src().getSocket()),
                                 new ComputeInfo(packet.getChecker().url(), packet.getChecker().className(), packet.getRange().start(), packet.getRange().end()))
                 );
-                server.transfer(packet.getIdSrc().getSocket(), new WorkRequestResponsePacket(
-                        packet.getIdSrc(),
-                        packet.getIdDst(),
+                server.transfer(packet.src().getSocket(), new WorkRequestResponsePacket(
+                        packet.src(),
+                        packet.dst(),
                         packet.getRequestId(),
                         deltaComputingPossibility
                 ));
             }
         }
         else {
-            System.out.println("RECEIVE A COMPUTATION FROM " + packet.getIdSrc().getSocket() + " FOR " + packet.getIdDst().getSocket());
-            server.transfer(packet.getIdDst().getSocket(), packet);
+            System.out.println("RECEIVE A COMPUTATION FROM " + packet.src().getSocket() + " FOR " + packet.dst().getSocket());
+            server.transfer(packet.dst().getSocket(), packet);
         }
     }
 
@@ -110,20 +110,20 @@ public class ReceivePacketVisitor implements PacketVisitor {
      */
     @Override
     public void visit(WorkAssignmentPacket packet) {
-        var hasBeenTransfer = packet.onConditionTransfer(!packet.getIdDst().getSocket().equals(server.getAddress()), packet.getIdDst().getSocket(), server);
+        var hasBeenTransfer = packet.onConditionTransfer(!packet.dst().getSocket().equals(server.getAddress()), packet.dst().getSocket(), server);
         if(hasBeenTransfer){
-            System.out.println("RECEIVE A WORK ASSIGNMENT PACKET TO TRANSFER FOR " + packet.getIdDst().getSocket());
+            System.out.println("RECEIVE A WORK ASSIGNMENT PACKET TO TRANSFER FOR " + packet.dst().getSocket());
             return;
         }
         System.out.println("RECEIVE PACKET ASSIGNMENT");
-        var idContext = new ComputationIdentifier(packet.getRequestId(), packet.getIdSrc().getSocket());
+        var idContext = new ComputationIdentifier(packet.getRequestId(), packet.src().getSocket());
         var entityResponse = server.tools().room().findById(idContext);
         if(entityResponse.isEmpty()){
             System.out.println("THIS SERVER DOES NOT HANDLE THIS COMPUTATION");
             return;
         }
         var entity = entityResponse.get();
-        var targetRange = packet.getRanges().get(0); //TODO REMOVE LIST
+        var targetRange = packet.getRanges(); //TODO REMOVE LIST
         var result = Client.checkerFromHTTP(entity.info().url(), entity.info().className());
         if(result.isEmpty()){
             logger.severe("CANNOT GET THE CHECKER");
@@ -145,9 +145,9 @@ public class ReceivePacketVisitor implements PacketVisitor {
         }
     }
     private void sendResponseWithOPCode(WorkAssignmentPacket origin, long index,String result, byte opcode){
-        server.transfer(origin.getIdSrc().getSocket(), new WorkResponsePacket(
-                origin.getIdDst(),
-                origin.getIdSrc(),
+        server.transfer(origin.src().getSocket(), new WorkResponsePacket(
+                origin.dst(),
+                origin.src(),
                 origin.getRequestId(),
                 new ResponsePacket(index, result, opcode)
         ));
@@ -259,7 +259,7 @@ public class ReceivePacketVisitor implements PacketVisitor {
         }
         else {
             server.deleteAddress(packet.getId().getSocket());
-            server.broadcast(new DisconnectedPacket(server.getAddress(), packet.getId().getSocket()), packet.getIdSrc().getSocket());
+            server.broadcast(new DisconnectedPacket(server.getAddress(), packet.getId().getSocket()), packet.src().getSocket());
         }
     }
 
@@ -306,7 +306,7 @@ public class ReceivePacketVisitor implements PacketVisitor {
                         server.getAddress(),
                         socketRange.socketAddress(),
                         packet.requestID(),
-                        List.of(new RangePacket(socketRange.range().start(), socketRange.range().end()))
+                        socketRange.range()
                 );
                 server.transfer(socketRange.socketAddress(), workAssignmentPacket);
             }

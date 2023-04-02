@@ -9,7 +9,7 @@ import fr.ramatellier.greed.server.util.TramKind;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
-public sealed interface FullPacket extends Packet permits AddNodePacket, ConnectKOPacket, ConnectOKPacket, ConnectPacket, DisconnectedPacket, LogoutDeniedPacket, LogoutGrantedPacket, LogoutRequestPacket, PleaseReconnectPacket, ReconnectPacket, WorkAssignmentPacket, WorkRequestPacket, WorkRequestResponsePacket, WorkResponsePacket {
+public sealed interface FullPacket extends Packet permits AddNodePacket, BroadcastPacket, ConnectKOPacket, ConnectOKPacket, ConnectPacket, DisconnectedPacket, LocalPacket, LogoutDeniedPacket, LogoutGrantedPacket, LogoutRequestPacket, PleaseReconnectPacket, ReconnectPacket, TransferPacket, WorkAssignmentPacket, WorkRequestPacket, WorkRequestResponsePacket, WorkResponsePacket {
     default void accept(PacketVisitor visitor){
         visitor.visit(this);
     }
@@ -28,4 +28,5 @@ public sealed interface FullPacket extends Packet permits AddNodePacket, Connect
         buffer.put(kind().BYTES);
         buffer.put(opCode().BYTES);
     }
+
 }
