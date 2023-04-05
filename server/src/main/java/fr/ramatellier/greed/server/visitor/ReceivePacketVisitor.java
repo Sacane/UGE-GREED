@@ -10,13 +10,11 @@ import fr.ramatellier.greed.server.compute.SharingProcessExecutor;
 import fr.ramatellier.greed.server.compute.SocketUcIdentifier;
 import fr.ramatellier.greed.server.packet.full.*;
 import fr.ramatellier.greed.server.packet.sub.IDPacket;
-import fr.ramatellier.greed.server.packet.sub.RangePacket;
 import fr.ramatellier.greed.server.packet.sub.ResponsePacket;
 import fr.uge.ugegreed.Client;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.util.List;
 import java.util.Objects;
 import java.util.logging.Logger;
 import java.util.stream.LongStream;
@@ -123,7 +121,7 @@ public class ReceivePacketVisitor implements PacketVisitor {
             return;
         }
         var entity = entityResponse.get();
-        var targetRange = packet.getRanges(); //TODO REMOVE LIST
+        var targetRange = packet.getRanges();
         var result = Client.checkerFromHTTP(entity.info().url(), entity.info().className());
         if(result.isEmpty()){
             logger.severe("CANNOT GET THE CHECKER");
@@ -288,12 +286,7 @@ public class ReceivePacketVisitor implements PacketVisitor {
         }
         var entity = entityResponse.get();
         room.increment(computeId);
-
-        store.storeSocketFor(
-                computeId,
-                new SocketUcIdentifier(packet.src().getSocket(), packet.nb_uc())
-        );
-        store.print(computeId);
+        store.store(computeId, new SocketUcIdentifier(packet.src().getSocket(), packet.nb_uc()));
         if(room.isReady(computeId)){
             var process = new SharingProcessExecutor(
                     store.availableSockets(computeId),
@@ -301,7 +294,6 @@ public class ReceivePacketVisitor implements PacketVisitor {
             );
             var socketRangeList = process.shareAndGet(entity.info().start());
             for(var socketRange: socketRangeList){
-                System.out.println("DISTRIBUTING TO " + socketRange.socketAddress());
                 var workAssignmentPacket = new WorkAssignmentPacket(
                         server.getAddress(),
                         socketRange.socketAddress(),
