@@ -35,6 +35,11 @@ public class IDPacket implements Packet {
     }
 
     @Override
+    public int size() {
+        return ipAddressPacket.size() + Integer.BYTES;
+    }
+
+    @Override
     public String toString() {
         return "IDPacket{" +
                 "port=" + port +

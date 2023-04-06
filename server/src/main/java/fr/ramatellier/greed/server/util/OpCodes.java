@@ -45,7 +45,9 @@ public enum OpCodes {
             case RECONNECT -> new ReconnectPacketReader();
             case OK -> new ConnectOKPacketReader();
             case CONNECT -> new ConnectPacketReader();
-            default -> null;
+            case KO -> new ConnectKOPacketReader();
+            case LOGOUT_DENIED -> new LogoutDeniedPacketReader();
+            case LOGOUT_GRANTED -> new LogoutGrantedPacketReader();
         };
     }
 }

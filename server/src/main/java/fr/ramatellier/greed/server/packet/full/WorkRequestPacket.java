@@ -4,8 +4,6 @@ import fr.ramatellier.greed.server.packet.sub.RangePacket;
 import fr.ramatellier.greed.server.packet.sub.CheckerPacket;
 import fr.ramatellier.greed.server.packet.sub.IDPacket;
 import fr.ramatellier.greed.server.util.OpCodes;
-import fr.ramatellier.greed.server.util.TramKind;
-
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
@@ -46,14 +44,9 @@ public final class WorkRequestPacket implements FullPacket, TransferPacket {
         return range;
     }
 
-    public long getMax() {
-        return max;
-    }
-
-    @Override
-    public TramKind kind() {
-        return TramKind.TRANSFER;
-    }
+//    public long getMax() {
+//        return max;
+//    }
 
     @Override
     public OpCodes opCode() {

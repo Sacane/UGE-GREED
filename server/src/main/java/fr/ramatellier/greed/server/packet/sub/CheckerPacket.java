@@ -18,4 +18,9 @@ public record CheckerPacket(String url, String className) implements Packet {
         urlPacket.putInBuffer(buffer);
         classNamePacket.putInBuffer(buffer);
     }
+
+    @Override
+    public int size() {
+        return Integer.BYTES * 2 + url.length() + className.length();
+    }
 }

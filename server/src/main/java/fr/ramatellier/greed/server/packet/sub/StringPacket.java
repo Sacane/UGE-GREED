@@ -11,4 +11,9 @@ public record StringPacket(String value) implements Packet {
     public void putInBuffer(ByteBuffer buffer) {
         buffer.putInt(value.length()).put(Server.UTF8.encode(value));
     }
+
+    @Override
+    public int size() {
+        return Integer.BYTES + value.length();
+    }
 }

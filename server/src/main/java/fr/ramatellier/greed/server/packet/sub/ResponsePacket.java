@@ -30,6 +30,11 @@ public final class ResponsePacket implements Packet {
         }
     }
 
+    @Override
+    public int size() {
+        return Long.BYTES + Byte.BYTES + response.size();
+    }
+
     public byte getResponseCode() {
         return responseCode;
     }

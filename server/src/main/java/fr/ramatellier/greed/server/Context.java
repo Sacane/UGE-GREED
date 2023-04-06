@@ -1,7 +1,6 @@
 package fr.ramatellier.greed.server;
 
 import fr.ramatellier.greed.server.packet.full.FullPacket;
-import fr.ramatellier.greed.server.reader.FullPacketReader;
 import fr.ramatellier.greed.server.reader.PacketReader;
 import fr.ramatellier.greed.server.visitor.ReceivePacketVisitor;
 
@@ -61,7 +60,6 @@ public class Context {
             var buffer = ByteBuffer.allocate(BUFFER_SIZE);
             packet.putInBuffer(buffer);
             buffer.flip();
-            System.out.println(packet);
             if(buffer.remaining() <= bufferOut.remaining()) {
                 bufferOut.put(buffer);
                 queue.poll();
@@ -98,14 +96,19 @@ public class Context {
     }
 
     public void doRead() throws IOException {
-        var readValue = sc.read(bufferIn);
-        System.out.println("DO READ"); // Ne s'applique qu'une fois par serveur lors d'une réponse à un calcul...
-        if (readValue == -1) {
-            closed = true;
-        }
+        try {
+            var readValue = sc.read(bufferIn);
+            System.out.println("DO READ");
+            if (readValue == -1) {
+                closed = true;
+            }
 
-        processIn();
-        updateInterestOps();
+            processIn();
+            updateInterestOps();
+        } catch (IOException e) {
+            System.out.println(bufferIn.remaining());
+            silentlyClose();
+        }
     }
 
     public void doWrite() throws IOException {

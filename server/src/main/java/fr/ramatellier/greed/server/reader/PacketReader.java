@@ -1,9 +1,6 @@
 package fr.ramatellier.greed.server.reader;
 
-import fr.ramatellier.greed.server.packet.full.ConnectKOPacket;
 import fr.ramatellier.greed.server.packet.full.FullPacket;
-import fr.ramatellier.greed.server.packet.full.LogoutDeniedPacket;
-import fr.ramatellier.greed.server.packet.full.LogoutGrantedPacket;
 import fr.ramatellier.greed.server.reader.primitive.ByteReader;
 import fr.ramatellier.greed.server.util.OpCodes;
 import fr.ramatellier.greed.server.util.TramKind;
@@ -81,7 +78,7 @@ public class PacketReader implements FullPacketReader {
     private static HashMap<OpCodes, FullPacketReader> createReaders(){
         var readers = new HashMap<OpCodes, FullPacketReader>();
         for(var opcode : OpCodes.values()){
-            readers.put(opcode, FullPacketReader.fromOpCode(opcode));
+            readers.put(opcode, opcode.reader());
         }
         return readers;
     }

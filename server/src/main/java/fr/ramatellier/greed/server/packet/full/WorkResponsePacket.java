@@ -32,6 +32,11 @@ public record WorkResponsePacket(
         responsePacket.putInBuffer(buffer);
     }
 
+    @Override
+    public int size() {
+        return 0;
+    }
+
     public IDPacket src() {
         return src;
     }

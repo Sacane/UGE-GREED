@@ -11,4 +11,9 @@ public record RangePacket(long start, long end) implements Packet {
         buffer.putLong(start);
         buffer.putLong(end);
     }
+
+    @Override
+    public int size() {
+        return Long.BYTES * 2;
+    }
 }

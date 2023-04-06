@@ -11,4 +11,9 @@ public record PacketHeader(TramKind kind, byte opCode) implements Packet {
         buffer.put(kind.BYTES);
         buffer.put(opCode);
     }
+
+    @Override
+    public int size() {
+        return Byte.BYTES * 2;
+    }
 }
