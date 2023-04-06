@@ -1,53 +1,74 @@
 package fr.ramatellier.greed.server;
 
-import fr.ramatellier.greed.server.packet.FullPacket;
+import fr.ramatellier.greed.server.packet.full.BroadcastPacket;
+import fr.ramatellier.greed.server.packet.full.FullPacket;
+import fr.ramatellier.greed.server.packet.full.LocalPacket;
+import fr.ramatellier.greed.server.packet.full.TransferPacket;
 import fr.ramatellier.greed.server.reader.PacketReader;
-import fr.ramatellier.greed.server.reader.Reader;
+import fr.ramatellier.greed.server.visitor.ReceivePacketVisitor;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayDeque;
 
 public class Context {
-    private static final int BUFFER_SIZE = 1_024;
+    private static final int BUFFER_SIZE = 32_768;
     private final SelectionKey key;
     private final SocketChannel sc;
-    private final ServerVisitor visitor;
+    private final ReceivePacketVisitor visitor;
     private final ByteBuffer bufferIn = ByteBuffer.allocate(BUFFER_SIZE);
     private final ByteBuffer bufferOut = ByteBuffer.allocate(BUFFER_SIZE);
     private final PacketReader packetReader = new PacketReader();
     private final ArrayDeque<FullPacket> queue = new ArrayDeque<>();
     private boolean closed = false;
+    private final Server server;
 
     public Context(Server server, SelectionKey key) {
         this.key = key;
         this.sc = (SocketChannel) key.channel();
-        this.visitor = new ServerVisitor(server, this);
+        this.visitor = new ReceivePacketVisitor(server, this);
+        this.server = server;
     }
 
     private void processIn() {
         for (;;) {
-            Reader.ProcessStatus status = packetReader.process(bufferIn);
-            switch (status) {
-                case DONE:
-                    var packet = packetReader.get();
-                    packetReader.reset();
-                    packet.accept(visitor);
-                    break;
-                case REFILL:
-                    return;
+            var state = packetReader.process(bufferIn);
+            switch (state) {
                 case ERROR:
                     silentlyClose();
+                case REFILL:
                     return;
+                case DONE:
+                    var frame = packetReader.get();
+                    packetReader.reset();
+                    frame.accept(visitor);
+//                    processPacket(frame);
+                    break;
             }
         }
     }
 
+    private void processPacket(FullPacket packet) {
+        switch(packet){
+            case BroadcastPacket b -> {
+                b.accept(visitor);
+                server.broadcast(b, b.src().getSocket());
+            }
+            case TransferPacket t -> {
+                if(t.dst().getSocket().equals(server.getAddress())){
+                    t.accept(visitor);
+                } else {
+                    server.transfer(t.dst().getSocket(), t);
+                }
+            }
+            case LocalPacket l -> l.accept(visitor);
+        }
+    }
+
     public void queuePacket(FullPacket packet) {
-        queue.add(packet);
+        queue.offer(packet);
 
         processOut();
         updateInterestOps();
@@ -55,13 +76,19 @@ public class Context {
 
     private void processOut() {
         while(!queue.isEmpty()) {
-            var packet = queue.poll();
+            var packet = queue.peek();
 
-            packet.putInBuffer(bufferOut);
+            if(packet.size() <= bufferOut.remaining()) {
+                queue.poll();
+                packet.putInBuffer(bufferOut);
+            }
+            else {
+                break;
+            }
         }
     }
 
-    private void updateInterestOps() {
+    public void updateInterestOps() {
         var op = 0;
 
         if (bufferOut.position() > 0) {

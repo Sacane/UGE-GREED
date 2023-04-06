@@ -1,7 +1,7 @@
 package fr.ramatellier.greed.server.util;
 
 import fr.ramatellier.greed.server.Context;
-import fr.ramatellier.greed.server.packet.FullPacket;
+import fr.ramatellier.greed.server.packet.full.FullPacket;
 
 import java.net.InetSocketAddress;
 import java.util.*;
@@ -14,15 +14,6 @@ import java.util.function.Consumer;
  */
 public class RootTable {
     private final HashMap<InetSocketAddress, AddressContext> table = new HashMap<>();
-
-    /**
-     * Check if the table has registered the destination address.
-     * @param socketAddress the address to check
-     * @return true if the address is registered, false otherwise.
-     */
-    public boolean exists(InetSocketAddress socketAddress) {
-        return table.containsKey(socketAddress);
-    }
 
     /**
      * Put a new destination address in the table or update the value of an existing one.
@@ -69,32 +60,30 @@ public class RootTable {
         return table.keySet();
     }
 
-    public List<InetSocketAddress> ancestors(InetSocketAddress parentAddress, InetSocketAddress address) {
+    public List<InetSocketAddress> ancestors(InetSocketAddress parentAddress) {
         var ancestorsList = new ArrayList<InetSocketAddress>();
 
         for(var entry: table.entrySet()) {
             if(entry.getKey().equals(entry.getValue().address()) && !parentAddress.equals(entry.getKey())) {
                 ancestorsList.add(entry.getKey());
-
-                for(var ancestor: ancestorsOf(entry.getKey())) {
-                    ancestorsList.add(ancestor);
-                }
+                ancestorsList.addAll(ancestorsOf(entry.getKey()));
+//                for(var ancestor: ancestorsOf(entry.getKey())) {
+//                    ancestorsList.add(ancestor);
+//                }
             }
         }
-
         return ancestorsList;
     }
 
     private List<InetSocketAddress> ancestorsOf(InetSocketAddress address) {
         var ancestors = new ArrayList<InetSocketAddress>();
-
         for(var entry: table.entrySet()) {
             if(address.equals(entry.getValue().address()) && !entry.getKey().equals(entry.getValue().address())) {
                 ancestors.add(entry.getKey());
-
-                for(var ancestor: ancestorsOf(entry.getKey())) {
-                    ancestors.add(ancestor);
-                }
+                ancestors.addAll(ancestorsOf(entry.getKey()));
+//                for(var ancestor: ancestorsOf(entry.getKey())) {
+//                    ancestors.add(ancestor);
+//                }
             }
         }
 

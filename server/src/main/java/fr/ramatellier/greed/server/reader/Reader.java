@@ -1,15 +1,28 @@
 package fr.ramatellier.greed.server.reader;
 
+import fr.ramatellier.greed.server.packet.Packet;
+
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 
 public interface Reader<T> {
-    public static enum ProcessStatus { DONE, REFILL, ERROR };
+    enum ProcessStatus {
+        DONE, REFILL, ERROR
+    }
+    ProcessStatus process(ByteBuffer buffer);
+    T get();
+    void reset();
 
-    public ProcessStatus process(ByteBuffer bb);
+    default <E extends Packet> void fillList(ArrayList<E> list, int size, Reader<E> reader, ByteBuffer buffer) {
+        while(buffer.limit() > 0 && list.size() != size) {
+            var status = reader.process(buffer);
 
-    public T get();
-
-    public void reset();
+            if(status == ProcessStatus.DONE) {
+                list.add(reader.get());
+                reader.reset();
+            }
+        }
+    }
 
     default void fillBuffer(ByteBuffer srcBuffer, ByteBuffer dstBuffer) {
         try {
