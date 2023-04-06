@@ -44,25 +44,12 @@ public class LogoutRequestPacketReader implements FullPacketReader {
             }
         }
         if(state == State.WAITING_IDS) {
+            fillList(ids, sizeReader.get(), idReader, buffer);
+
             if(ids.size() == sizeReader.get()) {
                 state = State.DONE;
 
                 value = new LogoutRequestPacket(idMother.get().getSocket(), ids.stream().map(IDPacket::getSocket).toList());
-            }
-
-            while(buffer.limit() > 0 && ids.size() != sizeReader.get()) {
-                var status = idReader.process(buffer);
-
-                if(status == ProcessStatus.DONE) {
-                    ids.add(idReader.get());
-                    idReader.reset();
-                }
-
-                if(ids.size() == sizeReader.get()) {
-                    state = State.DONE;
-
-                    value = new LogoutRequestPacket(idMother.get().getSocket(), ids.stream().map(IDPacket::getSocket).toList());
-                }
             }
         }
 

@@ -8,15 +8,14 @@ import fr.ramatellier.greed.server.util.TramKind;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 
-
 public class PacketReader implements FullPacketReader {
     private enum State {
         DONE, WAITING_LOCATION, WAITING_CODE, WAITING_PACKET, ERROR
     }
     private State state = State.WAITING_LOCATION;
-    private final HashMap<OpCodes, FullPacketReader> readers = createReaders();
     private final ByteReader locationReader = new ByteReader();
     private final ByteReader codeReader = new ByteReader();
+    private final HashMap<OpCodes, FullPacketReader> readers = createReaders();
     private FullPacket value;
 
     @Override
@@ -59,12 +58,12 @@ public class PacketReader implements FullPacketReader {
         return Reader.ProcessStatus.DONE;
     }
 
-
     @Override
     public FullPacket get() {
         if (state != State.DONE) {
             throw new IllegalStateException();
         }
+
         return value;
     }
 
@@ -75,18 +74,18 @@ public class PacketReader implements FullPacketReader {
         codeReader.reset();
         resetReaders();
     }
-    private static HashMap<OpCodes, FullPacketReader> createReaders(){
+
+    private static HashMap<OpCodes, FullPacketReader> createReaders() {
         var readers = new HashMap<OpCodes, FullPacketReader>();
+
         for(var opcode : OpCodes.values()){
             readers.put(opcode, opcode.reader());
         }
+
         return readers;
     }
-    private void resetReaders(){
-        for(var reader : readers.values()){
-            if(reader != null){
-                reader.reset();
-            }
-        }
+
+    private void resetReaders() {
+        readers.values().forEach(Reader::reset);
     }
 }

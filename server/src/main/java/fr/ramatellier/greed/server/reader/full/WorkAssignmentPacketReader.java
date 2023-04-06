@@ -1,95 +1,61 @@
 package fr.ramatellier.greed.server.reader.full;
 
 import fr.ramatellier.greed.server.compute.Range;
-import fr.ramatellier.greed.server.packet.sub.RangePacket;
 import fr.ramatellier.greed.server.packet.full.WorkAssignmentPacket;
 import fr.ramatellier.greed.server.reader.FullPacketReader;
 import fr.ramatellier.greed.server.reader.sub.IDReader;
 import fr.ramatellier.greed.server.reader.sub.RangePacketReader;
 import fr.ramatellier.greed.server.reader.Reader;
-import fr.ramatellier.greed.server.reader.primitive.IntReader;
 import fr.ramatellier.greed.server.reader.primitive.LongReader;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 
 public class WorkAssignmentPacketReader implements FullPacketReader {
     private enum State {
-        DONE, WAITING_IDSRC, WAITING_IDDST, WAITING_REQUESTID, WAITING_SIZE, WAITING_RANGES, ERROR
+        DONE, WAITING_ID_SRC, WAITING_ID_DST, WAITING_REQUEST_ID, WAITING_RANGES, ERROR
     }
-    private State state = State.WAITING_IDSRC;
+    private State state = State.WAITING_ID_SRC;
     private final IDReader idSrcReader = new IDReader();
     private final IDReader idDstReader = new IDReader();
     private final LongReader requestIdReader = new LongReader();
-    private final IntReader sizeReader = new IntReader();
     private final RangePacketReader rangePacketReader = new RangePacketReader();
-    private ArrayList<RangePacket> ranges;
-    private RangePacket rangePacket;
     private WorkAssignmentPacket value;
 
     @Override
     public ProcessStatus process(ByteBuffer buffer) {
-        System.out.println("WorkAssignmentPacketReader.process");
         if (state == State.DONE || state == State.ERROR) {
             throw new IllegalStateException();
         }
 
-        if(state == State.WAITING_IDSRC) {
+        if(state == State.WAITING_ID_SRC) {
             var status = idSrcReader.process(buffer);
 
             if(status == ProcessStatus.DONE) {
-                state = State.WAITING_IDDST;
+                state = State.WAITING_ID_DST;
             }
         }
-        if(state == State.WAITING_IDDST) {
+        if(state == State.WAITING_ID_DST) {
             var status = idDstReader.process(buffer);
 
             if(status == ProcessStatus.DONE) {
-                state = State.WAITING_REQUESTID;
+                state = State.WAITING_REQUEST_ID;
             }
         }
-        if(state == State.WAITING_REQUESTID) {
+        if(state == State.WAITING_REQUEST_ID) {
             var status = requestIdReader.process(buffer);
 
             if(status == ProcessStatus.DONE) {
                 state = State.WAITING_RANGES;
             }
         }
-        /*if(state == State.WAITING_SIZE) {
-            var status = sizeReader.process(buffer);
-
-            if(status == ProcessStatus.DONE) {
-                state = State.WAITING_RANGES;
-            }
-        }*/
-        System.out.println("WAITING RANGE");
         if(state == State.WAITING_RANGES) {
             var status = rangePacketReader.process(buffer);
+
             if(status == ProcessStatus.DONE) {
-                rangePacket = rangePacketReader.get();
-                value = new WorkAssignmentPacket(idSrcReader.get().getSocket(), idDstReader.get().getSocket(), requestIdReader.get(), new Range(rangePacket.start(), rangePacket.end()));
-                state = State.DONE;
-            }
-            /*if(ranges.size() == sizeReader.get()) {
                 state = State.DONE;
 
-                value = new WorkAssignmentPacket(idSrcReader.get().getSocket(), idDstReader.get().getSocket(), requestIdReader.get(), ranges);
+                value = new WorkAssignmentPacket(idSrcReader.get().getSocket(), idDstReader.get().getSocket(), requestIdReader.get(), new Range(rangePacketReader.get().start(), rangePacketReader.get().end()));
             }
-
-            while(buffer.limit() > 0 && ranges.size() != sizeReader.get()) {
-                var status = rangePacketReader.process(buffer);
-
-                if(status == ProcessStatus.DONE) {
-                    ranges.add(rangePacketReader.get());
-                    rangePacketReader.reset();
-                }
-
-                if(ranges.size() == sizeReader.get()) {
-                    state = State.DONE;
-
-                    value = new WorkAssignmentPacket(idSrcReader.get().getSocket(), idDstReader.get().getSocket(), requestIdReader.get(), ranges);
-                }
-            }*/
         }
 
         if (state != State.DONE) {
@@ -110,12 +76,10 @@ public class WorkAssignmentPacketReader implements FullPacketReader {
 
     @Override
     public void reset() {
-        state = State.WAITING_IDSRC;
+        state = State.WAITING_ID_SRC;
         idSrcReader.reset();
         idDstReader.reset();
         requestIdReader.reset();
-        sizeReader.reset();
         rangePacketReader.reset();
-        ranges = new ArrayList<>();
     }
 }

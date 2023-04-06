@@ -80,7 +80,6 @@ public class ReceivePacketVisitor implements PacketVisitor {
     @Override
     public void visit(WorkRequestPacket packet) {
         if(server.getAddress().equals(packet.dst().getSocket())) {
-            System.out.println("RECEIVE A WORK REQUEST PACKET FOR ME");
             var deltaComputingPossibility = Server.MAXIMUM_COMPUTATION - server.currentOnWorkingComputationsValue();
             if(deltaComputingPossibility > 0) { //He is accepting the computation
                 server.tools().room().add(
@@ -96,7 +95,6 @@ public class ReceivePacketVisitor implements PacketVisitor {
             }
         }
         else {
-            System.out.println("RECEIVE A COMPUTATION FROM " + packet.src().getSocket() + " FOR " + packet.dst().getSocket());
             server.transfer(packet.dst().getSocket(), packet);
         }
     }
@@ -110,14 +108,11 @@ public class ReceivePacketVisitor implements PacketVisitor {
     public void visit(WorkAssignmentPacket packet) {
         var hasBeenTransfer = packet.onConditionTransfer(!packet.dst().getSocket().equals(server.getAddress()), packet.dst().getSocket(), server);
         if(hasBeenTransfer){
-            System.out.println("RECEIVE A WORK ASSIGNMENT PACKET TO TRANSFER FOR " + packet.dst().getSocket());
             return;
         }
-        System.out.println("RECEIVE PACKET ASSIGNMENT");
         var idContext = new ComputationIdentifier(packet.getRequestId(), packet.src().getSocket());
         var entityResponse = server.tools().room().findById(idContext);
         if(entityResponse.isEmpty()){
-            System.out.println("THIS SERVER DOES NOT HANDLE THIS COMPUTATION");
             return;
         }
         var entity = entityResponse.get();
@@ -139,7 +134,6 @@ public class ReceivePacketVisitor implements PacketVisitor {
             }catch (Exception e){
                 sendResponseWithOPCode(packet, i, null, (byte) 0x01);
             }
-            System.out.println("Checker sent for " + i); //TODO REMOVE IT LATER
         }
     }
     private void sendResponseWithOPCode(WorkAssignmentPacket origin, long index,String result, byte opcode){
@@ -157,10 +151,8 @@ public class ReceivePacketVisitor implements PacketVisitor {
                 packet.dst().getSocket(),
                 server
         )){
-            // System.out.println("RECEIVE A WORK RESPONSE PACKET TO TRANSFER FOR " + packet.dst().getSocket());
             return;
         }
-        // System.out.println("RECEIVED A RESULT FROM " + packet.src().getSocket() + " FOR COMPUTATION " + packet.requestID());
         var responsePacket = packet.responsePacket();
         switch(packet.responsePacket().getResponseCode()){
             case 0x00 -> {
@@ -184,8 +176,6 @@ public class ReceivePacketVisitor implements PacketVisitor {
 
     @Override
     public void visit(LogoutRequestPacket packet) {
-        System.out.println("RECEIVE LOGOUT");
-
         if(server.isRunning()) {
             context.queuePacket(new LogoutGrantedPacket());
 
@@ -209,8 +199,6 @@ public class ReceivePacketVisitor implements PacketVisitor {
 
     @Override
     public void visit(LogoutGrantedPacket packet) {
-        System.out.println("LOGOUT ACCEPTED");
-
         var daughtersContext = server.daughtersContext();
 
         for(var daughterContext: daughtersContext) {
@@ -220,21 +208,15 @@ public class ReceivePacketVisitor implements PacketVisitor {
 
     @Override
     public void visit(PleaseReconnectPacket packet) {
-        System.out.println("PLEASE RECONNECT PACKET");
-        System.out.println("TO " + packet.getId().getSocket());
-
         try {
             server.connectToNewParent(packet.getId());
         } catch (IOException e) {
-            System.out.println("FAIL RECONNECT TO NEW PARENT");
+            // Ignore exception
         }
     }
 
     @Override
     public void visit(ReconnectPacket packet) {
-        System.out.println("RECONNECT PACKET");
-        System.out.println("FROM " + packet.getId().getSocket());
-
         server.receiveReconnect(packet.getId().getSocket());
         server.addRoot(packet.getId().getSocket(), packet.getId().getSocket(), context);
 
@@ -243,7 +225,6 @@ public class ReceivePacketVisitor implements PacketVisitor {
         }
 
         if(server.allConnected()) {
-            System.out.println("TOUT LE MONDE EST CONNECT");
             server.broadcast(new DisconnectedPacket(server.getAddress(), server.getAddressLogout()), server.getAddress());
             server.deleteAddress(server.getAddressLogout());
         }
@@ -251,8 +232,6 @@ public class ReceivePacketVisitor implements PacketVisitor {
 
     @Override
     public void visit(DisconnectedPacket packet) {
-        System.out.println("DISCONNECTED PACKET");
-
         if(server.getAddress().equals(packet.getId().getSocket())) {
             server.shutdown();
         }
@@ -270,7 +249,6 @@ public class ReceivePacketVisitor implements PacketVisitor {
                 server
         );
         if(transfer){
-            System.out.println("RECEIVE A WORK RESPONSE PACKET TO TRANSFER FOR " + packet.dst().getSocket());
             return;
         }
         //Computation sender part

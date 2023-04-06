@@ -44,25 +44,12 @@ public class ReconnectPacketReader implements FullPacketReader {
             }
         }
         if(state == State.WAITING_IDS) {
+            fillList(ids, sizeReader.get(), ancestorIdReader, buffer);
+
             if(ids.size() == sizeReader.get()) {
                 state = State.DONE;
 
                 value = new ReconnectPacket(idReader.get().getSocket(), ids.stream().map(IDPacket::getSocket).toList());
-            }
-
-            while(buffer.limit() > 0 && ids.size() != sizeReader.get()) {
-                var status = ancestorIdReader.process(buffer);
-
-                if(status == ProcessStatus.DONE) {
-                    ids.add(ancestorIdReader.get());
-                    ancestorIdReader.reset();
-                }
-
-                if(ids.size() == sizeReader.get()) {
-                    state = State.DONE;
-
-                    value = new ReconnectPacket(idReader.get().getSocket(), ids.stream().map(IDPacket::getSocket).toList());
-                }
             }
         }
 
@@ -87,5 +74,6 @@ public class ReconnectPacketReader implements FullPacketReader {
         state = State.WAITING_ID;
         idReader.reset();
         sizeReader.reset();
+        ancestorIdReader.reset();
     }
 }
