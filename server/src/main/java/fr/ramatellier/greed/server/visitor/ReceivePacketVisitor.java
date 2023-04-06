@@ -83,10 +83,8 @@ public class ReceivePacketVisitor implements PacketVisitor {
             System.out.println("RECEIVE A WORK REQUEST PACKET FOR ME");
             var deltaComputingPossibility = Server.MAXIMUM_COMPUTATION - server.currentOnWorkingComputationsValue();
             if(deltaComputingPossibility > 0) { //He is accepting the computation
-                server.tools().room().add(
-                        new ComputationEntity(new ComputationIdentifier(packet.getRequestId(), packet.src().getSocket()),
-                                new ComputeInfo(packet.getChecker().url(), packet.getChecker().className(), packet.getRange().start(), packet.getRange().end()))
-                );
+                server.addRoom(new ComputationEntity(new ComputationIdentifier(packet.getRequestId(), packet.src().getSocket()),
+                                new ComputeInfo(packet.getChecker().url(), packet.getChecker().className(), packet.getRange().start(), packet.getRange().end())));
                 server.transfer(packet.src().getSocket(), new WorkRequestResponsePacket(
                         packet.src(),
                         packet.dst(),
@@ -163,32 +161,20 @@ public class ReceivePacketVisitor implements PacketVisitor {
         // System.out.println("RECEIVED A RESULT FROM " + packet.src().getSocket() + " FOR COMPUTATION " + packet.requestID());
         var responsePacket = packet.responsePacket();
         switch(packet.responsePacket().getResponseCode()){
-            case 0x00 -> {
-                //TODO Create file and fill response inside
-                 System.out.println(responsePacket.getResponse().value());
-            }
-            case 0x01 -> {
-                System.out.println("An exception has occur while computing the value : " + responsePacket.getValue());
-            }
-            case 0x02 -> {
-                System.out.println("Time out while computing the value : " + responsePacket.getValue());
-            }
-            case 0x03 -> {
-                System.out.println("Cannot get the checker");
-            }
-            default -> {
-                logger.severe("UNKNOWN RESPONSE CODE");
-            }
+            //TODO Create file and fill response inside
+            case 0x00 -> System.out.println(responsePacket.getResponse().value());
+            case 0x01 -> System.out.println("An exception has occur while computing the value : " + responsePacket.getValue());
+            case 0x02 -> System.out.println("Time out while computing the value : " + responsePacket.getValue());
+            case 0x03 -> System.out.println("Cannot get the checker");
+            default -> logger.severe("UNKNOWN RESPONSE CODE");
         }
     }
 
     @Override
     public void visit(LogoutRequestPacket packet) {
         System.out.println("RECEIVE LOGOUT");
-
         if(server.isRunning()) {
             context.queuePacket(new LogoutGrantedPacket());
-
             if(packet.getDaughters().size() == 0) {
                 server.broadcast(new DisconnectedPacket(server.getAddress(), packet.getId().getSocket()), server.getAddress());
                 server.deleteAddress(packet.getId().getSocket());
@@ -278,19 +264,15 @@ public class ReceivePacketVisitor implements PacketVisitor {
             return;
         }
         var computeId = new ComputationIdentifier(packet.requestID(), server.getAddress());
-        var store = server.tools().reminder();
-        var room = server.tools().room();
-        var entityResponse = room.findById(computeId);
-        if(entityResponse.isEmpty()){
-            logger.severe("No computation found for id " + computeId);
+        var entity = server.retrieveWaitingComputation(computeId);
+        if(entity == null){
             return;
         }
-        var entity = entityResponse.get();
-        room.increment(computeId);
-        store.store(computeId, new SocketUcIdentifier(packet.src().getSocket(), packet.nb_uc()));
-        if(room.isReady(computeId)){
+        server.incrementWaitingWorker(computeId);
+        server.storeComputation(computeId, new SocketUcIdentifier(packet.src().getSocket(), packet.nb_uc()));
+        if(server.isRoomReady(computeId)){
             var process = new SharingProcessExecutor(
-                    store.availableSockets(computeId),
+                    server.availableSocketsUc(computeId),
                     entity.info().end() - entity.info().start()
             );
             var socketRangeList = process.shareAndGet(entity.info().start());

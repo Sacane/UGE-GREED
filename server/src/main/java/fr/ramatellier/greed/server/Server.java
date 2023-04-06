@@ -2,6 +2,7 @@ package fr.ramatellier.greed.server;
 
 import fr.ramatellier.greed.server.compute.ComputationEntity;
 import fr.ramatellier.greed.server.compute.ComputationIdentifier;
+import fr.ramatellier.greed.server.compute.SocketUcIdentifier;
 import fr.ramatellier.greed.server.packet.full.*;
 import fr.ramatellier.greed.server.packet.sub.IDPacket;
 import fr.ramatellier.greed.server.util.Helpers;
@@ -47,6 +48,27 @@ public class Server {
     // Others
     public static final Charset UTF8 = StandardCharsets.UTF_8;
 
+    public void addRoom(ComputationEntity computationEntity) {
+        Objects.requireNonNull(computationEntity);
+        processToolManager.room().add(computationEntity);
+    }
+
+    public ComputationEntity retrieveWaitingComputation(ComputationIdentifier idContext) {
+        var response = processToolManager.room().findById(idContext);
+        return response.orElse(null);
+    }
+    public void incrementWaitingWorker(ComputationIdentifier id) {
+        processToolManager.room().increment(id);
+    }
+    public void storeComputation(ComputationIdentifier id, SocketUcIdentifier ucId){
+        processToolManager.reminder().store(id, ucId);
+    }
+    public boolean isRoomReady(ComputationIdentifier id){
+        return processToolManager.room().isReady(id);
+    }
+    public List<SocketUcIdentifier> availableSocketsUc(ComputationIdentifier id){
+        return processToolManager.reminder().availableSockets(id);
+    }
     private enum Command{
         INFO, STOP, SHUTDOWN, COMPUTE
     }
