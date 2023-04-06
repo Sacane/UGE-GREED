@@ -12,9 +12,9 @@ import java.nio.ByteBuffer;
 
 public class WorkRequestPacketReader implements FullPacketReader {
     private enum State {
-        DONE, WAITING_IDSRC, WAITING_IDDST, WAITING_REQUESTID, WAITING_CHECKER, WAITING_RANGE, WAITING_MAX, ERROR
+        DONE, WAITING_ID_SRC, WAITING_ID_DST, WAITING_REQUEST_ID, WAITING_CHECKER, WAITING_RANGE, WAITING_MAX, ERROR
     }
-    private State state = State.WAITING_IDSRC;
+    private State state = State.WAITING_ID_SRC;
     private final IDReader idSrcReader = new IDReader();
     private final IDReader idDstReader = new IDReader();
     private final LongReader requestIdReader = new LongReader();
@@ -29,21 +29,21 @@ public class WorkRequestPacketReader implements FullPacketReader {
             throw new IllegalStateException();
         }
 
-        if(state == State.WAITING_IDSRC) {
+        if(state == State.WAITING_ID_SRC) {
             var status = idSrcReader.process(buffer);
 
             if(status == ProcessStatus.DONE) {
-                state = State.WAITING_IDDST;
+                state = State.WAITING_ID_DST;
             }
         }
-        if(state == State.WAITING_IDDST) {
+        if(state == State.WAITING_ID_DST) {
             var status = idDstReader.process(buffer);
 
             if(status == ProcessStatus.DONE) {
-                state = State.WAITING_REQUESTID;
+                state = State.WAITING_REQUEST_ID;
             }
         }
-        if(state == State.WAITING_REQUESTID) {
+        if(state == State.WAITING_REQUEST_ID) {
             var status = requestIdReader.process(buffer);
 
             if(status == ProcessStatus.DONE) {
@@ -92,7 +92,7 @@ public class WorkRequestPacketReader implements FullPacketReader {
 
     @Override
     public void reset() {
-        state = State.WAITING_IDSRC;
+        state = State.WAITING_ID_SRC;
         idSrcReader.reset();
         idDstReader.reset();
         requestIdReader.reset();

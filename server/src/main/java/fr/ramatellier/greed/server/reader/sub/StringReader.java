@@ -11,10 +11,10 @@ public class StringReader implements Reader<String> {
     private enum State {
         DONE, WAITING_INT, WAITING_STRING, ERROR
     }
+    private State state = State.WAITING_INT;
     private static final Charset UTF8 = StandardCharsets.UTF_8;
     private final IntReader intReader = new IntReader();
     private ByteBuffer stringBuffer;
-    private State state = State.WAITING_INT;
     private String value;
 
     @Override
@@ -32,6 +32,7 @@ public class StringReader implements Reader<String> {
                 if(size < 0 || size > 1024) {
                     return ProcessStatus.ERROR;
                 }
+
                 stringBuffer = ByteBuffer.allocate(size);
                 state = State.WAITING_STRING;
             }
@@ -41,15 +42,15 @@ public class StringReader implements Reader<String> {
 
             if(!stringBuffer.hasRemaining()) {
                 state = State.DONE;
+
+                stringBuffer.flip();
+                value = UTF8.decode(stringBuffer).toString();
             }
         }
 
-        if (state == State.WAITING_INT || state == State.WAITING_STRING) {
+        if (state != State.DONE) {
             return ProcessStatus.REFILL;
         }
-
-        stringBuffer.flip();
-        value = UTF8.decode(stringBuffer).toString();
 
         return ProcessStatus.DONE;
     }

@@ -9,63 +9,57 @@ import fr.ramatellier.greed.server.reader.primitive.LongReader;
 import java.nio.ByteBuffer;
 
 public class WorkResponsePacketReader implements FullPacketReader {
-
-
     enum State {
-        ERROR,
-        WAITING_SRC_ID,
-        WAITING_DST_ID,
-        WAITING_REQUEST_ID,
-        WAITING_RESPONSE,
-        DONE,
+        DONE, WAITING_ID_SRC, WAITING_ID_DST, WAITING_REQUEST_ID, WAITING_RESPONSE, ERROR
     }
-    private State state = State.WAITING_SRC_ID;
-    private final IDReader srcReader = new IDReader();
-    private final IDReader dstReader = new IDReader();
-    private final LongReader longReader = new LongReader();
+    private State state = State.WAITING_ID_SRC;
+    private final IDReader idSrcReader = new IDReader();
+    private final IDReader idDstReader = new IDReader();
+    private final LongReader requestIdReader = new LongReader();
     private final ResponsePacketReader responsePacketReader = new ResponsePacketReader();
+    private WorkResponsePacket value;
 
     @Override
-    public ProcessStatus process(ByteBuffer bb) {
+    public ProcessStatus process(ByteBuffer buffer) {
         if(state == State.DONE || state == State.ERROR) {
             throw new IllegalStateException();
         }
-        if(state == State.WAITING_SRC_ID) {
-            var status = srcReader.process(bb);
+
+        if(state == State.WAITING_ID_SRC) {
+            var status = idSrcReader.process(buffer);
+
             if(status == ProcessStatus.DONE) {
-                state = State.WAITING_DST_ID;
-            } else if(status == ProcessStatus.ERROR) {
-                return ProcessStatus.ERROR;
+                state = State.WAITING_ID_DST;
             }
         }
-        if(state == State.WAITING_DST_ID) {
-            var status = dstReader.process(bb);
+        if(state == State.WAITING_ID_DST) {
+            var status = idDstReader.process(buffer);
+
             if(status == ProcessStatus.DONE) {
                 state = State.WAITING_REQUEST_ID;
-            } else if(status == ProcessStatus.ERROR) {
-                return ProcessStatus.ERROR;
             }
         }
         if(state == State.WAITING_REQUEST_ID) {
-            var status = longReader.process(bb);
+            var status = requestIdReader.process(buffer);
+
             if(status == ProcessStatus.DONE) {
                 state = State.WAITING_RESPONSE;
-            } else if(status == ProcessStatus.ERROR) {
-                return ProcessStatus.ERROR;
             }
         }
         if(state == State.WAITING_RESPONSE) {
-            var status = responsePacketReader.process(bb);
+            var status = responsePacketReader.process(buffer);
+
             if(status == ProcessStatus.DONE) {
                 state = State.DONE;
-            } else if(status == ProcessStatus.ERROR) {
-                System.out.println("ERROR READING RESPONSE PACKET");
-                return ProcessStatus.ERROR;
+
+                value = new WorkResponsePacket(idSrcReader.get(), idDstReader.get(), requestIdReader.get(), responsePacketReader.get());
             }
         }
+
         if(state != State.DONE) {
             return ProcessStatus.REFILL;
         }
+
         return ProcessStatus.DONE;
     }
 
@@ -74,15 +68,16 @@ public class WorkResponsePacketReader implements FullPacketReader {
         if(state != State.DONE) {
             throw new IllegalStateException();
         }
-        return new WorkResponsePacket(srcReader.get(), dstReader.get(), longReader.get(), responsePacketReader.get());
+
+        return value;
     }
 
     @Override
     public void reset() {
-        state = State.WAITING_SRC_ID;
-        srcReader.reset();
-        dstReader.reset();
-        longReader.reset();
+        state = State.WAITING_ID_SRC;
+        idSrcReader.reset();
+        idDstReader.reset();
+        requestIdReader.reset();
         responsePacketReader.reset();
     }
 }

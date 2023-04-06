@@ -79,7 +79,6 @@ public class Context {
             var packet = queue.peek();
 
             if(packet.size() <= bufferOut.remaining()) {
-                System.out.println(packet);
                 queue.poll();
                 packet.putInBuffer(bufferOut);
             }

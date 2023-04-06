@@ -152,7 +152,7 @@ public class Server {
      * Exemple for compute :
      * COMPUTE C:/Users/johan/Documents/dev_project/SlowChecker.jar fr.uge.slow.SlowChecker 10 20
      * COMPUTE http://www-igm.univ-mlv.fr/~carayol/Factorizer.jar fr.uge.factors.Factorizer 10 1000
-     * START http://www-igm.univ-mlv.fr/~carayol/SlowChecker.jar fr.uge.slow.SlowChecker 10 20
+     * COMPUTE http://www-igm.univ-mlv.fr/~carayol/SlowChecker.jar fr.uge.slow.SlowChecker 10 20
      */
     private void consoleRun(){
         try{
@@ -373,7 +373,7 @@ public class Server {
                 .daemon()
                 .start(this::consoleRun);
         while (!Thread.interrupted()) {
-             Helpers.printKeys(selector); // for debug
+            // Helpers.printKeys(selector); // for debug
 //            System.out.println("Starting select");
             try {
                 selector.select(this::treatKey);

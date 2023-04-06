@@ -7,8 +7,8 @@ import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
 
 public abstract class UncheckedFullPacketReader<T extends FullPacket> implements FullPacketReader {
-
     private final T packet;
+
     public UncheckedFullPacketReader(Class<T> clazz) {
         try {
             this.packet = clazz.getDeclaredConstructor().newInstance();
@@ -28,6 +28,5 @@ public abstract class UncheckedFullPacketReader<T extends FullPacket> implements
 
     @Override
     public void reset() {
-
     }
 }

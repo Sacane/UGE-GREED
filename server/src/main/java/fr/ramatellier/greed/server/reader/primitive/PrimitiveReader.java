@@ -18,7 +18,7 @@ abstract class PrimitiveReader<T> implements Reader<T> {
     private T value;
     private final Function<ByteBuffer, T> converter;
 
-    PrimitiveReader(int nbByte, Function<ByteBuffer, T> converter){
+    PrimitiveReader(int nbByte, Function<ByteBuffer, T> converter) {
         this.internalBuffer = ByteBuffer.allocate(nbByte);
         this.converter = converter;
     }
@@ -30,19 +30,6 @@ abstract class PrimitiveReader<T> implements Reader<T> {
         }
 
         fillBuffer(buffer, internalBuffer);
-        /*buffer.flip();
-        try {
-            if (buffer.remaining() <= internalBuffer.remaining()) {
-                internalBuffer.put(buffer);
-            } else {
-                var oldLimit = buffer.limit();
-                buffer.limit(internalBuffer.remaining());
-                internalBuffer.put(buffer);
-                buffer.limit(oldLimit);
-            }
-        } finally {
-            buffer.compact();
-        }*/
 
         if (internalBuffer.hasRemaining()) {
             return Reader.ProcessStatus.REFILL;
