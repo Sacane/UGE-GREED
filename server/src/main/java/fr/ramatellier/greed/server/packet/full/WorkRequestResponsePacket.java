@@ -28,4 +28,9 @@ public record WorkRequestResponsePacket(IDPacket dst, IDPacket src, long request
         buffer.putLong(nb_uc);
     }
 
+    @Override
+    public int size() {
+        return Byte.BYTES * 2 + Long.BYTES * 2 + dst.size() + src.size();
+    }
+
 }

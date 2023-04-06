@@ -42,4 +42,15 @@ public final class LogoutRequestPacket implements FullPacket, LocalPacket {
             daughter.putInBuffer(buffer);
         }
     }
+
+    @Override
+    public int size() {
+        var res = Byte.BYTES * 2 + id.size() + Integer.BYTES;
+
+        for(var daughter: daughters) {
+            res += daughter.size();
+        }
+
+        return res;
+    }
 }

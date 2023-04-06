@@ -36,5 +36,8 @@ public final class DisconnectedPacket implements BroadcastPacket, FullPacket {
         id.putInBuffer(buffer);
     }
 
-
+    @Override
+    public int size() {
+        return Byte.BYTES * 2 + idSrc.size() + id.size();
+    }
 }

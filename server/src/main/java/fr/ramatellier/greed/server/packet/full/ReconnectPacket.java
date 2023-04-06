@@ -43,4 +43,15 @@ public final class ReconnectPacket implements FullPacket, LocalPacket {
             ancestor.putInBuffer(buffer);
         }
     }
+
+    @Override
+    public int size() {
+        var res = Byte.BYTES * 2 + id.size() + Integer.BYTES;
+
+        for(var ancestor: ancestors) {
+            res += ancestor.size();
+        }
+
+        return res;
+    }
 }

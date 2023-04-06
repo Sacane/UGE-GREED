@@ -157,14 +157,14 @@ public class ReceivePacketVisitor implements PacketVisitor {
                 packet.dst().getSocket(),
                 server
         )){
-            System.out.println("RECEIVE A WORK RESPONSE PACKET TO TRANSFER FOR " + packet.dst().getSocket());
+            // System.out.println("RECEIVE A WORK RESPONSE PACKET TO TRANSFER FOR " + packet.dst().getSocket());
             return;
         }
-        System.out.println("RECEIVED A RESULT FROM " + packet.src().getSocket() + " FOR COMPUTATION " + packet.requestID());
+        // System.out.println("RECEIVED A RESULT FROM " + packet.src().getSocket() + " FOR COMPUTATION " + packet.requestID());
         var responsePacket = packet.responsePacket();
         switch(packet.responsePacket().getResponseCode()){
             case 0x00 -> {
-                System.out.println(responsePacket.getResponse().value());
+                // System.out.println(responsePacket.getResponse().value());
             }
             case 0x01 -> {
                 System.out.println("An exception has occur while computing the value : " + responsePacket.getValue());

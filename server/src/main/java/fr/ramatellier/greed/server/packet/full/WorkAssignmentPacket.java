@@ -54,4 +54,9 @@ public final class WorkAssignmentPacket implements FullPacket, TransferPacket {
         buffer.putLong(requestId);
         range.putInBuffer(buffer);
     }
+
+    @Override
+    public int size() {
+        return Byte.BYTES * 2 + idSrc.size() + idDst.size() + Long.BYTES + range.size();
+    }
 }

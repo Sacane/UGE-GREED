@@ -34,7 +34,7 @@ public record WorkResponsePacket(
 
     @Override
     public int size() {
-        return 0;
+        return Byte.BYTES * 2 + Long.BYTES + src.size() + dst.size() + responsePacket.size();
     }
 
     public IDPacket src() {

@@ -26,15 +26,18 @@ public final class ConnectPacket implements FullPacket, LocalPacket {
         return idPacket.getSocket();
     }
 
-
     @Override
     public OpCodes opCode() {
         return OpCodes.CONNECT;
     }
 
     public void putInBuffer(ByteBuffer buffer) {
-        buffer.put(kind().BYTES);
-        buffer.put((byte) 1);
+        putHeader(buffer);
         idPacket.putInBuffer(buffer);
+    }
+
+    @Override
+    public int size() {
+        return Byte.BYTES * 2 + idPacket.size();
     }
 }

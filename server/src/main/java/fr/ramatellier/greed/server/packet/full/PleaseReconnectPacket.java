@@ -28,4 +28,9 @@ public final class PleaseReconnectPacket implements FullPacket, LocalPacket {
         putHeader(buffer);
         id.putInBuffer(buffer);
     }
+
+    @Override
+    public int size() {
+        return Byte.BYTES * 2 + id.size();
+    }
 }

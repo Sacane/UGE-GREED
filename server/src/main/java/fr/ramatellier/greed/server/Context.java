@@ -45,8 +45,8 @@ public class Context {
     }
 
     public void queuePacket(FullPacket packet) {
-        System.out.println("QUEUE PACKET " + packet);
         queue.offer(packet);
+
         processOut();
         updateInterestOps();
     }
@@ -54,17 +54,14 @@ public class Context {
     private void processOut() {
         while(!queue.isEmpty()) {
             var packet = queue.peek();
-            if(packet == null){
-                return;
-            }
-            var buffer = ByteBuffer.allocate(BUFFER_SIZE);
-            packet.putInBuffer(buffer);
-            buffer.flip();
-            if(buffer.remaining() <= bufferOut.remaining()) {
-                bufferOut.put(buffer);
+
+            if(packet.size() <= bufferOut.remaining()) {
+                System.out.println(packet);
                 queue.poll();
-            } else {
-                return;
+                packet.putInBuffer(bufferOut);
+            }
+            else {
+                break;
             }
         }
     }
@@ -96,19 +93,14 @@ public class Context {
     }
 
     public void doRead() throws IOException {
-        try {
-            var readValue = sc.read(bufferIn);
-            System.out.println("DO READ");
-            if (readValue == -1) {
-                closed = true;
-            }
+        var readValue = sc.read(bufferIn);
 
-            processIn();
-            updateInterestOps();
-        } catch (IOException e) {
-            System.out.println(bufferIn.remaining());
-            silentlyClose();
+        if (readValue == -1) {
+            closed = true;
         }
+
+        processIn();
+        updateInterestOps();
     }
 
     public void doWrite() throws IOException {

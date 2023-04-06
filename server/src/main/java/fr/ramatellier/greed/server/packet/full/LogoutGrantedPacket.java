@@ -7,7 +7,6 @@ import fr.ramatellier.greed.server.util.TramKind;
 import java.nio.ByteBuffer;
 
 public final class LogoutGrantedPacket implements FullPacket, LocalPacket {
-
     @Override
     public OpCodes opCode() {
         return OpCodes.LOGOUT_GRANTED;
@@ -16,5 +15,10 @@ public final class LogoutGrantedPacket implements FullPacket, LocalPacket {
     @Override
     public void putInBuffer(ByteBuffer buffer) {
         putHeader(buffer);
+    }
+
+    @Override
+    public int size() {
+        return Byte.BYTES * 2;
     }
 }

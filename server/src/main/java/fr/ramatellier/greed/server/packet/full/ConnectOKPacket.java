@@ -51,4 +51,15 @@ public final class ConnectOKPacket implements FullPacket, LocalPacket {
             id.putInBuffer(buffer);
         }
     }
+
+    @Override
+    public int size() {
+        var res = Byte.BYTES * 2 + idMother.size() + Integer.BYTES;
+
+        for(var id: ids) {
+            res += id.size();
+        }
+
+        return res;
+    }
 }

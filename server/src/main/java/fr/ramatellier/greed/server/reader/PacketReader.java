@@ -14,9 +14,7 @@ public class PacketReader implements FullPacketReader {
         DONE, WAITING_LOCATION, WAITING_CODE, WAITING_PACKET, ERROR
     }
     private State state = State.WAITING_LOCATION;
-
     private final HashMap<OpCodes, FullPacketReader> readers = createReaders();
-
     private final ByteReader locationReader = new ByteReader();
     private final ByteReader codeReader = new ByteReader();
     private FullPacket value;
@@ -53,9 +51,11 @@ public class PacketReader implements FullPacketReader {
                 value = reader.get();
             }
         }
+
         if (state != State.DONE) {
             return ProcessStatus.REFILL;
         }
+
         return Reader.ProcessStatus.DONE;
     }
 
