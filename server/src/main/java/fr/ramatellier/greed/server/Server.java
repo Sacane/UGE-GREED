@@ -1,9 +1,6 @@
 package fr.ramatellier.greed.server;
 
-import fr.ramatellier.greed.server.compute.ComputationEntity;
-import fr.ramatellier.greed.server.compute.ComputationIdentifier;
-import fr.ramatellier.greed.server.compute.ComputeInfo;
-import fr.ramatellier.greed.server.compute.SocketUcIdentifier;
+import fr.ramatellier.greed.server.compute.*;
 import fr.ramatellier.greed.server.packet.full.*;
 import fr.ramatellier.greed.server.packet.sub.IDPacket;
 import fr.ramatellier.greed.server.util.*;
@@ -29,12 +26,13 @@ public class Server {
     private final Selector selector;
     private final boolean isRoot;
     private final InetSocketAddress address;
-    private final RootTable rootTable = new RootTable();
+    private final RouteTable rootTable = new RouteTable();
     private ServerState state = ServerState.ON_GOING;
     private final ArrayBlockingQueue<CommandArgs> commandQueue = new ArrayBlockingQueue<>(10);
-    private final ServerProcessTool processToolManager;
     private static long computationIdentifierValue;
     private final AtomicLong currentOnWorkingComputations = new AtomicLong(0);
+    private final SocketCandidate socketCandidate = new SocketCandidate();
+    private final ComputationRoomHandler computationRoomHandler = new ComputationRoomHandler();
 
     public static final long MAXIMUM_COMPUTATION = 1_000_000_000;
     private LogoutInformation logoutInformation;
@@ -48,24 +46,24 @@ public class Server {
 
     public void addRoom(ComputationEntity computationEntity) {
         Objects.requireNonNull(computationEntity);
-        processToolManager.room().add(computationEntity);
+        computationRoomHandler.add(computationEntity);
     }
 
     public ComputationEntity retrieveWaitingComputation(ComputationIdentifier idContext) {
-        var response = processToolManager.room().findById(idContext);
+        var response = computationRoomHandler.findById(idContext);
         return response.orElse(null);
     }
     public void incrementWaitingWorker(ComputationIdentifier id) {
-        processToolManager.room().increment(id);
+        computationRoomHandler.increment(id);
     }
     public void storeComputation(ComputationIdentifier id, SocketUcIdentifier ucId){
-        processToolManager.reminder().store(id, ucId);
+        socketCandidate.store(id, ucId);
     }
     public boolean isRoomReady(ComputationIdentifier id){
-        return processToolManager.room().isReady(id);
+        return computationRoomHandler.isReady(id);
     }
     public List<SocketUcIdentifier> availableSocketsUc(ComputationIdentifier id){
-        return processToolManager.reminder().availableSockets(id);
+        return socketCandidate.availableSockets(id);
     }
     private enum Command{
         INFO, STOP, SHUTDOWN, COMPUTE
@@ -78,7 +76,6 @@ public class Server {
 
     private Server(int port) throws IOException {
         address = new InetSocketAddress(port);
-        this.processToolManager = ServerProcessTool.create();
         serverSocketChannel = ServerSocketChannel.open();
         serverSocketChannel.bind(address);
         parentSocketChannel = null;
@@ -91,16 +88,11 @@ public class Server {
         address = new InetSocketAddress(hostPort);
         serverSocketChannel = ServerSocketChannel.open();
         serverSocketChannel.bind(address);
-        this.processToolManager = ServerProcessTool.create();
         parentSocketChannel = SocketChannel.open();
         parentSocketAddress = new InetSocketAddress(IP, connectPort);
         selector = Selector.open();
         this.isRoot = false;
     }
-
-//    public boolean isLogout() {
-//        return state == ServerState.SHUTDOWN;
-//    }
 
     public void updateParentAddress(InetSocketAddress address) {
         parentSocketAddress = address;
@@ -131,10 +123,6 @@ public class Server {
             commandQueue.put(command);
             selector.wakeup();
         }
-    }
-
-    public ServerProcessTool tools(){
-        return processToolManager;
     }
 
     private void sendComputeCommand(String line) throws InterruptedException {
@@ -232,12 +220,9 @@ public class Server {
         new Server(port).launch();
     }
 
-//    public void incrementNbComputation(long value){
-//        currentOnWorkingComputations.getAndUpdate(x -> x + value);
-//    }
-//    public void decrementNbComputation(long value){
-//        currentOnWorkingComputations.getAndUpdate(x -> x - value);
-//    }
+    public Optional<ComputationEntity> findComputationById(ComputationIdentifier id) {
+        return computationRoomHandler.findById(id);
+    }
 
     /**
      * Launch a server on the given hostPort, connected to another server.
@@ -306,22 +291,18 @@ public class Server {
 
     private void processComputeCommand(ComputeInfo info) {
         //TODO remove this method -> access to all Address is not necessary
-        var addresses = rootTable.allAddress();
         var id = new ComputationIdentifier(computationIdentifierValue++, address);
         var entity = new ComputationEntity(id, info);
-        processToolManager.room().prepare(entity, addresses.size());
-        System.out.println(processToolManager.room());
-        for(var address: addresses){
-            transfer(address.address(), new WorkRequestPacket(
-                    this.address, address.address(),
-                    id.id(),
-                    info.url(),
-                    info.className(),
-                    info.start(),
-                    info.end(),
-                    info.end() - info.start()
-            ));
-        }
+        computationRoomHandler.prepare(entity, rootTable.size());
+        rootTable.performOnAllAddress(address -> transfer(address.address(), new WorkRequestPacket(
+                this.address, address.address(),
+                id.id(),
+                info.url(),
+                info.className(),
+                info.start(),
+                info.end(),
+                info.end() - info.start()
+        )));
     }
 
     public void connectToNewParent(IDPacket packet) throws IOException {

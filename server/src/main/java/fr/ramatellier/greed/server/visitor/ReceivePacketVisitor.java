@@ -104,7 +104,7 @@ public class ReceivePacketVisitor implements PacketVisitor {
     public void visit(WorkAssignmentPacket packet) {
         System.out.println("RECEIVED WORK ASSIGNMENT PACKET");
         var idContext = new ComputationIdentifier(packet.getRequestId(), packet.src().getSocket());
-        var entityResponse = server.tools().room().findById(idContext);
+        var entityResponse = server.findComputationById(idContext);
         if(entityResponse.isEmpty()){
             return;
         }
