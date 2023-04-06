@@ -1,6 +1,9 @@
 package fr.ramatellier.greed.server;
 
+import fr.ramatellier.greed.server.packet.full.BroadcastPacket;
 import fr.ramatellier.greed.server.packet.full.FullPacket;
+import fr.ramatellier.greed.server.packet.full.LocalPacket;
+import fr.ramatellier.greed.server.packet.full.TransferPacket;
 import fr.ramatellier.greed.server.reader.PacketReader;
 import fr.ramatellier.greed.server.visitor.ReceivePacketVisitor;
 
@@ -20,11 +23,13 @@ public class Context {
     private final PacketReader packetReader = new PacketReader();
     private final ArrayDeque<FullPacket> queue = new ArrayDeque<>();
     private boolean closed = false;
+    private final Server server;
 
     public Context(Server server, SelectionKey key) {
         this.key = key;
         this.sc = (SocketChannel) key.channel();
         this.visitor = new ReceivePacketVisitor(server, this);
+        this.server = server;
     }
 
     private void processIn() {
@@ -39,8 +44,26 @@ public class Context {
                     var frame = packetReader.get();
                     packetReader.reset();
                     frame.accept(visitor);
+//                    processPacket(frame);
                     break;
             }
+        }
+    }
+
+    private void processPacket(FullPacket packet) {
+        switch(packet){
+            case BroadcastPacket b -> {
+                b.accept(visitor);
+                server.broadcast(b, b.src().getSocket());
+            }
+            case TransferPacket t -> {
+                if(t.dst().getSocket().equals(server.getAddress())){
+                    t.accept(visitor);
+                } else {
+                    server.transfer(t.dst().getSocket(), t);
+                }
+            }
+            case LocalPacket l -> l.accept(visitor);
         }
     }
 
