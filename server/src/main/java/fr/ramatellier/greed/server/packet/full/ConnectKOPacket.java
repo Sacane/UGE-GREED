@@ -4,7 +4,7 @@ import fr.ramatellier.greed.server.util.OpCodes;
 
 import java.nio.ByteBuffer;
 
-public final class ConnectKOPacket implements LocalPacket {
+public record ConnectKOPacket() implements LocalPacket {
     @Override
     public OpCodes opCode() {
         return OpCodes.KO;

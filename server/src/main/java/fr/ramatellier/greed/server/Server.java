@@ -2,13 +2,11 @@ package fr.ramatellier.greed.server;
 
 import fr.ramatellier.greed.server.compute.ComputationEntity;
 import fr.ramatellier.greed.server.compute.ComputationIdentifier;
+import fr.ramatellier.greed.server.compute.ComputeInfo;
 import fr.ramatellier.greed.server.compute.SocketUcIdentifier;
 import fr.ramatellier.greed.server.packet.full.*;
 import fr.ramatellier.greed.server.packet.sub.IDPacket;
-import fr.ramatellier.greed.server.util.Helpers;
-import fr.ramatellier.greed.server.util.LogoutInformation;
-import fr.ramatellier.greed.server.util.RootTable;
-import fr.ramatellier.greed.server.util.TramKind;
+import fr.ramatellier.greed.server.util.*;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;

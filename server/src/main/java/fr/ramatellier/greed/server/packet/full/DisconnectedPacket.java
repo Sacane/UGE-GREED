@@ -1,7 +1,6 @@
 package fr.ramatellier.greed.server.packet.full;
 
 import fr.ramatellier.greed.server.packet.sub.IDPacket;
-import fr.ramatellier.greed.server.reader.Reader;
 import fr.ramatellier.greed.server.util.OpCodes;
 
 import java.net.InetSocketAddress;
@@ -26,7 +25,7 @@ public final class DisconnectedPacket implements BroadcastPacket {
         return new DisconnectedPacket(newSrc.getSocket(), id.getSocket());
     }
 
-    public IDPacket getId() {
+    public IDPacket id() {
         return id;
     }
     @Override

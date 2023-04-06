@@ -2,19 +2,14 @@ package fr.ramatellier.greed.server.reader.full;
 
 import fr.ramatellier.greed.server.packet.full.FullPacket;
 import fr.ramatellier.greed.server.reader.FullPacketReader;
-
-import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
+import java.util.function.Supplier;
 
 public abstract class UncheckedFullPacketReader<T extends FullPacket> implements FullPacketReader {
     private final T packet;
 
-    public UncheckedFullPacketReader(Class<T> clazz) {
-        try {
-            this.packet = clazz.getDeclaredConstructor().newInstance();
-        } catch (NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
-            throw new AssertionError();
-        }
+    public UncheckedFullPacketReader(Supplier<T> supplier) {
+        this.packet = supplier.get();
     }
 
     @Override

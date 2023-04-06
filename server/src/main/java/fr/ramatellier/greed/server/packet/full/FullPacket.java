@@ -22,6 +22,4 @@ public sealed interface FullPacket extends Packet permits BroadcastPacket, Local
         putHeader(buffer);
         put(buffer);
     }
-
-
 }

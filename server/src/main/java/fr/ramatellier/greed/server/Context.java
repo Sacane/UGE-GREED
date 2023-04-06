@@ -42,10 +42,9 @@ public class Context {
                 case REFILL:
                     return;
                 case DONE:
-                    var frame = packetReader.get();
+                    var packet = packetReader.get();
                     packetReader.reset();
-                    //frame.accept(visitor);
-                    processPacket(frame);
+                    processPacket(packet);
                     break;
             }
         }

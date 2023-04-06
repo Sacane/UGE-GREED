@@ -1,4 +1,4 @@
-package fr.ramatellier.greed.server;
+package fr.ramatellier.greed.server.util;
 
 import fr.ramatellier.greed.server.compute.ComputationRoomHandler;
 import fr.ramatellier.greed.server.compute.SocketCandidate;

@@ -1,7 +1,7 @@
 package fr.ramatellier.greed.server.visitor;
 
 
-import fr.ramatellier.greed.server.ComputeInfo;
+import fr.ramatellier.greed.server.compute.ComputeInfo;
 import fr.ramatellier.greed.server.Context;
 import fr.ramatellier.greed.server.Server;
 import fr.ramatellier.greed.server.compute.ComputationEntity;
@@ -207,11 +207,11 @@ public class ReceivePacketVisitor implements PacketVisitor {
 
     @Override
     public void visit(DisconnectedPacket packet) {
-        if(server.getAddress().equals(packet.getId().getSocket())) {
+        if(server.getAddress().equals(packet.id().getSocket())) {
             server.shutdown();
         }
         else {
-            server.deleteAddress(packet.getId().getSocket());
+            server.deleteAddress(packet.id().getSocket());
         }
     }
 

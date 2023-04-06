@@ -1,4 +1,6 @@
-package fr.ramatellier.greed.server;
+package fr.ramatellier.greed.server.util;
+
+import fr.ramatellier.greed.server.compute.ComputeInfo;
 
 import java.net.MalformedURLException;
 import java.net.URL;
