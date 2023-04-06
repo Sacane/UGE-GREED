@@ -4,6 +4,7 @@ import fr.ramatellier.greed.server.compute.ComputationEntity;
 import fr.ramatellier.greed.server.compute.ComputationIdentifier;
 import fr.ramatellier.greed.server.packet.full.*;
 import fr.ramatellier.greed.server.packet.sub.IDPacket;
+import fr.ramatellier.greed.server.util.Helpers;
 import fr.ramatellier.greed.server.util.LogoutInformation;
 import fr.ramatellier.greed.server.util.RootTable;
 import fr.ramatellier.greed.server.util.TramKind;
@@ -77,9 +78,9 @@ public class Server {
         this.isRoot = false;
     }
 
-    public boolean isLogout() {
-        return state == ServerState.SHUTDOWN;
-    }
+//    public boolean isLogout() {
+//        return state == ServerState.SHUTDOWN;
+//    }
 
     public void updateParentAddress(InetSocketAddress address) {
         parentSocketAddress = address;
@@ -211,12 +212,12 @@ public class Server {
         new Server(port).launch();
     }
 
-    public void incrementNbComputation(long value){
-        currentOnWorkingComputations.getAndUpdate(x -> x + value);
-    }
-    public void decrementNbComputation(long value){
-        currentOnWorkingComputations.getAndUpdate(x -> x - value);
-    }
+//    public void incrementNbComputation(long value){
+//        currentOnWorkingComputations.getAndUpdate(x -> x + value);
+//    }
+//    public void decrementNbComputation(long value){
+//        currentOnWorkingComputations.getAndUpdate(x -> x - value);
+//    }
 
     /**
      * Launch a server on the given hostPort, connected to another server.
@@ -350,7 +351,7 @@ public class Server {
                 .daemon()
                 .start(this::consoleRun);
         while (!Thread.interrupted()) {
-            // Helpers.printKeys(selector); // for debug
+             Helpers.printKeys(selector); // for debug
 //            System.out.println("Starting select");
             try {
                 selector.select(this::treatKey);
@@ -414,7 +415,7 @@ public class Server {
     }
 
     private void silentlyClose(SelectionKey key) {
-        Channel sc = (Channel) key.channel();
+        Channel sc = key.channel();
         try {
             sc.close();
         } catch (IOException e) {
@@ -442,7 +443,7 @@ public class Server {
             silentlyClose(serverKey);
             if(!isRoot) silentlyClose(parentKey);
             state = ServerState.STOPPED;
-        } catch (IOException e) {
+        } catch (IOException ignored) {
         }
     }
 

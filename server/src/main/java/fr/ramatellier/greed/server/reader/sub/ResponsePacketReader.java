@@ -66,7 +66,6 @@ public class ResponsePacketReader implements Reader<ResponsePacket> {
         if(state != State.DONE) {
             throw new IllegalStateException();
         }
-        System.out.println("RESPONSE FROM READER -> " + packet);
         return packet;
     }
 

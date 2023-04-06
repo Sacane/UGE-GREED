@@ -164,7 +164,8 @@ public class ReceivePacketVisitor implements PacketVisitor {
         var responsePacket = packet.responsePacket();
         switch(packet.responsePacket().getResponseCode()){
             case 0x00 -> {
-                // System.out.println(responsePacket.getResponse().value());
+                //TODO Create file and fill response inside
+                 System.out.println(responsePacket.getResponse().value());
             }
             case 0x01 -> {
                 System.out.println("An exception has occur while computing the value : " + responsePacket.getValue());
