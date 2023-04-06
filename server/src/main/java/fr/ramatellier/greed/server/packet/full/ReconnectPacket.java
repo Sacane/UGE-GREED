@@ -9,7 +9,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-public final class ReconnectPacket implements FullPacket, LocalPacket {
+public final class ReconnectPacket implements LocalPacket {
     private final IDPacket id;
     private final List<IDPacket> ancestors = new ArrayList<>();
 
@@ -35,8 +35,7 @@ public final class ReconnectPacket implements FullPacket, LocalPacket {
     }
 
     @Override
-    public void putInBuffer(ByteBuffer buffer) {
-        putHeader(buffer);
+    public void put(ByteBuffer buffer) {
         id.putInBuffer(buffer);
         buffer.putInt(ancestors.size());
         for(var ancestor: ancestors) {

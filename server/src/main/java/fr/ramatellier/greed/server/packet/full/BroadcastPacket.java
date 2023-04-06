@@ -8,6 +8,6 @@ public sealed interface BroadcastPacket extends FullPacket permits AddNodePacket
     default TramKind kind(){
         return TramKind.BROADCAST;
     }
-
     IDPacket src();
+    BroadcastPacket withNewSource(IDPacket newSrc);
 }

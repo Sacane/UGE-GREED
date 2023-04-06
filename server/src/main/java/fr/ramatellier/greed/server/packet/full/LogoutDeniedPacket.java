@@ -4,15 +4,15 @@ import fr.ramatellier.greed.server.util.OpCodes;
 
 import java.nio.ByteBuffer;
 
-public final class LogoutDeniedPacket implements LocalPacket, FullPacket {
+public final class LogoutDeniedPacket implements LocalPacket {
     @Override
     public OpCodes opCode() {
         return OpCodes.LOGOUT_DENIED;
     }
 
     @Override
-    public void putInBuffer(ByteBuffer buffer) {
-        putHeader(buffer);
+    public void put(ByteBuffer buffer) {
+
     }
 
     @Override

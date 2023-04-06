@@ -73,8 +73,6 @@ public class ReceivePacketVisitor implements PacketVisitor {
         logger.info("AddNodePacket received from " + packet.src().getSocket());
         server.addRoot(packet.daughter().getSocket(), packet.src().getSocket(), context);
         logger.info("update root table and send broadcast to neighbours");
-        var addNodePacket = new AddNodePacket(new IDPacket(server.getAddress()), packet.daughter());
-        server.broadcast(addNodePacket, packet.src().getSocket());
     }
 
     @Override
@@ -104,10 +102,7 @@ public class ReceivePacketVisitor implements PacketVisitor {
      */
     @Override
     public void visit(WorkAssignmentPacket packet) {
-        var hasBeenTransfer = packet.onConditionTransfer(!packet.dst().getSocket().equals(server.getAddress()), packet.dst().getSocket(), server);
-        if(hasBeenTransfer){
-            return;
-        }
+        System.out.println("RECEIVED WORK ASSIGNMENT PACKET");
         var idContext = new ComputationIdentifier(packet.getRequestId(), packet.src().getSocket());
         var entityResponse = server.tools().room().findById(idContext);
         if(entityResponse.isEmpty()){
@@ -144,13 +139,6 @@ public class ReceivePacketVisitor implements PacketVisitor {
     }
     @Override
     public void visit(WorkResponsePacket packet) {
-        if(packet.onConditionTransfer(
-                !server.getAddress().equals(packet.dst().getSocket()),
-                packet.dst().getSocket(),
-                server
-        )){
-            return;
-        }
         var responsePacket = packet.responsePacket();
         switch(packet.responsePacket().getResponseCode()){
             //TODO Create file and fill response inside
@@ -224,20 +212,12 @@ public class ReceivePacketVisitor implements PacketVisitor {
         }
         else {
             server.deleteAddress(packet.getId().getSocket());
-            server.broadcast(new DisconnectedPacket(server.getAddress(), packet.getId().getSocket()), packet.src().getSocket());
+//            server.broadcast(new DisconnectedPacket(server.getAddress(), packet.getId().getSocket()), packet.src().getSocket());
         }
     }
 
     @Override
     public void visit(WorkRequestResponsePacket packet) {
-        var transfer = packet.onConditionTransfer(
-                !server.getAddress().equals(packet.dst().getSocket()),
-                packet.dst().getSocket(),
-                server
-        );
-        if(transfer){
-            return;
-        }
         //Computation sender part
         if(packet.nb_uc() == 0){
             return;
