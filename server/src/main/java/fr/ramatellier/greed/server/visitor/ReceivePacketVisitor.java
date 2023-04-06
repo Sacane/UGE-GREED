@@ -212,13 +212,11 @@ public class ReceivePacketVisitor implements PacketVisitor {
         }
         else {
             server.deleteAddress(packet.getId().getSocket());
-//            server.broadcast(new DisconnectedPacket(server.getAddress(), packet.getId().getSocket()), packet.src().getSocket());
         }
     }
 
     @Override
     public void visit(WorkRequestResponsePacket packet) {
-        //Computation sender part
         if(packet.nb_uc() == 0){
             return;
         }
