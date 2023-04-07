@@ -305,6 +305,13 @@ public class Server {
         )));
     }
 
+    public void updateComputationUc(ComputationIdentifier id) {
+        computationRoomHandler.incrementUc(id);
+    }
+    public boolean isComputationReady(ComputationIdentifier id) {
+        return computationRoomHandler.isReady(id);
+    }
+
     public void connectToNewParent(IDPacket packet) throws IOException {
         var oldParentAddress = parentSocketAddress;
         var ancestors = rootTable.ancestors(parentSocketAddress);

@@ -6,11 +6,12 @@ import java.util.Optional;
 
 public final class ComputationRoomHandler {
     private final Object lock = new Object();
-    private final HashMap<ComputationIdentifier, CounterIntend> waitingRoom = new HashMap<>();
+    private final HashMap<ComputationIdentifier, CounterIntend> prepareWaitingRoom = new HashMap<>();
     private final ArrayList<ComputationEntity> computations = new ArrayList<>();
+
     public void prepare(ComputationEntity entity, long intendValue) {
         synchronized (lock) {
-            waitingRoom.put(entity.id(), new CounterIntend(intendValue));
+            prepareWaitingRoom.put(entity.id(), new CounterIntend(intendValue));
             computations.add(entity);
         }
     }
@@ -22,7 +23,7 @@ public final class ComputationRoomHandler {
 
     public void increment(ComputationIdentifier id) {
         synchronized (lock) {
-            waitingRoom.merge(id, new CounterIntend(1), (old, newOne) -> {
+            prepareWaitingRoom.merge(id, new CounterIntend(1), (old, newOne) -> {
                 old.increment();
                 return old;
             });
@@ -30,13 +31,23 @@ public final class ComputationRoomHandler {
     }
     public boolean isReady(ComputationIdentifier id) {
         synchronized (lock) {
-            return waitingRoom.get(id).isReady();
+            return prepareWaitingRoom.get(id).isReady();
         }
     }
 
     public Optional<ComputationEntity> findById(ComputationIdentifier id){
         synchronized (lock) {
             return computations.stream().filter(computation -> computation.id().equals(id)).findFirst();
+        }
+    }
+
+    public void incrementUc(ComputationIdentifier id){
+        synchronized (lock) {
+            computations
+                    .stream()
+                    .filter(computation -> computation.id().equals(id))
+                    .findFirst()
+                    .ifPresent(ComputationEntity::incrementUc);
         }
     }
 

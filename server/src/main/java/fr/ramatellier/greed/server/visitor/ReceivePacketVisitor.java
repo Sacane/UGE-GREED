@@ -142,7 +142,9 @@ public class ReceivePacketVisitor implements PacketVisitor {
         var responsePacket = packet.responsePacket();
         switch(packet.responsePacket().getResponseCode()){
             //TODO Create file and fill response inside
-            case 0x00 -> System.out.println(responsePacket.getResponse().value());
+            case 0x00 -> {
+                System.out.println(responsePacket.getResponse().value());
+            }
             case 0x01 -> System.out.println("An exception has occur while computing the value : " + responsePacket.getValue());
             case 0x02 -> System.out.println("Time out while computing the value : " + responsePacket.getValue());
             case 0x03 -> System.out.println("Cannot get the checker");
