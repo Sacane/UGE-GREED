@@ -16,6 +16,7 @@ import fr.uge.ugegreed.Client;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Objects;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.LongStream;
 
@@ -141,9 +142,14 @@ public class ReceivePacketVisitor implements PacketVisitor {
     public void visit(WorkResponsePacket packet) {
         var responsePacket = packet.responsePacket();
         switch(packet.responsePacket().getResponseCode()){
-            //TODO Create file and fill response inside
             case 0x00 -> {
                 System.out.println(responsePacket.getResponse().value());
+                var id = new ComputationIdentifier(packet.requestID(), server.getAddress());
+                try {
+                    server.treatComputationResult(id, packet.result());
+                } catch (IOException e) {
+                    logger.log(Level.SEVERE, "The file cannot be written : ", e);
+                }
             }
             case 0x01 -> System.out.println("An exception has occur while computing the value : " + responsePacket.getValue());
             case 0x02 -> System.out.println("Time out while computing the value : " + responsePacket.getValue());

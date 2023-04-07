@@ -36,6 +36,7 @@ public class Server {
 
     public static final long MAXIMUM_COMPUTATION = 1_000_000_000;
     private LogoutInformation logoutInformation;
+    private final ResultFormatHandler resultFormatHandler = new ResultFormatHandler();
 
     // Parent information
     private SocketChannel parentSocketChannel;
@@ -305,11 +306,13 @@ public class Server {
         )));
     }
 
-    public void updateComputationUc(ComputationIdentifier id) {
+
+    public void treatComputationResult(ComputationIdentifier id, String result) throws IOException {
         computationRoomHandler.incrementUc(id);
-    }
-    public boolean isComputationReady(ComputationIdentifier id) {
-        return computationRoomHandler.isReady(id);
+        resultFormatHandler.append(id, result);
+        if(computationRoomHandler.isComputationDone(id)){
+            resultFormatHandler.build(id);
+        }
     }
 
     public void connectToNewParent(IDPacket packet) throws IOException {

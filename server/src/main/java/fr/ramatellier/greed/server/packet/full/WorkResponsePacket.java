@@ -43,4 +43,7 @@ public record WorkResponsePacket(
     public IDPacket dst() {
         return dst;
     }
+    public String result(){
+        return responsePacket.getResponse().value();
+    }
 }

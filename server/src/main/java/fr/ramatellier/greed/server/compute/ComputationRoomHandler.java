@@ -50,6 +50,16 @@ public final class ComputationRoomHandler {
                     .ifPresent(ComputationEntity::incrementUc);
         }
     }
+    public boolean isComputationDone(ComputationIdentifier id){
+        synchronized (lock) {
+            return computations
+                    .stream()
+                    .filter(computation -> computation.id().equals(id))
+                    .findFirst()
+                    .map(ComputationEntity::isReady)
+                    .orElse(false);
+        }
+    }
 
     @Override
     public String toString() {

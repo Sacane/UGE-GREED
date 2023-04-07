@@ -1,6 +1,8 @@
 package fr.ramatellier.greed.server.util;
 
 import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.Objects;
 
 public final class ResponseToFileBuilder {
@@ -16,7 +18,13 @@ public final class ResponseToFileBuilder {
         return this;
     }
 
-    public File build() {
-        return new File(fileName, builder.toString());
+    public boolean build() throws IOException {
+        System.out.println("Build file " + fileName);
+        var file = new File(fileName);
+        try(var writer = new FileWriter(file)){
+            writer.write(builder.toString());
+        }
+        System.out.println(file.getAbsolutePath());
+        return file.createNewFile();
     }
 }
