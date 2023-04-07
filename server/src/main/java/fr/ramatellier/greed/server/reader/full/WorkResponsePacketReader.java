@@ -2,7 +2,7 @@ package fr.ramatellier.greed.server.reader.full;
 
 import fr.ramatellier.greed.server.packet.full.WorkResponsePacket;
 import fr.ramatellier.greed.server.reader.FullPacketReader;
-import fr.ramatellier.greed.server.reader.sub.IDReader;
+import fr.ramatellier.greed.server.reader.sub.DestinationPacketReader;
 import fr.ramatellier.greed.server.reader.sub.ResponsePacketReader;
 import fr.ramatellier.greed.server.reader.primitive.LongReader;
 
@@ -10,11 +10,10 @@ import java.nio.ByteBuffer;
 
 public class WorkResponsePacketReader implements FullPacketReader {
     enum State {
-        DONE, WAITING_ID_SRC, WAITING_ID_DST, WAITING_REQUEST_ID, WAITING_RESPONSE, ERROR
+        DONE, WAITING_DESTINATION, WAITING_REQUEST_ID, WAITING_RESPONSE, ERROR
     }
-    private State state = State.WAITING_ID_SRC;
-    private final IDReader idSrcReader = new IDReader();
-    private final IDReader idDstReader = new IDReader();
+    private State state = State.WAITING_DESTINATION;
+    private final DestinationPacketReader destinationPacketReader = new DestinationPacketReader();
     private final LongReader requestIdReader = new LongReader();
     private final ResponsePacketReader responsePacketReader = new ResponsePacketReader();
     private WorkResponsePacket value;
@@ -25,15 +24,8 @@ public class WorkResponsePacketReader implements FullPacketReader {
             throw new IllegalStateException();
         }
 
-        if(state == State.WAITING_ID_SRC) {
-            var status = idSrcReader.process(buffer);
-
-            if(status == ProcessStatus.DONE) {
-                state = State.WAITING_ID_DST;
-            }
-        }
-        if(state == State.WAITING_ID_DST) {
-            var status = idDstReader.process(buffer);
+        if(state == State.WAITING_DESTINATION) {
+            var status = destinationPacketReader.process(buffer);
 
             if(status == ProcessStatus.DONE) {
                 state = State.WAITING_REQUEST_ID;
@@ -52,7 +44,7 @@ public class WorkResponsePacketReader implements FullPacketReader {
             if(status == ProcessStatus.DONE) {
                 state = State.DONE;
 
-                value = new WorkResponsePacket(idSrcReader.get(), idDstReader.get(), requestIdReader.get(), responsePacketReader.get());
+                value = new WorkResponsePacket(destinationPacketReader.get().getIdSrc(), destinationPacketReader.get().getIdDst(), requestIdReader.get(), responsePacketReader.get());
             }
         }
 
@@ -74,9 +66,8 @@ public class WorkResponsePacketReader implements FullPacketReader {
 
     @Override
     public void reset() {
-        state = State.WAITING_ID_SRC;
-        idSrcReader.reset();
-        idDstReader.reset();
+        state = State.WAITING_DESTINATION;
+        destinationPacketReader.reset();
         requestIdReader.reset();
         responsePacketReader.reset();
     }
