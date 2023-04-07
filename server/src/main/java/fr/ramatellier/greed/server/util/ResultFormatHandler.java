@@ -18,15 +18,13 @@ public final class ResultFormatHandler {
             lock.unlock();
         }
     }
-    public boolean build(ComputationIdentifier id) throws IOException {
+    public void build(ComputationIdentifier id) throws IOException {
         lock.lock();
         try {
             if(computeToBuilder.containsKey(id)){
                 computeToBuilder.get(id).build();
                 computeToBuilder.remove(id);
-                return true;
             }
-            return false;
         } finally {
             lock.unlock();
         }

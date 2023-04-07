@@ -18,13 +18,12 @@ public final class ResponseToFileBuilder {
         return this;
     }
 
-    public boolean build() throws IOException {
-        System.out.println("Build file " + fileName);
+    public void build() throws IOException {
         var file = new File(fileName);
         try(var writer = new FileWriter(file)){
             writer.write(builder.toString());
         }
         System.out.println(file.getAbsolutePath());
-        return file.createNewFile();
+        file.createNewFile();
     }
 }
