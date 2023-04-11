@@ -4,13 +4,11 @@ import fr.ramatellier.greed.server.compute.Range;
 import fr.ramatellier.greed.server.packet.sub.RangePacket;
 import fr.ramatellier.greed.server.packet.sub.IDPacket;
 import fr.ramatellier.greed.server.util.OpCodes;
-import fr.ramatellier.greed.server.util.TramKind;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.util.List;
 
-public final class WorkAssignmentPacket implements FullPacket, TransferPacket {
+public final class WorkAssignmentPacket implements TransferPacket {
     private final IDPacket idSrc;
     private final IDPacket idDst;
     private final long requestId;
@@ -47,8 +45,7 @@ public final class WorkAssignmentPacket implements FullPacket, TransferPacket {
     }
 
     @Override
-    public void putInBuffer(ByteBuffer buffer) {
-        putHeader(buffer);
+    public void put(ByteBuffer buffer) {
         idSrc.putInBuffer(buffer);
         idDst.putInBuffer(buffer);
         buffer.putLong(requestId);

@@ -5,15 +5,14 @@ import fr.ramatellier.greed.server.util.OpCodes;
 
 import java.nio.ByteBuffer;
 
-public record AddNodePacket(IDPacket src, IDPacket daughter) implements FullPacket, BroadcastPacket {
+public record AddNodePacket(IDPacket src, IDPacket daughter) implements BroadcastPacket {
     @Override
     public OpCodes opCode() {
         return OpCodes.ADD_NODE;
     }
 
     @Override
-    public void putInBuffer(ByteBuffer buffer) {
-        putHeader(buffer);
+    public void put(ByteBuffer buffer) {
         src.putInBuffer(buffer);
         daughter.putInBuffer(buffer);
     }
@@ -21,5 +20,10 @@ public record AddNodePacket(IDPacket src, IDPacket daughter) implements FullPack
     @Override
     public int size() {
         return Byte.BYTES * 2 + src.size() + daughter.size();
+    }
+
+    @Override
+    public BroadcastPacket withNewSource(IDPacket newSrc) {
+        return new AddNodePacket(newSrc, daughter);
     }
 }

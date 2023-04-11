@@ -4,6 +4,6 @@ import fr.ramatellier.greed.server.packet.full.ConnectKOPacket;
 
 public class ConnectKOPacketReader extends UncheckedFullPacketReader<ConnectKOPacket> {
     public ConnectKOPacketReader() {
-        super(ConnectKOPacket.class);
+        super(ConnectKOPacket::new);
     }
 }

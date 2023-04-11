@@ -1,13 +1,12 @@
 package fr.ramatellier.greed.server.packet.full;
 
 import fr.ramatellier.greed.server.packet.sub.IDPacket;
-import fr.ramatellier.greed.server.reader.Reader;
 import fr.ramatellier.greed.server.util.OpCodes;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
-public final class DisconnectedPacket implements BroadcastPacket, FullPacket {
+public final class DisconnectedPacket implements BroadcastPacket {
     private final IDPacket idSrc;
     private final IDPacket id;
 
@@ -21,7 +20,12 @@ public final class DisconnectedPacket implements BroadcastPacket, FullPacket {
         return idSrc;
     }
 
-    public IDPacket getId() {
+    @Override
+    public BroadcastPacket withNewSource(IDPacket newSrc) {
+        return new DisconnectedPacket(newSrc.getSocket(), id.getSocket());
+    }
+
+    public IDPacket id() {
         return id;
     }
     @Override
@@ -30,8 +34,7 @@ public final class DisconnectedPacket implements BroadcastPacket, FullPacket {
     }
 
     @Override
-    public void putInBuffer(ByteBuffer buffer) {
-        putHeader(buffer);
+    public void put(ByteBuffer buffer) {
         idSrc.putInBuffer(buffer);
         id.putInBuffer(buffer);
     }

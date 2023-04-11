@@ -2,12 +2,11 @@ package fr.ramatellier.greed.server.packet.full;
 
 import fr.ramatellier.greed.server.packet.sub.IDPacket;
 import fr.ramatellier.greed.server.util.OpCodes;
-import fr.ramatellier.greed.server.util.TramKind;
 
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
-public record WorkRequestResponsePacket(IDPacket dst, IDPacket src, long requestID, long nb_uc) implements FullPacket, TransferPacket {
+public record WorkRequestResponsePacket(IDPacket dst, IDPacket src, long requestID, long nb_uc) implements TransferPacket {
 
     public WorkRequestResponsePacket{
         Objects.requireNonNull(dst);
@@ -20,8 +19,7 @@ public record WorkRequestResponsePacket(IDPacket dst, IDPacket src, long request
     }
 
     @Override
-    public void putInBuffer(ByteBuffer buffer) {
-        putHeader(buffer);
+    public void put(ByteBuffer buffer) {
         dst.putInBuffer(buffer);
         src.putInBuffer(buffer);
         buffer.putLong(requestID);

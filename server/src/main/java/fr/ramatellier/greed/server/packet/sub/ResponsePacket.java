@@ -11,15 +11,16 @@ public final class ResponsePacket implements Packet {
 
     /**
      *
-     * @param value
-     * @param response
-     * @param responseCode
+     * @param value The value of the long that have been computed
+     * @param response The response of the checker
+     * @param responseCode The byte that represents the status of the computation
      */
     public ResponsePacket(long value, String response, byte responseCode) {
         this.response = (response != null) ? new StringPacket(response) : null;
         this.responseCode = responseCode;
         this.value = value;
     }
+
     @Override
     public void putInBuffer(ByteBuffer buffer) {
         buffer.putLong(value);

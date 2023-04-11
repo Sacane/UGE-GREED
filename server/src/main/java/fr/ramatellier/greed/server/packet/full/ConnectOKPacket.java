@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-public final class ConnectOKPacket implements FullPacket, LocalPacket {
+public final class ConnectOKPacket implements LocalPacket {
     private final IDPacket idMother;
     private final List<IDPacket> ids = new ArrayList<>();
 
@@ -43,8 +43,7 @@ public final class ConnectOKPacket implements FullPacket, LocalPacket {
     }
 
     @Override
-    public void putInBuffer(ByteBuffer buffer) {
-        putHeader(buffer);
+    public void put(ByteBuffer buffer) {
         idMother.putInBuffer(buffer);
         buffer.putInt(ids.size());
         for(var id: ids) {

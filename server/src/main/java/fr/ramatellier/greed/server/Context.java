@@ -4,6 +4,7 @@ import fr.ramatellier.greed.server.packet.full.BroadcastPacket;
 import fr.ramatellier.greed.server.packet.full.FullPacket;
 import fr.ramatellier.greed.server.packet.full.LocalPacket;
 import fr.ramatellier.greed.server.packet.full.TransferPacket;
+import fr.ramatellier.greed.server.packet.sub.IDPacket;
 import fr.ramatellier.greed.server.reader.PacketReader;
 import fr.ramatellier.greed.server.visitor.ReceivePacketVisitor;
 
@@ -41,20 +42,20 @@ public class Context {
                 case REFILL:
                     return;
                 case DONE:
-                    var frame = packetReader.get();
+                    var packet = packetReader.get();
                     packetReader.reset();
-                    frame.accept(visitor);
-//                    processPacket(frame);
+                    processPacket(packet);
                     break;
             }
         }
     }
 
     private void processPacket(FullPacket packet) {
-        switch(packet){
+        switch(packet) {
             case BroadcastPacket b -> {
                 b.accept(visitor);
-                server.broadcast(b, b.src().getSocket());
+                var oldSrc = b.src().getSocket();
+                server.broadcast(b.withNewSource(new IDPacket(server.getAddress())), oldSrc);
             }
             case TransferPacket t -> {
                 if(t.dst().getSocket().equals(server.getAddress())){

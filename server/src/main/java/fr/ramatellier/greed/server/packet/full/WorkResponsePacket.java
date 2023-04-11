@@ -11,7 +11,7 @@ public record WorkResponsePacket(
     IDPacket dst,
     long requestID,
     ResponsePacket responsePacket
-) implements FullPacket, TransferPacket {
+) implements TransferPacket {
     public WorkResponsePacket{
         Objects.requireNonNull(src);
         Objects.requireNonNull(dst);
@@ -24,8 +24,7 @@ public record WorkResponsePacket(
     }
 
     @Override
-    public void putInBuffer(ByteBuffer buffer) {
-        putHeader(buffer);
+    public void put(ByteBuffer buffer) {
         src.putInBuffer(buffer);
         dst.putInBuffer(buffer);
         buffer.putLong(requestID);
@@ -43,5 +42,8 @@ public record WorkResponsePacket(
 
     public IDPacket dst() {
         return dst;
+    }
+    public String result(){
+        return responsePacket.getResponse().value();
     }
 }

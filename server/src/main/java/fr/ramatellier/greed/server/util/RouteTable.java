@@ -12,7 +12,7 @@ import java.util.function.Consumer;
  * A Key is an InetSocketAddress destination and the value is the InetSocketAddress of the closest neighbour to the destination and its context from this table.
  * This table can also perform action on the given neighbours registered in the table.
  */
-public class RootTable {
+public class RouteTable {
     private final HashMap<InetSocketAddress, AddressContext> table = new HashMap<>();
 
     /**
@@ -67,9 +67,6 @@ public class RootTable {
             if(entry.getKey().equals(entry.getValue().address()) && !parentAddress.equals(entry.getKey())) {
                 ancestorsList.add(entry.getKey());
                 ancestorsList.addAll(ancestorsOf(entry.getKey()));
-//                for(var ancestor: ancestorsOf(entry.getKey())) {
-//                    ancestorsList.add(ancestor);
-//                }
             }
         }
         return ancestorsList;
@@ -81,9 +78,6 @@ public class RootTable {
             if(address.equals(entry.getValue().address()) && !entry.getKey().equals(entry.getValue().address())) {
                 ancestors.add(entry.getKey());
                 ancestors.addAll(ancestorsOf(entry.getKey()));
-//                for(var ancestor: ancestorsOf(entry.getKey())) {
-//                    ancestors.add(ancestor);
-//                }
             }
         }
 
@@ -129,11 +123,16 @@ public class RootTable {
         }
     }
 
-    public List<AddressContext> allAddress() {
-        return table.keySet().stream().map(k -> new AddressContext(k, table.get(k).context())).toList();
+    public int size() {
+        return table.size();
     }
 
-    private boolean isNeighbour(Map.Entry<InetSocketAddress, AddressContext> entry){
+    public void performOnAllAddress(Consumer<AddressContext> action) {
+        Objects.requireNonNull(action);
+        table.keySet().stream().map(k -> new AddressContext(k, table.get(k).context())).forEach(action);
+    }
+
+    private boolean isNeighbour(Map.Entry<InetSocketAddress, AddressContext> entry) {
         return entry.getKey().equals(entry.getValue().address());
     }
 

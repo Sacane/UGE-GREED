@@ -1,7 +1,6 @@
 package fr.ramatellier.greed.server.visitor;
 
-
-import fr.ramatellier.greed.server.ComputeInfo;
+import fr.ramatellier.greed.server.compute.ComputeInfo;
 import fr.ramatellier.greed.server.Context;
 import fr.ramatellier.greed.server.Server;
 import fr.ramatellier.greed.server.compute.ComputationEntity;
@@ -16,6 +15,7 @@ import fr.uge.ugegreed.Client;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Objects;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.LongStream;
 
@@ -73,17 +73,15 @@ public class ReceivePacketVisitor implements PacketVisitor {
         logger.info("AddNodePacket received from " + packet.src().getSocket());
         server.addRoot(packet.daughter().getSocket(), packet.src().getSocket(), context);
         logger.info("update root table and send broadcast to neighbours");
-        var addNodePacket = new AddNodePacket(new IDPacket(server.getAddress()), packet.daughter());
-        server.broadcast(addNodePacket, packet.src().getSocket());
     }
 
     @Override
     public void visit(WorkRequestPacket packet) {
-        if(server.getAddress().equals(packet.dst().getSocket())) {
+        if(server.isRunning()) {
             var deltaComputingPossibility = Server.MAXIMUM_COMPUTATION - server.currentOnWorkingComputationsValue();
             if(deltaComputingPossibility > 0) { //He is accepting the computation
                 server.addRoom(new ComputationEntity(new ComputationIdentifier(packet.getRequestId(), packet.src().getSocket()),
-                                new ComputeInfo(packet.getChecker().url(), packet.getChecker().className(), packet.getRange().start(), packet.getRange().end())));
+                        new ComputeInfo(packet.getChecker().url(), packet.getChecker().className(), packet.getRange().start(), packet.getRange().end())));
                 server.transfer(packet.src().getSocket(), new WorkRequestResponsePacket(
                         packet.src(),
                         packet.dst(),
@@ -93,7 +91,12 @@ public class ReceivePacketVisitor implements PacketVisitor {
             }
         }
         else {
-            server.transfer(packet.dst().getSocket(), packet);
+            server.transfer(packet.src().getSocket(), new WorkRequestResponsePacket(
+                    packet.src(),
+                    packet.dst(),
+                    packet.getRequestId(),
+                    0
+            ));
         }
     }
 
@@ -104,37 +107,45 @@ public class ReceivePacketVisitor implements PacketVisitor {
      */
     @Override
     public void visit(WorkAssignmentPacket packet) {
-        var hasBeenTransfer = packet.onConditionTransfer(!packet.dst().getSocket().equals(server.getAddress()), packet.dst().getSocket(), server);
-        if(hasBeenTransfer){
-            return;
-        }
         var idContext = new ComputationIdentifier(packet.getRequestId(), packet.src().getSocket());
-        var entityResponse = server.tools().room().findById(idContext);
-        if(entityResponse.isEmpty()){
-            return;
+        var entityResponse = server.findComputationById(idContext);
+        if(entityResponse.isEmpty()) {
+            return ;
         }
         var entity = entityResponse.get();
         var targetRange = packet.getRanges();
         var result = Client.checkerFromHTTP(entity.info().url(), entity.info().className());
-        if(result.isEmpty()){
+        if(result.isEmpty()) {
             logger.severe("CANNOT GET THE CHECKER");
             LongStream.range(targetRange.start(), targetRange.end()).forEach(i -> sendResponseWithOPCode(packet, i, "CANNOT GET THE CHECKER", (byte) 0x03));
             return;
         }
         var checker = result.get();
-        for(var i = targetRange.start(); i < targetRange.end(); i++){
-            try{
-                var checkerResult = checker.check(i);
-                sendResponseWithOPCode(packet, i, checkerResult, (byte) 0x00);
-            } catch (InterruptedException e) {
-                logger.severe("INTERRUPTED EXCEPTION");
-                sendResponseWithOPCode(packet, i, null, (byte) 0x01);
-            }catch (Exception e){
-                sendResponseWithOPCode(packet, i, null, (byte) 0x01);
+
+        Thread.ofPlatform().start(() -> {
+            for(var i = targetRange.start(); i < targetRange.end(); i++) {
+                try{
+                    var checkerResult = checker.check(i);
+                    sendResponseWithOPCode(packet, i, checkerResult, (byte) 0x00);
+                } catch (InterruptedException e) {
+                    logger.severe("INTERRUPTED EXCEPTION");
+                    sendResponseWithOPCode(packet, i, null, (byte) 0x01);
+                } catch (Exception e){
+                    sendResponseWithOPCode(packet, i, null, (byte) 0x01);
+                }
+
+                server.incrementComputation(entity.info());
             }
-        }
+
+            if(server.isShutdown() && !server.isComputing()) {
+                server.sendLogout();
+            }
+
+            server.wakeup();
+        });
     }
-    private void sendResponseWithOPCode(WorkAssignmentPacket origin, long index,String result, byte opcode){
+
+    private void sendResponseWithOPCode(WorkAssignmentPacket origin, long index, String result, byte opcode) {
         server.transfer(origin.src().getSocket(), new WorkResponsePacket(
                 origin.dst(),
                 origin.src(),
@@ -142,19 +153,20 @@ public class ReceivePacketVisitor implements PacketVisitor {
                 new ResponsePacket(index, result, opcode)
         ));
     }
+
     @Override
     public void visit(WorkResponsePacket packet) {
-        if(packet.onConditionTransfer(
-                !server.getAddress().equals(packet.dst().getSocket()),
-                packet.dst().getSocket(),
-                server
-        )){
-            return;
-        }
         var responsePacket = packet.responsePacket();
         switch(packet.responsePacket().getResponseCode()){
-            //TODO Create file and fill response inside
-            case 0x00 -> System.out.println(responsePacket.getResponse().value());
+            case 0x00 -> {
+                System.out.println(responsePacket.getResponse().value());
+                var id = new ComputationIdentifier(packet.requestID(), server.getAddress());
+                try {
+                    server.treatComputationResult(id, packet.result());
+                } catch (IOException e) {
+                    logger.log(Level.SEVERE, "The file cannot be written : ", e);
+                }
+            }
             case 0x01 -> System.out.println("An exception has occur while computing the value : " + responsePacket.getValue());
             case 0x02 -> System.out.println("Time out while computing the value : " + responsePacket.getValue());
             case 0x03 -> System.out.println("Cannot get the checker");
@@ -214,31 +226,25 @@ public class ReceivePacketVisitor implements PacketVisitor {
         if(server.allConnected()) {
             server.broadcast(new DisconnectedPacket(server.getAddress(), server.getAddressLogout()), server.getAddress());
             server.deleteAddress(server.getAddressLogout());
+
+            if(server.isShutdown()) {
+                server.sendLogout();
+            }
         }
     }
 
     @Override
     public void visit(DisconnectedPacket packet) {
-        if(server.getAddress().equals(packet.getId().getSocket())) {
+        if(server.getAddress().equals(packet.id().getSocket())) {
             server.shutdown();
         }
         else {
-            server.deleteAddress(packet.getId().getSocket());
-            server.broadcast(new DisconnectedPacket(server.getAddress(), packet.getId().getSocket()), packet.src().getSocket());
+            server.deleteAddress(packet.id().getSocket());
         }
     }
 
     @Override
     public void visit(WorkRequestResponsePacket packet) {
-        var transfer = packet.onConditionTransfer(
-                !server.getAddress().equals(packet.dst().getSocket()),
-                packet.dst().getSocket(),
-                server
-        );
-        if(transfer){
-            return;
-        }
-        //Computation sender part
         if(packet.nb_uc() == 0){
             return;
         }
