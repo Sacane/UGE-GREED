@@ -98,7 +98,6 @@ public class HttpContext{
     }
 
     public void doWrite() throws IOException {
-        System.out.println("doWrite");
         bufferOut.flip();
         sc.write(bufferOut);
         bufferOut.compact();

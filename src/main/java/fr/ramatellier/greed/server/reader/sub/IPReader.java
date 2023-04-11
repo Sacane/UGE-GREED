@@ -3,6 +3,7 @@ package fr.ramatellier.greed.server.reader.sub;
 import fr.ramatellier.greed.server.packet.sub.IpAddressPacket;
 import fr.ramatellier.greed.server.reader.Reader;
 import fr.ramatellier.greed.server.reader.primitive.ByteReader;
+import fr.ramatellier.greed.server.util.Buffers;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -33,7 +34,7 @@ public class IPReader implements Reader<IpAddressPacket> {
             }
         }
         if(state == State.WAITING_ADDRESS) {
-            fillBuffer(buffer, addressBuffer);
+            Buffers.fillBuffer(buffer, addressBuffer);
 
             if(!addressBuffer.hasRemaining()) {
                 addressBuffer.flip();

@@ -11,8 +11,23 @@ public sealed interface FullPacket extends Packet permits BroadcastPacket, Local
     default void accept(PacketVisitor visitor){
         visitor.visit(this);
     }
+
+    /**
+     * The kind of the packet (broadcast, local, transfer)
+     * @return the kind of the packet
+     */
     TramKind kind();
+
+    /**
+     * The {@link OpCodes} of the packet
+     * @return the opcode of the packet
+     */
     OpCodes opCode();
+
+    /**
+     * Put the packet body into the buffer
+     * @param buffer the buffer that receive the packet
+     */
     void put(ByteBuffer buffer);
     default void putHeader(ByteBuffer buffer) {
         buffer.put(kind().BYTES);

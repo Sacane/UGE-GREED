@@ -2,6 +2,7 @@ package fr.ramatellier.greed.server.reader.sub;
 
 import fr.ramatellier.greed.server.reader.Reader;
 import fr.ramatellier.greed.server.reader.primitive.IntReader;
+import fr.ramatellier.greed.server.util.Buffers;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
@@ -38,7 +39,7 @@ public class StringReader implements Reader<String> {
             }
         }
         if(state == State.WAITING_STRING) {
-            fillBuffer(buffer, stringBuffer);
+            Buffers.fillBuffer(buffer, stringBuffer);
 
             if(!stringBuffer.hasRemaining()) {
                 state = State.DONE;

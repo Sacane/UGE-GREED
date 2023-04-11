@@ -1,4 +1,4 @@
-package fr.ramatellier.greed.server.util;
+package fr.ramatellier.greed.server.util.file;
 
 import fr.ramatellier.greed.server.Server;
 
@@ -8,6 +8,9 @@ import java.io.IOException;
 import java.util.Objects;
 import java.util.logging.Logger;
 
+/**
+ * This class is aim to build a file response, using the builder pattern throughout a StringBuilder.
+ */
 public final class ResponseToFileBuilder {
     private static final Logger logger = Logger.getLogger(Server.class.getName());
     private final StringBuilder builder = new StringBuilder();

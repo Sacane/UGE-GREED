@@ -4,6 +4,7 @@ import fr.ramatellier.greed.server.compute.*;
 import fr.ramatellier.greed.server.packet.full.*;
 import fr.ramatellier.greed.server.packet.sub.IDPacket;
 import fr.ramatellier.greed.server.util.*;
+import fr.ramatellier.greed.server.util.file.ResultFormatHandler;
 import fr.uge.ugegreed.Client;
 
 import java.io.File;

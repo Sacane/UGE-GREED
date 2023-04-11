@@ -4,7 +4,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-
+/**
+ * This class will share the computation between the different socket.
+ * It will return the range of computation for each socket that has been assigned
+ */
 public class SharingProcessExecutor {
     private final HashMap<SocketUcIdentifier, Long> availableSocketMap = new HashMap<>();
     private final long nbWorkingComputation;
@@ -22,8 +25,13 @@ public class SharingProcessExecutor {
     private void incrementUc(SocketUcIdentifier socketUcIdentifier){
         availableSocketMap.merge(socketUcIdentifier, 0L, (old, newOne) -> old + 1);
     }
+
+    /**
+     * This method will share the computation and return the range of computation for each socket that has been assigned.
+     * @param start the start of the range
+     * @return the list of socket range computed
+     */
     public List<SocketRange> shareAndGet(long start){
-        System.out.println("COMPUTING " + nbWorkingComputation);
         var socketRangeList = new ArrayList<SocketRange>();
         var computingLeft = nbWorkingComputation;
         while(computingLeft > 0){

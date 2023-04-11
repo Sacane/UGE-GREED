@@ -1,4 +1,4 @@
-package fr.ramatellier.greed.server.util;
+package fr.ramatellier.greed.server.util.file;
 
 import fr.ramatellier.greed.server.compute.ComputationIdentifier;
 
@@ -18,6 +18,12 @@ public final class ResultFormatHandler {
             lock.unlock();
         }
     }
+
+    /**
+     * Build the file and remove the builder from the map
+     * @param id
+     * @throws IOException
+     */
     public void build(ComputationIdentifier id) throws IOException {
         lock.lock();
         try {

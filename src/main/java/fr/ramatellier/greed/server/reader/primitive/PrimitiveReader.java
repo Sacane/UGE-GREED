@@ -1,6 +1,7 @@
 package fr.ramatellier.greed.server.reader.primitive;
 
 import fr.ramatellier.greed.server.reader.Reader;
+import fr.ramatellier.greed.server.util.Buffers;
 
 import java.nio.ByteBuffer;
 import java.util.function.Function;
@@ -29,7 +30,7 @@ abstract class PrimitiveReader<T> implements Reader<T> {
             throw new IllegalStateException();
         }
 
-        fillBuffer(buffer, internalBuffer);
+        Buffers.fillBuffer(buffer, internalBuffer);
 
         if (internalBuffer.hasRemaining()) {
             return Reader.ProcessStatus.REFILL;

@@ -4,15 +4,23 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Optional;
 
+/**
+ * This class has two main purpose:
+ * - keep track of all computation that are currently running
+ * - prepare computation that are not yet ready to be computed
+ * //TODO Later on, we shall separate the two purpose into two different class
+ */
 public final class ComputationRoomHandler {
     private final Object lock = new Object();
     private final HashMap<ComputationIdentifier, CounterIntend> prepareWaitingRoom = new HashMap<>();
+    //TODO move this list into server
     private final ArrayList<ComputationEntity> computations = new ArrayList<>();
 
     public boolean isComputing() {
         return computations.stream().mapToLong(ComputationEntity::remains).sum() > 0;
     }
 
+    //TODO increment by Id not by info
     public void incrementComputation(ComputeInfo info) {
         computations.stream().filter(computation -> computation.info().equals(info)).forEach(ComputationEntity::incrementUc);
     }
