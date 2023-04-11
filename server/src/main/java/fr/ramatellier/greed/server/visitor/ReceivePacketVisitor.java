@@ -133,6 +133,12 @@ public class ReceivePacketVisitor implements PacketVisitor {
                 } catch (Exception e){
                     sendResponseWithOPCode(packet, i, null, (byte) 0x01);
                 }
+
+                server.incrementComputation(entity.info());
+            }
+
+            if(server.isShutdown() && !server.isComputing()) {
+                server.sendLogout();
             }
 
             server.wakeup();

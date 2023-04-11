@@ -9,6 +9,14 @@ public final class ComputationRoomHandler {
     private final HashMap<ComputationIdentifier, CounterIntend> prepareWaitingRoom = new HashMap<>();
     private final ArrayList<ComputationEntity> computations = new ArrayList<>();
 
+    public boolean isComputing() {
+        return computations.stream().mapToLong(ComputationEntity::remains).sum() > 0;
+    }
+
+    public void incrementComputation(ComputeInfo info) {
+        computations.stream().filter(computation -> computation.info().equals(info)).forEach(ComputationEntity::incrementUc);
+    }
+
     public void prepare(ComputationEntity entity, long intendValue) {
         synchronized (lock) {
             prepareWaitingRoom.put(entity.id(), new CounterIntend(intendValue));

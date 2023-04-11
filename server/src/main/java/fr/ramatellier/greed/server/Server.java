@@ -83,6 +83,10 @@ public class Server {
         computationRoomHandler.increment(id);
     }
 
+    public void incrementComputation(ComputeInfo info) {
+        computationRoomHandler.incrementComputation(info);
+    }
+
     public void storeComputation(ComputationIdentifier id, SocketUcIdentifier ucId){
         socketCandidate.store(id, ucId);
     }
@@ -184,6 +188,10 @@ public class Server {
         return state == ServerState.SHUTDOWN;
     }
 
+    public boolean isComputing() {
+        return computationRoomHandler.isComputing();
+    }
+
     public void addRoot(InetSocketAddress src, InetSocketAddress dst, Context context) {
         if(!src.equals(address)) {
             logger.info("Root table has been updated");
@@ -256,7 +264,7 @@ public class Server {
                     }
                     logger.info("Command SHUTDOWN received");
                     state = ServerState.SHUTDOWN;
-                    if(logoutInformation == null || logoutInformation.allConnected()) {
+                    if((logoutInformation == null || logoutInformation.allConnected()) && !isComputing()) {
                         sendLogout();
                     }
                 }

@@ -14,13 +14,19 @@ public final class ComputationEntity {
         this.intendedUc = info.end() - info.start();
     }
 
-    public void incrementUc(){
-        if(currentUcDone >= intendedUc){
+    public long remains() {
+        return intendedUc - currentUcDone;
+    }
+
+    public void incrementUc() {
+        if(currentUcDone >= intendedUc) {
             throw new IllegalStateException("Computation already done");
         }
+
         currentUcDone++;
     }
-    public boolean isReady(){
+
+    public boolean isReady() {
         return currentUcDone >= intendedUc;
     }
 
