@@ -62,39 +62,6 @@ public class HttpContext{
         key.interestOps(SelectionKey.OP_WRITE);
     }
 
-//    private void processIn() throws IOException {
-//        System.out.println("PROCESS IN WITH -> " + bufferIn.remaining() + " REMAINING");
-//        while(true){
-//            var response = headerReader.process(bufferIn);
-//            if(response == Reader.ProcessStatus.DONE){
-//                var header = headerReader.get();
-//                System.out.println("CODE -> " + header.getCode());
-//                if(header.getCode() == 200){
-//                    var contentLength = header.getContentLength();
-//                    System.out.println(header);
-//                    var body = new byte[contentLength];
-//                    int toReadLeft = bufferIn.remaining();
-//                    while(toReadLeft < contentLength){
-//                        bufferIn.get(body, contentLength - toReadLeft, toReadLeft);
-//                        contentLength -= toReadLeft;
-//                        bufferIn.clear();
-//                        sc.read(bufferIn);
-//                        bufferIn.flip();
-//                        toReadLeft = bufferIn.remaining();
-//                    }
-//                    client.setBody(body);
-//                    System.out.println("BODY GET");
-//                }
-//                break;
-//            } else if(response == Reader.ProcessStatus.REFILL){
-//                return;
-//            } else if(response == Reader.ProcessStatus.ERROR){
-//                System.out.println("ERROR");
-//                break;
-//            }
-//        }
-//    }
-
         private void processIn() throws IOException {
         System.out.println("PROCESS IN WITH -> " + bufferIn.remaining() + " REMAINING");
         while(true){
