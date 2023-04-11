@@ -285,7 +285,6 @@ public class Server {
     }
 
     private void processComputeCommand(ComputeInfo info) {
-        //TODO remove this method -> access to all Address is not necessary
         var id = new ComputationIdentifier(computationIdentifierValue++, address);
         var entity = new ComputationEntity(id, info);
         if(routeTable.neighbors().size() == 0) {

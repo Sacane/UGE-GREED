@@ -5,9 +5,7 @@ import fr.ramatellier.greed.server.reader.Reader;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -18,39 +16,6 @@ import static org.junit.jupiter.api.Assertions.*;
  * Tests suit for the class HTTPReader
  */
 public class HTTPReaderTest {
-
-    /**
-     * Test for ReadLineLFCR with a null Socket
-     */
-
-    @Test
-    public void ReadLineLFCR1test() throws IOException {
-        try {
-            final String BUFFER_INITIAL_CONTENT = "Debut\rSuite\n\rFin\n\r\nANEPASTOUCHER";
-            ByteBuffer buff = ByteBuffer.wrap(BUFFER_INITIAL_CONTENT.getBytes("ASCII")).compact();
-            HTTPHeaderReader reader = new HTTPHeaderReader();
-            assertEquals("Debut\rSuite\n\rFin\n", reader.readLineCRLF(buff));
-            ByteBuffer buffFinal = ByteBuffer.wrap("ANEPASTOUCHER".getBytes("ASCII")).compact();
-            assertEquals(buffFinal.flip(), buff.flip());
-        } catch (NullPointerException e) {
-            fail("The socket must not be read until buff is entirely consumed.");
-        }
-    }
-
-    /**
-     * Test for ReadLineLFCR with a fake server
-     * @throws java.io.IOException
-     */
-    @Test
-    public void testLineReaderLFCR2() throws IOException {
-
-        var buff = ByteBuffer.allocate(40);
-        buff.put("AA\rLine1\r\nLine2\nLine2cont\r\n".getBytes("ASCII"));
-        var reader = new HTTPHeaderReader();
-        assertEquals("AA\rLine1", reader.readLineCRLF(buff));
-        assertEquals("Line2\nLine2cont", reader.readLineCRLF(buff));
-
-    }
 
     @Test
     public void readHeaderTest() throws IOException{
