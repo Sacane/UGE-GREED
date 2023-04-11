@@ -62,7 +62,7 @@ public class HttpContext{
         key.interestOps(SelectionKey.OP_WRITE);
     }
 
-        private void processIn() throws IOException {
+    private void processIn() throws IOException {
         System.out.println("PROCESS IN WITH -> " + bufferIn.remaining() + " REMAINING");
         while(true){
             var response = headerReader.process(bufferIn);

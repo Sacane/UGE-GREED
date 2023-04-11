@@ -14,7 +14,7 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayDeque;
 
-public class Context {
+public class ServerApplicationContext {
     private static final int BUFFER_SIZE = 32_768;
     private final SelectionKey key;
     private final SocketChannel sc;
@@ -26,7 +26,7 @@ public class Context {
     private boolean closed = false;
     private final Server server;
 
-    public Context(Server server, SelectionKey key) {
+    public ServerApplicationContext(Server server, SelectionKey key) {
         this.key = key;
         this.sc = (SocketChannel) key.channel();
         this.visitor = new ReceivePacketVisitor(server, this);

@@ -26,7 +26,7 @@ public class Server {
     private final Selector selector;
     private final boolean isRoot;
     private final InetSocketAddress address;
-    private final RouteTable rootTable = new RouteTable();
+    private final RouteTable routeTable = new RouteTable();
     private ServerState state = ServerState.ON_GOING;
     private final ArrayBlockingQueue<CommandArgs> commandQueue = new ArrayBlockingQueue<>(10);
     private static long computationIdentifierValue;
@@ -104,7 +104,7 @@ public class Server {
     }
 
     public void deleteAddress(InetSocketAddress address) {
-        rootTable.delete(address);
+        routeTable.delete(address);
     }
 
     public void newLogoutRequest(InetSocketAddress address, List<InetSocketAddress> daughters) {
@@ -192,10 +192,10 @@ public class Server {
         return computationRoomHandler.isComputing();
     }
 
-    public void addRoot(InetSocketAddress src, InetSocketAddress dst, Context context) {
+    public void addRoot(InetSocketAddress src, InetSocketAddress dst, ServerApplicationContext context) {
         if(!src.equals(address)) {
             logger.info("Root table has been updated");
-            rootTable.putOrUpdate(src, dst, context);
+            routeTable.putOrUpdate(src, dst, context);
         }
     }
 
@@ -203,7 +203,7 @@ public class Server {
      * returns the set of registered addresses in the rootTable.
      */
     public Set<InetSocketAddress> registeredAddresses() {
-        return rootTable.registeredAddresses();
+        return routeTable.registeredAddresses();
     }
 
     /**
@@ -236,13 +236,11 @@ public class Server {
         System.out.print("This server is a " + root + " server ");
         if(!isRoot){
             System.out.println("connected to " + parentSocketAddress);
-        } else {
-            System.out.println();
         }
-        System.out.println("Connected to " + address);
+        System.out.println("This server is listening on " + address);
         System.out.println("Neighbours : ");
-        rootTable.onNeighboursDo(null, info -> System.out.println("- " + info.address()));
-        System.out.println("Root table : \n" + rootTable);
+        routeTable.onNeighboursDo(null, info -> System.out.println("- " + info.address()));
+        System.out.println("Route table content: \n" + routeTable);
     }
 
     void processCommand() {
@@ -290,7 +288,7 @@ public class Server {
         //TODO remove this method -> access to all Address is not necessary
         var id = new ComputationIdentifier(computationIdentifierValue++, address);
         var entity = new ComputationEntity(id, info);
-        if(rootTable.neighbors().size() == 0) {
+        if(routeTable.neighbors().size() == 0) {
             var results = new ArrayList<String>();
             var response = Client.checkerFromHTTP(info.url(), info.className());
 
@@ -322,8 +320,8 @@ public class Server {
             }
         }
         else {
-            computationRoomHandler.prepare(entity, rootTable.size());
-            rootTable.performOnAllAddress(address -> transfer(address.address(), new WorkRequestPacket(
+            computationRoomHandler.prepare(entity, routeTable.size());
+            routeTable.performOnAllAddress(address -> transfer(address.address(), new WorkRequestPacket(
                     this.address, address.address(),
                     id.id(),
                     info.url(),
@@ -345,19 +343,19 @@ public class Server {
 
     public void connectToNewParent(IDPacket packet) throws IOException {
         var oldParentAddress = parentSocketAddress;
-        var ancestors = rootTable.ancestors(parentSocketAddress);
+        var ancestors = routeTable.ancestors(parentSocketAddress);
         parentSocketChannel = SocketChannel.open();
         parentSocketAddress = new InetSocketAddress(packet.getHostname(), packet.getPort());
         logger.info("Trying to connect to " + parentSocketAddress + " ...");
         parentSocketChannel.configureBlocking(false);
         parentSocketChannel.connect(parentSocketAddress);
         parentKey = parentSocketChannel.register(selector, SelectionKey.OP_CONNECT);
-        var context = new Context(this, parentKey);
+        var context = new ServerApplicationContext(this, parentKey);
         context.queuePacket(new ReconnectPacket(address, ancestors));
         parentKey.interestOps(SelectionKey.OP_CONNECT);
         parentKey.attach(context);
         deleteAddress(oldParentAddress);
-        rootTable.updateToContext(oldParentAddress, parentSocketAddress, context);
+        routeTable.updateToContext(oldParentAddress, parentSocketAddress, context);
     }
 
     private void connect() throws IOException {
@@ -368,7 +366,7 @@ public class Server {
         parentSocketChannel.configureBlocking(false);
         parentSocketChannel.connect(parentSocketAddress);
         parentKey = parentSocketChannel.register(selector, SelectionKey.OP_CONNECT);
-        var context = new Context(this, parentKey);
+        var context = new ServerApplicationContext(this, parentKey);
         context.queuePacket(new ConnectPacket(address));
         parentKey.interestOps(SelectionKey.OP_CONNECT);
         parentKey.attach(context);
@@ -418,10 +416,10 @@ public class Server {
         }
         try {
             if (key.isValid() && key.isWritable()) {
-                ((Context) key.attachment()).doWrite();
+                ((ServerApplicationContext) key.attachment()).doWrite();
             }
             if (key.isValid() && key.isReadable()) {
-                ((Context) key.attachment()).doRead();
+                ((ServerApplicationContext) key.attachment()).doRead();
             }
         } catch (IOException e) {
             logger.log(Level.INFO, "Connection closed with client due to IOException", e);
@@ -450,7 +448,7 @@ public class Server {
 
         sc.configureBlocking(false);
         var socketKey = sc.register(selector, SelectionKey.OP_READ);
-        socketKey.attach(new Context(this, socketKey));
+        socketKey.attach(new ServerApplicationContext(this, socketKey));
     }
 
     private void silentlyClose(SelectionKey key) {
@@ -470,7 +468,7 @@ public class Server {
     public void broadcast(FullPacket packet, InetSocketAddress src) {
         Objects.requireNonNull(packet);
         Objects.requireNonNull(src);
-        rootTable.onNeighboursDo(src, addressContext -> addressContext.context().queuePacket(packet));
+        routeTable.onNeighboursDo(src, addressContext -> addressContext.context().queuePacket(packet));
     }
 
     /**
@@ -485,11 +483,11 @@ public class Server {
         if(dst.equals(address)){
             return;
         }
-        rootTable.sendTo(dst, packet);
+        routeTable.sendTo(dst, packet);
     }
 
     public void sendLogout() {
-        rootTable.sendTo(parentSocketAddress, new LogoutRequestPacket(address, rootTable.neighbors().stream().filter(n -> !n.equals(parentSocketAddress)).toList()));
+        routeTable.sendTo(parentSocketAddress, new LogoutRequestPacket(address, routeTable.neighbors().stream().filter(n -> !n.equals(parentSocketAddress)).toList()));
     }
 
     /**
@@ -505,7 +503,7 @@ public class Server {
         }
     }
 
-    public List<Context> daughtersContext() {
-        return rootTable.daughtersContext(parentSocketAddress);
+    public List<ServerApplicationContext> daughtersContext() {
+        return routeTable.daughtersContext(parentSocketAddress);
     }
 }

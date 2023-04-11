@@ -1,7 +1,7 @@
 package fr.ramatellier.greed.server.visitor;
 
 import fr.ramatellier.greed.server.compute.ComputeInfo;
-import fr.ramatellier.greed.server.Context;
+import fr.ramatellier.greed.server.ServerApplicationContext;
 import fr.ramatellier.greed.server.Server;
 import fr.ramatellier.greed.server.compute.ComputationEntity;
 import fr.ramatellier.greed.server.compute.ComputationIdentifier;
@@ -25,10 +25,10 @@ import java.util.stream.LongStream;
  */
 public class ReceivePacketVisitor implements PacketVisitor {
     private final Server server;
-    private final Context context;
+    private final ServerApplicationContext context;
     private static final Logger logger = Logger.getLogger(ReceivePacketVisitor.class.getName());
 
-    public ReceivePacketVisitor(Server server, Context context) {
+    public ReceivePacketVisitor(Server server, ServerApplicationContext context) {
         this.server = Objects.requireNonNull(server);
         this.context = Objects.requireNonNull(context);
     }

@@ -1,7 +1,5 @@
 package fr.ramatellier.greed.server.util.http;
 
-import fr.ramatellier.greed.server.util.Helpers;
-
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -44,7 +42,6 @@ public final class HttpClient {
     public void launch() throws IOException {
         while (!isDone) {
             try {
-                Helpers.printKeys(selector);
                 selector.select(this::treatKey);
             } catch (UncheckedIOException tunneled) {
                 throw tunneled.getCause();
