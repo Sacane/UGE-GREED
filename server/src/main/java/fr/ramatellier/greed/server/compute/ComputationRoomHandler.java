@@ -15,6 +15,7 @@ public final class ComputationRoomHandler {
             computations.add(entity);
         }
     }
+
     public void add(ComputationEntity entity) {
         synchronized (lock) {
             computations.add(entity);
@@ -29,6 +30,7 @@ public final class ComputationRoomHandler {
             });
         }
     }
+
     public boolean isReady(ComputationIdentifier id) {
         synchronized (lock) {
             return prepareWaitingRoom.get(id).isReady();
@@ -50,6 +52,7 @@ public final class ComputationRoomHandler {
                     .ifPresent(ComputationEntity::incrementUc);
         }
     }
+
     public boolean isComputationDone(ComputationIdentifier id){
         synchronized (lock) {
             return computations
@@ -72,7 +75,7 @@ public final class ComputationRoomHandler {
         }
     }
 
-    private final static class CounterIntend{
+    private final static class CounterIntend {
         private final long intendValue;
         private long countedValue;
 

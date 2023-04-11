@@ -1,11 +1,15 @@
 package fr.ramatellier.greed.server.util;
 
+import fr.ramatellier.greed.server.Server;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Objects;
+import java.util.logging.Logger;
 
 public final class ResponseToFileBuilder {
+    private static final Logger logger = Logger.getLogger(Server.class.getName());
     private final StringBuilder builder = new StringBuilder();
     private final String fileName;
 
@@ -24,6 +28,8 @@ public final class ResponseToFileBuilder {
             writer.write(builder.toString());
         }
         System.out.println(file.getAbsolutePath());
-        file.createNewFile();
+        if(!file.createNewFile()) {
+            logger.severe("Failed to create the file response");
+        }
     }
 }

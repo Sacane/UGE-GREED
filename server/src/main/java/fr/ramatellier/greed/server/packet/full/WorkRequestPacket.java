@@ -44,10 +44,6 @@ public final class WorkRequestPacket implements TransferPacket {
         return range;
     }
 
-//    public long getMax() {
-//        return max;
-//    }
-
     @Override
     public OpCodes opCode() {
         return OpCodes.WORK;

@@ -7,7 +7,6 @@ import fr.ramatellier.greed.server.util.OpCodes;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.util.List;
 
 public final class WorkAssignmentPacket implements TransferPacket {
     private final IDPacket idSrc;

@@ -51,7 +51,7 @@ public class Context {
     }
 
     private void processPacket(FullPacket packet) {
-        switch(packet){
+        switch(packet) {
             case BroadcastPacket b -> {
                 b.accept(visitor);
                 var oldSrc = b.src().getSocket();

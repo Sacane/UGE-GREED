@@ -29,5 +29,4 @@ public final class ResultFormatHandler {
             lock.unlock();
         }
     }
-
 }

@@ -1,6 +1,5 @@
 package fr.ramatellier.greed.server.visitor;
 
-
 import fr.ramatellier.greed.server.compute.ComputeInfo;
 import fr.ramatellier.greed.server.Context;
 import fr.ramatellier.greed.server.Server;
@@ -78,11 +77,11 @@ public class ReceivePacketVisitor implements PacketVisitor {
 
     @Override
     public void visit(WorkRequestPacket packet) {
-        if(server.getAddress().equals(packet.dst().getSocket())) {
+        if(server.isRunning()) {
             var deltaComputingPossibility = Server.MAXIMUM_COMPUTATION - server.currentOnWorkingComputationsValue();
             if(deltaComputingPossibility > 0) { //He is accepting the computation
                 server.addRoom(new ComputationEntity(new ComputationIdentifier(packet.getRequestId(), packet.src().getSocket()),
-                                new ComputeInfo(packet.getChecker().url(), packet.getChecker().className(), packet.getRange().start(), packet.getRange().end())));
+                        new ComputeInfo(packet.getChecker().url(), packet.getChecker().className(), packet.getRange().start(), packet.getRange().end())));
                 server.transfer(packet.src().getSocket(), new WorkRequestResponsePacket(
                         packet.src(),
                         packet.dst(),
@@ -92,7 +91,12 @@ public class ReceivePacketVisitor implements PacketVisitor {
             }
         }
         else {
-            server.transfer(packet.dst().getSocket(), packet);
+            server.transfer(packet.src().getSocket(), new WorkRequestResponsePacket(
+                    packet.src(),
+                    packet.dst(),
+                    packet.getRequestId(),
+                    0
+            ));
         }
     }
 
@@ -103,34 +107,39 @@ public class ReceivePacketVisitor implements PacketVisitor {
      */
     @Override
     public void visit(WorkAssignmentPacket packet) {
-        System.out.println("RECEIVED WORK ASSIGNMENT PACKET");
         var idContext = new ComputationIdentifier(packet.getRequestId(), packet.src().getSocket());
         var entityResponse = server.findComputationById(idContext);
-        if(entityResponse.isEmpty()){
-            return;
+        if(entityResponse.isEmpty()) {
+            return ;
         }
         var entity = entityResponse.get();
         var targetRange = packet.getRanges();
         var result = Client.checkerFromHTTP(entity.info().url(), entity.info().className());
-        if(result.isEmpty()){
+        if(result.isEmpty()) {
             logger.severe("CANNOT GET THE CHECKER");
             LongStream.range(targetRange.start(), targetRange.end()).forEach(i -> sendResponseWithOPCode(packet, i, "CANNOT GET THE CHECKER", (byte) 0x03));
             return;
         }
         var checker = result.get();
-        for(var i = targetRange.start(); i < targetRange.end(); i++){
-            try{
-                var checkerResult = checker.check(i);
-                sendResponseWithOPCode(packet, i, checkerResult, (byte) 0x00);
-            } catch (InterruptedException e) {
-                logger.severe("INTERRUPTED EXCEPTION");
-                sendResponseWithOPCode(packet, i, null, (byte) 0x01);
-            }catch (Exception e){
-                sendResponseWithOPCode(packet, i, null, (byte) 0x01);
+
+        Thread.ofPlatform().start(() -> {
+            for(var i = targetRange.start(); i < targetRange.end(); i++) {
+                try{
+                    var checkerResult = checker.check(i);
+                    sendResponseWithOPCode(packet, i, checkerResult, (byte) 0x00);
+                } catch (InterruptedException e) {
+                    logger.severe("INTERRUPTED EXCEPTION");
+                    sendResponseWithOPCode(packet, i, null, (byte) 0x01);
+                } catch (Exception e){
+                    sendResponseWithOPCode(packet, i, null, (byte) 0x01);
+                }
             }
-        }
+
+            server.wakeup();
+        });
     }
-    private void sendResponseWithOPCode(WorkAssignmentPacket origin, long index,String result, byte opcode){
+
+    private void sendResponseWithOPCode(WorkAssignmentPacket origin, long index, String result, byte opcode) {
         server.transfer(origin.src().getSocket(), new WorkResponsePacket(
                 origin.dst(),
                 origin.src(),
@@ -138,6 +147,7 @@ public class ReceivePacketVisitor implements PacketVisitor {
                 new ResponsePacket(index, result, opcode)
         ));
     }
+
     @Override
     public void visit(WorkResponsePacket packet) {
         var responsePacket = packet.responsePacket();
@@ -210,6 +220,10 @@ public class ReceivePacketVisitor implements PacketVisitor {
         if(server.allConnected()) {
             server.broadcast(new DisconnectedPacket(server.getAddress(), server.getAddressLogout()), server.getAddress());
             server.deleteAddress(server.getAddressLogout());
+
+            if(server.isShutdown()) {
+                server.sendLogout();
+            }
         }
     }
 

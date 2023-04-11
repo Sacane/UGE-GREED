@@ -46,9 +46,10 @@ public final class ComputeCommandParser {
     }
 
     /**
-     * Get the compute information if the command has been checked.
+     * Get the information to compute if the command has been checked.
+     *
      * @throws IllegalStateException if the command has not been checked before calling this method.
-     * @return the compute information.
+     * @return the information to compute.
      */
     public ComputeInfo get(){
         if(computeInfo == null){
@@ -65,6 +66,7 @@ public final class ComputeCommandParser {
         }
         return true;
     }
+
     private boolean checkRange(String startAsString, String endAsString){
         try{
             var start = Long.parseLong(startAsString);
