@@ -11,11 +11,10 @@ import java.util.HashMap;
 public class HTTPHeaderReader implements Reader<HTTPHeader> {
 
     private enum State {
-        DONE, WAITING_VERSION, WAITING_RESPONSE, WAITING_STATUS, WAITING_PAYLOADS, ERROR
+        DONE, WAITING_STATUS, WAITING_PAYLOADS, ERROR
     }
-    private String version;
     private String status;
-    private State state = State.WAITING_VERSION;
+    private State state = State.WAITING_STATUS;
     private HTTPHeader header;
     @Override
     public ProcessStatus process(ByteBuffer buffer) {
@@ -25,6 +24,7 @@ public class HTTPHeaderReader implements Reader<HTTPHeader> {
                 return ProcessStatus.REFILL;
             }
             String contentHeader = readLineCRLF(buffer);
+            System.out.println("CONTENT " + contentHeader + " END CONTENT");
             if(contentHeader.isEmpty() || !buffer.hasRemaining()){
                 return ProcessStatus.REFILL;
             }
@@ -42,41 +42,85 @@ public class HTTPHeaderReader implements Reader<HTTPHeader> {
                 }
                 map.merge(key, value, (newValue, old) -> String.join(";", old, newValue));
             }
+            System.out.println(map);
             header = HTTPHeader.create(response, map);
             state = State.DONE;
             return ProcessStatus.DONE;
         }catch (IOException e) {
             return ProcessStatus.ERROR;
         }
+//        try {
+//            if (state == State.DONE || state == State.ERROR) {
+//                System.out.println("??");
+//                return ProcessStatus.ERROR;
+//            }
+//            if (state == State.WAITING_STATUS) {
+//                var statusCode = readLineCRLF(buffer);
+//                if (statusCode.isEmpty()) {
+//                    return ProcessStatus.REFILL;
+//                }
+//                state = State.WAITING_PAYLOADS;
+//                status = statusCode;
+//            }
+//            if(state == State.WAITING_PAYLOADS){
+//                var map = new HashMap<String, String>();
+//                var content = readLineCRLF(buffer);
+//                if(content.isEmpty()){
+//                    return ProcessStatus.REFILL;
+//                }
+//                var lines = Arrays.stream(content.split("\n")).toArray(String[]::new);
+//                for(var line: lines) {
+//                    int index = 0;
+//                    if(line.isEmpty()){
+//                        return ProcessStatus.REFILL;
+//                    }
+//                    for (; line.charAt(index) != ':'; index++) ;
+//                    String key = line.substring(0, index);
+//                    String value = line.substring(index + 1);
+//                    var split = line.split(": ");
+////                    if (split.length != 2) {
+////                        throw new HTTPException("Response is ill-formed");
+////                    }
+//                    map.merge(key, value, (newValue, old) -> String.join(";", old, newValue));
+//                }
+//                header = HTTPHeader.create(status, map);
+//                state = State.DONE;
+//                return ProcessStatus.DONE;
+//            }
+//            return ProcessStatus.REFILL;
+//        }catch (IOException e){
+//            System.out.println("??????");
+//            return ProcessStatus.ERROR;
+//        }
     }
 
     @Override
     public HTTPHeader get() {
+        if(state != State.DONE){
+            throw new IllegalStateException("Cannot get result before process is done");
+        }
         return header;
     }
 
     @Override
     public void reset() {
-        version = null;
         status = null;
     }
 
-    String readLineCRLF(ByteBuffer buffer) throws IOException {
+    String readLineCRLF(ByteBuffer buffer) {
         var builder = new StringBuilder();
         byte b = 0;
         buffer.flip();
         while(buffer.hasRemaining()){
-            byte prev = b;
-            b = buffer.get();
-            if(prev == '\r' && b == '\n'){
-                buffer.compact();
+            b = buffer.get(); // lit un octet du buffer
+            builder.append((char) b); // ajoute l'octet au header
+            if (builder.length() > 3 && builder.substring(builder.length() - 4).equals("\r\n\r\n")) {
+                // fin des en-têtes
                 break;
             }
-            builder.append((char)b);
         }
-        System.out.println(builder.length());
-        System.out.println("DONE");
-        return builder.substring(0, builder.length() - 1);
+        buffer.compact();
+        return builder.substring(0, builder.length() - 4);
     }
 //    public HTTPHeader readHeader(ByteBuffer buffer) throws IOException {
 //        var response = readLineCRLF(buffer);

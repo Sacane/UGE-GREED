@@ -43,26 +43,20 @@ public class HTTPReaderTest {
      */
     @Test
     public void testLineReaderLFCR2() throws IOException {
-        FakeHTTPServer server = new FakeHTTPServer("Line1\r\nLine2\nLine2cont\r\n",7);
-        try {
-            server.serve();
-            SocketChannel sc = SocketChannel.open();
-            sc.connect(new InetSocketAddress("localhost", server.getPort()));
-            var buff = ByteBuffer.allocate(40);
-            buff.put("AA\rLine1\r\nLine2\nLine2cont\r\n".getBytes("ASCII"));
-            var reader = new HTTPHeaderReader();
-            assertEquals("AA\rLine1", reader.readLineCRLF(buff));
-            assertEquals("Line2\nLine2cont", reader.readLineCRLF(buff));
-        } finally {
-            server.shutdown();
-        }
+
+        var buff = ByteBuffer.allocate(40);
+        buff.put("AA\rLine1\r\nLine2\nLine2cont\r\n".getBytes("ASCII"));
+        var reader = new HTTPHeaderReader();
+        assertEquals("AA\rLine1", reader.readLineCRLF(buff));
+        assertEquals("Line2\nLine2cont", reader.readLineCRLF(buff));
+
     }
 
     @Test
     public void readHeaderTest() throws IOException{
         var reader = new HTTPHeaderReader();
         var bb = ByteBuffer.allocate(1024);
-        bb.put("HTTP/1.1 200 OK\nDate: Thu, 01 Mar 2018 17:28:07 GMT\nServer: Apache\nLast-Modified: Thu, 15 Sep 2016 09:02:49 GMT\nETag: \"254441f-3d0a-53c881c25a040\"\nAccept-Ranges: bytes\nContent-Length: 15626\nContent-Type: text/html\r\n"
+        bb.put("HTTP/1.1 200 OK\nDate: Thu, 01 Mar 2018 17:28:07 GMT\nServer: Apache\nLast-Modified: Thu, 15 Sep 2016 09:02:49 GMT\nETag: \"254441f-3d0a-53c881c25a040\"\nAccept-Ranges: bytes\nContent-Length: 15626\nContent-Type: text/html\r\n" //Missing the last \r\n
                 .getBytes("ASCII"));
         var response = reader.process(bb);
         assertEquals(response, Reader.ProcessStatus.DONE);
@@ -70,20 +64,24 @@ public class HTTPReaderTest {
         assertNotNull(header);
         assertEquals(200, header.getCode());
         assertEquals(15626, header.getContentLength());
+        assertNotEquals("text/html", header.getContentType().get());
     }
 
     @Test
     public void readMoreThanJustHeaderTest() throws IOException{
         var reader = new HTTPHeaderReader();
         var bb = ByteBuffer.allocate(1024);
-        bb.put("HTTP/1.1 200 OK\nDate: Thu, 01 Mar 2018 17:28:07 GMT\nServer: Apache\nLast-Modified: Thu, 15 Sep 2016 09:02:49 GMT\nETag: \"254441f-3d0a-53c881c25a040\"\nAccept-Ranges: bytes\nContent-Length: 15626\nContent-Type: text/html\r\nBlablablablablablablaIGNORED"
+        bb.put("HTTP/1.1 200 OK\nDate: Thu, 01 Mar 2018 17:28:07 GMT\nServer: Apache\nLast-Modified: Thu, 15 Sep 2016 09:02:49 GMT\nETag: \"254441f-3d0a-53c881c25a040\"\nAccept-Ranges: bytes\nContent-Length: 15626\nContent-Type: text/html\r\n\r\nBlablablablablablablaIGNORED"
                 .getBytes(StandardCharsets.UTF_8));
         var response = reader.process(bb);
-        assertEquals(response, Reader.ProcessStatus.DONE);
+        assertEquals(Reader.ProcessStatus.DONE, response);
         var header = reader.get();
         assertNotNull(header);
         assertEquals(200, header.getCode());
         assertEquals(15626, header.getContentLength());
+        assertEquals("text/html", header.getContentType().get());
+        ByteBuffer buffFinal = ByteBuffer.wrap("BlablablablablablablaIGNORED".getBytes("ASCII")).compact();
+        assertEquals(buffFinal.flip(), bb.flip());
     }
 
 

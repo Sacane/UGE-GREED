@@ -1,30 +1,25 @@
 package fr.ramatellier.greed.server.util.http;
 
 import fr.ramatellier.greed.server.reader.Reader;
-import fr.ramatellier.greed.server.util.Buffers;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.Objects;
-import java.util.concurrent.ArrayBlockingQueue;
+import java.util.logging.Logger;
 
 public class HttpContext{
-    private static final int BUFFER_SIZE = 2048;
+    private static final int BUFFER_SIZE = 8192;
     private final ByteBuffer bufferIn = ByteBuffer.allocate(BUFFER_SIZE);
     private final ByteBuffer bufferOut = ByteBuffer.allocate(BUFFER_SIZE);
-    private static final String CONTENT_LENGTH_HEADER = "Content-Length";
-    private ByteBuffer bodyBuffer;
     private boolean closed = false;
     private final SelectionKey key;
     private final SocketChannel sc;
-    private final ArrayBlockingQueue<ByteBuffer> queue = new ArrayBlockingQueue<>(2);
     private final HttpClient client;
     private final String request;
-    private StringBuilder sb = new StringBuilder();
-    private int contentLength;
     private final HTTPHeaderReader headerReader = new HTTPHeaderReader();
+    private static final Logger LOGGER = Logger.getLogger(HttpContext.class.getName());
 
     HttpContext(HttpClient client, SelectionKey key, String request) {
         Objects.requireNonNull(key);
@@ -67,12 +62,64 @@ public class HttpContext{
         key.interestOps(SelectionKey.OP_WRITE);
     }
 
-    private void processIn() {
-        while(bufferIn.hasRemaining()){
+//    private void processIn() throws IOException {
+//        System.out.println("PROCESS IN WITH -> " + bufferIn.remaining() + " REMAINING");
+//        while(true){
+//            var response = headerReader.process(bufferIn);
+//            if(response == Reader.ProcessStatus.DONE){
+//                var header = headerReader.get();
+//                System.out.println("CODE -> " + header.getCode());
+//                if(header.getCode() == 200){
+//                    var contentLength = header.getContentLength();
+//                    System.out.println(header);
+//                    var body = new byte[contentLength];
+//                    int toReadLeft = bufferIn.remaining();
+//                    while(toReadLeft < contentLength){
+//                        bufferIn.get(body, contentLength - toReadLeft, toReadLeft);
+//                        contentLength -= toReadLeft;
+//                        bufferIn.clear();
+//                        sc.read(bufferIn);
+//                        bufferIn.flip();
+//                        toReadLeft = bufferIn.remaining();
+//                    }
+//                    client.setBody(body);
+//                    System.out.println("BODY GET");
+//                }
+//                break;
+//            } else if(response == Reader.ProcessStatus.REFILL){
+//                return;
+//            } else if(response == Reader.ProcessStatus.ERROR){
+//                System.out.println("ERROR");
+//                break;
+//            }
+//        }
+//    }
+
+        private void processIn() throws IOException {
+        System.out.println("PROCESS IN WITH -> " + bufferIn.remaining() + " REMAINING");
+        while(true){
             var response = headerReader.process(bufferIn);
             if(response == Reader.ProcessStatus.DONE){
                 var header = headerReader.get();
                 System.out.println("CODE -> " + header.getCode());
+                if(header.getCode() == 200){
+                    var contentLength = header.getContentLength();
+                    System.out.println(header);
+                    var body = new byte[contentLength];
+                    bufferIn.flip();
+                    int toReadLeft = bufferIn.remaining();
+                    bufferIn.get(body);
+                    while(toReadLeft < contentLength){
+                        bufferIn.clear();
+                        sc.read(bufferIn);
+                        bufferIn.flip();
+                        bufferIn.get(body, contentLength - toReadLeft, toReadLeft);
+                        contentLength -= toReadLeft;
+                        toReadLeft = bufferIn.remaining();
+                    }
+                    client.setBody(body);
+                    System.out.println("BODY GET");
+                }
                 break;
             } else if(response == Reader.ProcessStatus.REFILL){
                 return;
@@ -90,13 +137,9 @@ public class HttpContext{
         bufferOut.compact();
         updateInterestOps();
     }
-
-    private void processOut() {
-
-    }
-
     public void doRead() {
         System.out.println("doRead");
+
         try {
             var readValue = sc.read(bufferIn);
             if (readValue == -1) {
@@ -105,7 +148,6 @@ public class HttpContext{
             processIn();
             updateInterestOps();
         } catch (IOException ignored) {
-            silentlyClose();
         }
     }
 }

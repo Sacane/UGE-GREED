@@ -2,6 +2,7 @@ package fr.ramatellier.greed.server.util.http;
 
 import fr.ramatellier.greed.server.util.Helpers;
 
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
@@ -15,6 +16,7 @@ public final class HttpClient {
     private final Selector selector;
     private final InetSocketAddress targetAddress;
     private boolean isDone = false;
+    private byte[] body;
 
     public HttpClient(String path, String request) throws IOException {
         var url = new URL(path);
@@ -25,6 +27,18 @@ public final class HttpClient {
         sc.connect(targetAddress);
         var key = sc.register(selector, SelectionKey.OP_CONNECT);
         key.attach(new HttpContext(this, key, request));
+    }
+
+    void setBody(byte[] body){
+        this.body = body;
+        isDone = true;
+    }
+
+    public byte[] getBody(){
+        if(!isDone){
+            throw new IllegalStateException("The request is not done yet");
+        }
+        return body;
     }
 
     public void launch() throws IOException {
@@ -56,7 +70,6 @@ public final class HttpClient {
                 uniqueContext.doRead();
             }
         } catch (IOException ioe) {
-            // lambda call in select requires to tunnel IOException
             throw new UncheckedIOException(ioe);
         }
     }
@@ -64,5 +77,11 @@ public final class HttpClient {
     public static void main(String[] args) throws IOException {
         var client = new HttpClient("http://www-igm.univ-mlv.fr", "GET /~carayol/Factorizer.jar HTTP/1.1\r\nHost: igm.univ-mlv.fr\r\n\r\n");
         client.launch();
+        var filePath = "./Factorizer.jar";
+        try(var fos = new FileOutputStream(filePath)){
+            fos.write(client.getBody());
+            fos.flush();
+            System.out.println("File saved at " + filePath);
+        }
     }
 }
