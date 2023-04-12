@@ -30,9 +30,6 @@ public final class ResponseToFileBuilder {
         try(var writer = new FileWriter(file)){
             writer.write(builder.toString());
         }
-        System.out.println(file.getAbsolutePath());
-        if(!file.createNewFile()) {
-            logger.severe("Failed to create the file response");
-        }
+        System.out.println("Result has been created into -> " + file.getAbsolutePath());
     }
 }
