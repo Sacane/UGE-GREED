@@ -14,6 +14,8 @@ import fr.uge.ugegreed.Client;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Objects;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
@@ -146,8 +148,10 @@ public class ReceivePacketVisitor implements PacketVisitor {
 
             server.wakeup();
         });
+
         /*
         var lock = new ReentrantLock();
+        var results = new HashMap<Long, String>();
 
         for(var i = targetRange.start(); i < targetRange.end(); i++) {
             var value = i;
@@ -157,27 +161,38 @@ public class ReceivePacketVisitor implements PacketVisitor {
 
                 try{
                     checkerResult = checker.check(value);
-                    // sendResponseWithOPCode(packet, value, checkerResult, (byte) 0x00);
                 } catch (Exception e) {
-                    // sendResponseWithOPCode(packet, value, null, (byte) 0x01);
+                    // Ignore exception
                 }
 
                 lock.lock();
                 try {
-                    sendResponseWithOPCode(packet, value, checkerResult, (byte) 0x00);
+                    results.put(value, checkerResult);
+                    server.incrementComputation(entity.id());
+                    // sendResponseWithOPCode(packet, value, checkerResult, (byte) 0x00);
                 } finally {
                     lock.unlock();
                 }
-
-                server.incrementComputation(entity.id());
-
-                if(server.isShutdown() && !server.isComputing()) {
-                    server.sendLogout();
-                }
-
-                server.wakeup();
             });
-        }*/
+        }
+
+        while(results.size() != targetRange.end() - targetRange.start()) {
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+            }
+        }
+
+        for(var entry: results.entrySet()) {
+            sendResponseWithOPCode(packet, entry.getKey(), entry.getValue(), (byte) 0x00);
+        }
+
+        if(server.isShutdown() && !server.isComputing()) {
+            server.sendLogout();
+        }
+
+        server.wakeup();
+        */
     }
 
     private void sendResponseWithOPCode(WorkAssignmentPacket origin, long index, String result, byte opcode) {
