@@ -497,4 +497,8 @@ public class Server {
     public List<ServerApplicationContext> daughtersContext() {
         return routeTable.daughtersContext(parentSocketAddress);
     }
+
+    public void updateRoom(ComputationIdentifier id, long start, long end) {
+        computationRoomHandler.updateRange(id, start, end);
+    }
 }

@@ -10,7 +10,7 @@ import java.util.Objects;
 public final class ComputationEntity {
     private final ComputationIdentifier id;
     private final ComputeInfo info;
-    private final long intendedUc;
+    private long intendedUc;
     private long currentUcDone;
 
     public ComputationEntity(ComputationIdentifier id, ComputeInfo info) {
@@ -18,6 +18,11 @@ public final class ComputationEntity {
         this.info = Objects.requireNonNull(info);
         this.intendedUc = info.end() - info.start();
     }
+
+    public void setRange(long start, long end) {
+        intendedUc = end - start;
+    }
+
 
     /**
      * @return the number of unit of computation that remains to be done

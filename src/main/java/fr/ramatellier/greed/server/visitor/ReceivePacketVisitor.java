@@ -108,7 +108,9 @@ public class ReceivePacketVisitor implements PacketVisitor {
      */
     @Override
     public void visit(WorkAssignmentPacket packet) {
+        System.out.println("Start computation...");
         var idContext = new ComputationIdentifier(packet.getRequestId(), packet.src().getSocket());
+        server.updateRoom(idContext, packet.getRanges().start(), packet.getRanges().end());
         var entityResponse = server.findComputationById(idContext);
         if(entityResponse.isEmpty()) {
             return ;
@@ -123,7 +125,7 @@ public class ReceivePacketVisitor implements PacketVisitor {
         }
         var checker = result.get();
 
-        Thread.ofPlatform().start(() -> {
+        var thread = Thread.ofPlatform().start(() -> {
             for(var i = targetRange.start(); i < targetRange.end(); i++) {
                 try{
                     var checkerResult = checker.check(i);
@@ -144,7 +146,13 @@ public class ReceivePacketVisitor implements PacketVisitor {
 
             server.wakeup();
         });
-
+        try {
+            thread.join();
+        } catch (InterruptedException ignored) {
+            System.out.println("Computation interrupted");
+            return;
+        }
+        System.out.println("Computation finished with success");
         /*
         var lock = new ReentrantLock();
 

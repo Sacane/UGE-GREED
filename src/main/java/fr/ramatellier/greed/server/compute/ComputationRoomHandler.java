@@ -42,6 +42,11 @@ public final class ComputationRoomHandler {
         }
     }
 
+    public void updateRange(ComputationIdentifier id, long start, long end) {
+        computations.stream().filter(computation -> computation.id().equals(id)).forEach(computation -> computation.setRange(start, end));
+    }
+
+
     /**
      * Increment the number of UC that are ready to be used to compute the target computation.
      * @param id the computation to increment

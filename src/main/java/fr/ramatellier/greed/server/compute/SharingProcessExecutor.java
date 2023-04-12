@@ -45,7 +45,6 @@ public class SharingProcessExecutor {
         var startRange = start;
         for(var socketUcIdentifier : availableSocketMap.keySet()){
             var end = startRange + availableSocketMap.get(socketUcIdentifier);
-            System.out.println(end);
             var socketRange = new SocketRange(socketUcIdentifier.address(), new Range(startRange, end));
             startRange = end;
             socketRangeList.add(socketRange);
