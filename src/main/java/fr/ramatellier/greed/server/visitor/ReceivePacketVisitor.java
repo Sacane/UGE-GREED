@@ -125,7 +125,7 @@ public class ReceivePacketVisitor implements PacketVisitor {
         }
         var checker = result.get();
 
-        var thread = Thread.ofPlatform().start(() -> {
+        Thread.ofPlatform().start(() -> {
             for(var i = targetRange.start(); i < targetRange.end(); i++) {
                 try{
                     var checkerResult = checker.check(i);
@@ -139,20 +139,13 @@ public class ReceivePacketVisitor implements PacketVisitor {
 
                 server.incrementComputation(entity.id());
             }
-
+            System.out.println("Computation finished");
             if(server.isShutdown() && !server.isComputing()) {
                 server.sendLogout();
             }
 
             server.wakeup();
         });
-        try {
-            thread.join();
-        } catch (InterruptedException ignored) {
-            System.out.println("Computation interrupted");
-            return;
-        }
-        System.out.println("Computation finished with success");
         /*
         var lock = new ReentrantLock();
 
