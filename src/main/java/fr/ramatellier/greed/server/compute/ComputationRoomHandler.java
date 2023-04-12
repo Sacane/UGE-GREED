@@ -4,19 +4,31 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Optional;
 
+/**
+ * This is a thread-safe class that has two main purpose:
+ * - keep track of all computation that are currently running
+ * - prepare computation that are not yet ready to be computed
+ * //TODO Later on, we shall separate the two purpose into two different class
+ */
 public final class ComputationRoomHandler {
     private final Object lock = new Object();
     private final HashMap<ComputationIdentifier, CounterIntend> prepareWaitingRoom = new HashMap<>();
+    //TODO move this list into server
     private final ArrayList<ComputationEntity> computations = new ArrayList<>();
 
     public boolean isComputing() {
         return computations.stream().mapToLong(ComputationEntity::remains).sum() > 0;
     }
 
-    public void incrementComputation(ComputeInfo info) {
-        computations.stream().filter(computation -> computation.info().equals(info)).forEach(ComputationEntity::incrementUc);
+    public void incrementComputation(ComputationIdentifier id) {
+        computations.stream().filter(computation -> computation.id().equals(id)).forEach(ComputationEntity::incrementUc);
     }
 
+    /**
+     * Prepare a computation that is not yet ready to be computed.
+     * @param entity the computation to prepare
+     * @param intendValue the number of UC that will be used to compute this computation
+     */
     public void prepare(ComputationEntity entity, long intendValue) {
         synchronized (lock) {
             prepareWaitingRoom.put(entity.id(), new CounterIntend(intendValue));
@@ -30,6 +42,10 @@ public final class ComputationRoomHandler {
         }
     }
 
+    /**
+     * Increment the number of UC that are ready to be used to compute the target computation.
+     * @param id the computation to increment
+     */
     public void increment(ComputationIdentifier id) {
         synchronized (lock) {
             prepareWaitingRoom.merge(id, new CounterIntend(1), (old, newOne) -> {
@@ -39,6 +55,11 @@ public final class ComputationRoomHandler {
         }
     }
 
+    /**
+     * Check if the computation is ready to be computed.
+     * @param id the computation to check
+     * @return true if the target computation is ready to be computed, false otherwise
+     */
     public boolean isReady(ComputationIdentifier id) {
         synchronized (lock) {
             return prepareWaitingRoom.get(id).isReady();

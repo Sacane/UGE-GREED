@@ -4,6 +4,8 @@ import fr.ramatellier.greed.server.compute.*;
 import fr.ramatellier.greed.server.packet.full.*;
 import fr.ramatellier.greed.server.packet.sub.IDPacket;
 import fr.ramatellier.greed.server.util.*;
+import fr.ramatellier.greed.server.util.file.ResponseToFileBuilder;
+import fr.ramatellier.greed.server.util.file.ResultFormatHandler;
 import fr.uge.ugegreed.Client;
 
 import java.io.File;
@@ -83,8 +85,8 @@ public class Server {
         computationRoomHandler.increment(id);
     }
 
-    public void incrementComputation(ComputeInfo info) {
-        computationRoomHandler.incrementComputation(info);
+    public void incrementComputation(ComputationIdentifier id) {
+        computationRoomHandler.incrementComputation(id);
     }
 
     public void storeComputation(ComputationIdentifier id, SocketUcIdentifier ucId){
@@ -292,30 +294,20 @@ public class Server {
             var response = Client.checkerFromHTTP(info.url(), info.className());
 
             if(response.isEmpty()) {
-                logger.severe("FAILED GET CHECKER");
+                logger.severe("FAILED TO GET CHECKER");
                 return ;
             }
             var checker = response.get();
-
-            for(var i = info.start(); i < info.end(); i++) {
-                try {
-                    results.add(checker.check(i));
-                } catch (InterruptedException e) {
-                    logger.severe("CHECKER INTERRUPTED");
-                }
-            }
-
+            var fileBuilder = new ResponseToFileBuilder("result" + computationIdentifierValue + ".txt");
             try {
-                var file = new File("result.txt");
-                try(var writer = new FileWriter(file)) {
-                    writer.write(String.join("\n", results));
+                for(var i = info.start(); i < info.end(); i++) {
+                    fileBuilder.append(checker.check(i));
                 }
-                System.out.println(file.getAbsolutePath());
-                if(!file.createNewFile()) {
-                    logger.severe("Failed to create the file response");
-                }
+                fileBuilder.build();
+            } catch (InterruptedException e) {
+                logger.severe("CHECKER INTERRUPTED");
             } catch (IOException e) {
-                logger.severe("FAILED TO CREATE FILE");
+                logger.severe("FAILED TO WRITE FILE");
             }
         }
         else {

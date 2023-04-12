@@ -6,6 +6,7 @@ import fr.ramatellier.greed.server.reader.FullPacketReader;
 import fr.ramatellier.greed.server.reader.sub.IDReader;
 import fr.ramatellier.greed.server.reader.Reader;
 import fr.ramatellier.greed.server.reader.primitive.IntReader;
+import fr.ramatellier.greed.server.util.Buffers;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -45,7 +46,7 @@ public class ConnectOKPacketReader implements FullPacketReader {
             }
         }
         if(state == State.WAITING_IDS) {
-            fillList(ids, sizeReader.get(), idReader, buffer);
+            Buffers.fillList(ids, sizeReader.get(), idReader, buffer);
 
             if(ids.size() == sizeReader.get()) {
                 state = State.DONE;
