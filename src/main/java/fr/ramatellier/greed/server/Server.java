@@ -84,8 +84,8 @@ public class Server {
         computationRoomHandler.increment(id);
     }
 
-    public void incrementComputation(ComputeInfo info) {
-        computationRoomHandler.incrementComputation(info);
+    public void incrementComputation(ComputationIdentifier id) {
+        computationRoomHandler.incrementComputation(id);
     }
 
     public void storeComputation(ComputationIdentifier id, SocketUcIdentifier ucId){

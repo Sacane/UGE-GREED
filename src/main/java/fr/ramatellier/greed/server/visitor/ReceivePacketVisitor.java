@@ -15,6 +15,7 @@ import fr.uge.ugegreed.Client;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Objects;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.LongStream;
@@ -134,7 +135,7 @@ public class ReceivePacketVisitor implements PacketVisitor {
                     sendResponseWithOPCode(packet, i, null, (byte) 0x01);
                 }
 
-                server.incrementComputation(entity.info());
+                server.incrementComputation(entity.id());
             }
 
             if(server.isShutdown() && !server.isComputing()) {
@@ -143,6 +144,39 @@ public class ReceivePacketVisitor implements PacketVisitor {
 
             server.wakeup();
         });
+
+        /*
+        var lock = new ReentrantLock();
+
+        for(var i = targetRange.start(); i < targetRange.end(); i++) {
+            var value = i;
+
+            Thread.ofPlatform().start(() -> {
+                var checkerResult = "";
+
+                try{
+                    checkerResult = checker.check(value);
+                    // sendResponseWithOPCode(packet, value, checkerResult, (byte) 0x00);
+                } catch (Exception e) {
+                    // sendResponseWithOPCode(packet, value, null, (byte) 0x01);
+                }
+
+                lock.lock();
+                try {
+                    sendResponseWithOPCode(packet, value, checkerResult, (byte) 0x00);
+                } finally {
+                    lock.unlock();
+                }
+
+                server.incrementComputation(entity.id());
+
+                if(server.isShutdown() && !server.isComputing()) {
+                    server.sendLogout();
+                }
+
+                server.wakeup();
+            });
+        }*/
     }
 
     private void sendResponseWithOPCode(WorkAssignmentPacket origin, long index, String result, byte opcode) {
@@ -240,6 +274,10 @@ public class ReceivePacketVisitor implements PacketVisitor {
         }
         else {
             server.deleteAddress(packet.id().getSocket());
+
+            if(server.isShutdown() && packet.id().getSocket().equals(server.getParentSocketAddress())) {
+                server.sendLogout();
+            }
         }
     }
 

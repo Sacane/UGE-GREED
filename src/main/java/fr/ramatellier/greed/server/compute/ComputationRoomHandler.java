@@ -20,9 +20,8 @@ public final class ComputationRoomHandler {
         return computations.stream().mapToLong(ComputationEntity::remains).sum() > 0;
     }
 
-    //TODO increment by Id not by info
-    public void incrementComputation(ComputeInfo info) {
-        computations.stream().filter(computation -> computation.info().equals(info)).forEach(ComputationEntity::incrementUc);
+    public void incrementComputation(ComputationIdentifier id) {
+        computations.stream().filter(computation -> computation.id().equals(id)).forEach(ComputationEntity::incrementUc);
     }
 
     public void prepare(ComputationEntity entity, long intendValue) {
