@@ -1,12 +1,8 @@
 package fr.ramatellier.greed.server.visitor;
 
-import fr.ramatellier.greed.server.compute.ComputeInfo;
+import fr.ramatellier.greed.server.compute.*;
 import fr.ramatellier.greed.server.ServerApplicationContext;
 import fr.ramatellier.greed.server.Server;
-import fr.ramatellier.greed.server.compute.ComputationEntity;
-import fr.ramatellier.greed.server.compute.ComputationIdentifier;
-import fr.ramatellier.greed.server.compute.SharingProcessExecutor;
-import fr.ramatellier.greed.server.compute.SocketUcIdentifier;
 import fr.ramatellier.greed.server.packet.full.*;
 import fr.ramatellier.greed.server.packet.sub.IDPacket;
 import fr.ramatellier.greed.server.packet.sub.ResponsePacket;
@@ -14,10 +10,7 @@ import fr.uge.ugegreed.Client;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Objects;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.LongStream;
@@ -29,11 +22,33 @@ import java.util.stream.LongStream;
 public class ReceivePacketVisitor implements PacketVisitor {
     private final Server server;
     private final ServerApplicationContext context;
+    private final ThreadComputation computation;
     private static final Logger logger = Logger.getLogger(ReceivePacketVisitor.class.getName());
 
     public ReceivePacketVisitor(Server server, ServerApplicationContext context) {
         this.server = Objects.requireNonNull(server);
         this.context = Objects.requireNonNull(context);
+        computation = new ThreadComputation(100);
+
+        Thread.ofPlatform().daemon().start(() -> {
+            for(;;) {
+                try {
+                    var response = computation.takeResponse();
+
+                    sendResponseWithOPCode(response.packet(), response.value(), response.response(), response.code());
+
+                    server.incrementComputation(response.id());
+
+                    if(server.isShutdown() && !server.isComputing()) {
+                        server.sendLogout();
+                    }
+
+                    server.wakeup();
+                } catch (InterruptedException e) {
+                    // Ignore exception
+                }
+            }
+        });
     }
 
     @Override
@@ -127,15 +142,24 @@ public class ReceivePacketVisitor implements PacketVisitor {
         }
         var checker = result.get();
 
-        Thread.ofPlatform().start(() -> {
+        for(var i = targetRange.start(); i < targetRange.end(); i++) {
+            try {
+                computation.putTask(new TaskComputation(packet, checker, entity.id(), i));
+            } catch (InterruptedException e) {
+                // Ignore exception
+            }
+        }
+
+        /*Thread.ofPlatform().start(() -> {
             for(var i = targetRange.start(); i < targetRange.end(); i++) {
-                try{
+                try {
+                    computation.addTask(new TaskComputation(packet, checker, i));
                     var checkerResult = checker.check(i);
                     sendResponseWithOPCode(packet, i, checkerResult, (byte) 0x00);
                 } catch (InterruptedException e) {
                     logger.severe("INTERRUPTED EXCEPTION");
                     sendResponseWithOPCode(packet, i, null, (byte) 0x01);
-                } catch (Exception e){
+                } catch (Exception e) {
                     sendResponseWithOPCode(packet, i, null, (byte) 0x01);
                 }
 
@@ -147,7 +171,7 @@ public class ReceivePacketVisitor implements PacketVisitor {
             }
 
             server.wakeup();
-        });
+        });*/
 
         /*
         var lock = new ReentrantLock();

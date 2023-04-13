@@ -8,14 +8,13 @@ import fr.ramatellier.greed.server.util.file.ResponseToFileBuilder;
 import fr.ramatellier.greed.server.util.file.ResultFormatHandler;
 import fr.uge.ugegreed.Client;
 
-import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.*;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -42,6 +41,7 @@ public class Server {
     private SocketChannel parentSocketChannel;
     private InetSocketAddress parentSocketAddress;
     private SelectionKey parentKey;
+    private final LinkedBlockingQueue<SendInformation> packets = new LinkedBlockingQueue<>();
     // Others
     private enum ServerState{
         ON_GOING, SHUTDOWN, STOPPED
@@ -378,12 +378,22 @@ public class Server {
         selector.wakeup();
     }
 
+    private void processPacket() {
+        while(!packets.isEmpty()) {
+            var packet = packets.poll();
+
+            routeTable.sendTo(packet.address(), packet.packet());
+        }
+    }
+
     private void initConnection() throws IOException {
         Thread.ofPlatform()
                 .daemon()
                 .start(this::consoleRun);
+
         while (!Thread.interrupted()) {
             try {
+                processPacket();
                 selector.select(this::treatKey);
                 processCommand();
             } catch (UncheckedIOException tunneled) {
@@ -468,17 +478,23 @@ public class Server {
      * @param packet packet to transfer
      */
     public void transfer(InetSocketAddress dst, FullPacket packet) {
-        if(packet.kind() != TramKind.TRANSFER){
+        if(packet.kind() != TramKind.TRANSFER) {
             throw new AssertionError("Only transfer packet can be transferred");
         }
-        if(dst.equals(address)){
+        if(dst.equals(address)) {
             return;
         }
-        routeTable.sendTo(dst, packet);
+        try {
+            packets.put(new SendInformation(dst, packet));
+        } catch (InterruptedException e) {
+        }
     }
 
     public void sendLogout() {
-        routeTable.sendTo(parentSocketAddress, new LogoutRequestPacket(address, routeTable.neighbors().stream().filter(n -> !n.equals(parentSocketAddress)).toList()));
+        try {
+            packets.put(new SendInformation(parentSocketAddress, new LogoutRequestPacket(address, routeTable.neighbors().stream().filter(n -> !n.equals(parentSocketAddress)).toList())));
+        } catch (InterruptedException e) {
+        }
     }
 
     /**
