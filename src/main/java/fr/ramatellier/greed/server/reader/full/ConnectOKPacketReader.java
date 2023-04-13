@@ -51,7 +51,7 @@ public class ConnectOKPacketReader implements FullPacketReader {
             if(ids.size() == sizeReader.get()) {
                 state = State.DONE;
 
-                value = new ConnectOKPacket(idMotherReader.get().getSocket(), ids.stream().map(IDPacket::getSocket).collect(Collectors.toSet()));
+                value = new ConnectOKPacket(idMotherReader.get(), ids.stream().toList());
             }
         }
 

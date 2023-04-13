@@ -27,7 +27,7 @@ public class PleaseReconnectPacketReader implements FullPacketReader {
             if(status == ProcessStatus.DONE) {
                 state = State.DONE;
 
-                value = new PleaseReconnectPacket(idReader.get().getSocket());
+                value = new PleaseReconnectPacket(idReader.get());
             }
         }
 

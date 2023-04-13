@@ -27,7 +27,7 @@ public class ConnectPacketReader implements FullPacketReader {
             if(status == ProcessStatus.DONE) {
                 state = State.DONE;
 
-                value = new ConnectPacket(idReader.get().getSocket());
+                value = new ConnectPacket(idReader.get());
             }
         }
 

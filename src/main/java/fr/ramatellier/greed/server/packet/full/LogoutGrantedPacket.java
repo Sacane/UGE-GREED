@@ -4,7 +4,7 @@ import fr.ramatellier.greed.server.util.OpCodes;
 
 import java.nio.ByteBuffer;
 
-public final class LogoutGrantedPacket implements LocalPacket {
+public record LogoutGrantedPacket() implements LocalPacket {
     @Override
     public OpCodes opCode() {
         return OpCodes.LOGOUT_GRANTED;

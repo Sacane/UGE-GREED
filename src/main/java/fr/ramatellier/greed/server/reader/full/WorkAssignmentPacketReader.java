@@ -1,12 +1,11 @@
 package fr.ramatellier.greed.server.reader.full;
 
-import fr.ramatellier.greed.server.compute.Range;
 import fr.ramatellier.greed.server.packet.full.WorkAssignmentPacket;
 import fr.ramatellier.greed.server.reader.FullPacketReader;
-import fr.ramatellier.greed.server.reader.sub.DestinationPacketReader;
-import fr.ramatellier.greed.server.reader.sub.RangePacketReader;
 import fr.ramatellier.greed.server.reader.Reader;
 import fr.ramatellier.greed.server.reader.primitive.LongReader;
+import fr.ramatellier.greed.server.reader.sub.DestinationPacketReader;
+import fr.ramatellier.greed.server.reader.sub.RangePacketReader;
 
 import java.nio.ByteBuffer;
 
@@ -46,7 +45,7 @@ public class WorkAssignmentPacketReader implements FullPacketReader {
             if(status == ProcessStatus.DONE) {
                 state = State.DONE;
 
-                value = new WorkAssignmentPacket(destinationPacketReader.get().getIdSrc().getSocket(), destinationPacketReader.get().getIdDst().getSocket(), requestIdReader.get(), new Range(rangePacketReader.get().start(), rangePacketReader.get().end()));
+                value = new WorkAssignmentPacket(destinationPacketReader.get().getIdSrc(), destinationPacketReader.get().getIdDst(), requestIdReader.get(), rangePacketReader.get());
             }
         }
 

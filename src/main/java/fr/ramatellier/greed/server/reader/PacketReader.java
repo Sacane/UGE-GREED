@@ -2,6 +2,7 @@ package fr.ramatellier.greed.server.reader;
 
 import fr.ramatellier.greed.server.packet.full.FullPacket;
 import fr.ramatellier.greed.server.reader.primitive.ByteReader;
+import fr.ramatellier.greed.server.reader.sub.StringReader;
 import fr.ramatellier.greed.server.util.OpCodes;
 import fr.ramatellier.greed.server.util.TramKind;
 
@@ -15,6 +16,8 @@ public class PacketReader implements FullPacketReader {
     private State state = State.WAITING_LOCATION;
     private final ByteReader locationReader = new ByteReader();
     private final ByteReader codeReader = new ByteReader();
+    private final StringReader stringReader = new StringReader();
+    
     private final HashMap<OpCodes, FullPacketReader> readers = createReaders();
     private FullPacket value;
 
@@ -55,7 +58,7 @@ public class PacketReader implements FullPacketReader {
             return ProcessStatus.REFILL;
         }
 
-        return Reader.ProcessStatus.DONE;
+        return ProcessStatus.DONE;
     }
 
     @Override

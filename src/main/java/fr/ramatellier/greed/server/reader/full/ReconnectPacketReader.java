@@ -50,7 +50,7 @@ public class ReconnectPacketReader implements FullPacketReader {
             if(ids.size() == sizeReader.get()) {
                 state = State.DONE;
 
-                value = new ReconnectPacket(idReader.get().getSocket(), ids.stream().map(IDPacket::getSocket).toList());
+                value = new ReconnectPacket(idReader.get(), ids);
             }
         }
 

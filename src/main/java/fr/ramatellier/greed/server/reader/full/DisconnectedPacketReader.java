@@ -27,7 +27,7 @@ public class DisconnectedPacketReader implements FullPacketReader {
             if(status == ProcessStatus.DONE) {
                 state = State.DONE;
 
-                value = new DisconnectedPacket(destinationPacketReader.get().getIdSrc().getSocket(), destinationPacketReader.get().getIdDst().getSocket());
+                value = new DisconnectedPacket(destinationPacketReader.get().getIdSrc(), destinationPacketReader.get().getIdDst());
             }
         }
 

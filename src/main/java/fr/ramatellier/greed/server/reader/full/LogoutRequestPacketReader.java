@@ -49,8 +49,7 @@ public class LogoutRequestPacketReader implements FullPacketReader {
 
             if(ids.size() == sizeReader.get()) {
                 state = State.DONE;
-
-                value = new LogoutRequestPacket(idMother.get().getSocket(), ids.stream().map(IDPacket::getSocket).toList());
+                value = new LogoutRequestPacket(idMother.get(), ids);
             }
         }
 

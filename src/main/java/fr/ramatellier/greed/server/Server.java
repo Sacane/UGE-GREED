@@ -2,14 +2,17 @@ package fr.ramatellier.greed.server;
 
 import fr.ramatellier.greed.server.compute.*;
 import fr.ramatellier.greed.server.packet.full.*;
+import fr.ramatellier.greed.server.packet.sub.CheckerPacket;
 import fr.ramatellier.greed.server.packet.sub.IDPacket;
-import fr.ramatellier.greed.server.util.*;
+import fr.ramatellier.greed.server.packet.sub.RangePacket;
+import fr.ramatellier.greed.server.util.ComputeCommandParser;
+import fr.ramatellier.greed.server.util.LogoutInformation;
+import fr.ramatellier.greed.server.util.RouteTable;
+import fr.ramatellier.greed.server.util.TramKind;
 import fr.ramatellier.greed.server.util.file.ResponseToFileBuilder;
 import fr.ramatellier.greed.server.util.file.ResultFormatHandler;
 import fr.uge.ugegreed.Client;
 
-import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
@@ -19,6 +22,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 public class Server {
     private static final Logger logger = Logger.getLogger(Server.class.getName());
@@ -313,12 +317,10 @@ public class Server {
         else {
             computationRoomHandler.prepare(entity, routeTable.size());
             routeTable.performOnAllAddress(address -> transfer(address.address(), new WorkRequestPacket(
-                    this.address, address.address(),
+                    new IDPacket(this.address), new IDPacket(address.address()),
                     id.id(),
-                    info.url(),
-                    info.className(),
-                    info.start(),
-                    info.end(),
+                    new CheckerPacket(info.url(), info.className()),
+                    new RangePacket(info.start(), info.end()),
                     info.end() - info.start()
             )));
         }
@@ -342,7 +344,7 @@ public class Server {
         parentSocketChannel.connect(parentSocketAddress);
         parentKey = parentSocketChannel.register(selector, SelectionKey.OP_CONNECT);
         var context = new ServerApplicationContext(this, parentKey);
-        context.queuePacket(new ReconnectPacket(address, ancestors));
+        context.queuePacket(new ReconnectPacket(new IDPacket(address), ancestors.stream().map(IDPacket::new).collect(Collectors.toList())));
         parentKey.interestOps(SelectionKey.OP_CONNECT);
         parentKey.attach(context);
         deleteAddress(oldParentAddress);
@@ -358,7 +360,7 @@ public class Server {
         parentSocketChannel.connect(parentSocketAddress);
         parentKey = parentSocketChannel.register(selector, SelectionKey.OP_CONNECT);
         var context = new ServerApplicationContext(this, parentKey);
-        context.queuePacket(new ConnectPacket(address));
+        context.queuePacket(new ConnectPacket(new IDPacket(address)));
         parentKey.interestOps(SelectionKey.OP_CONNECT);
         parentKey.attach(context);
         initConnection();
@@ -413,7 +415,7 @@ public class Server {
                 ((ServerApplicationContext) key.attachment()).doRead();
             }
         } catch (IOException e) {
-            logger.log(Level.INFO, "Connection closed with client due to IOException", e);
+//            logger.log(Level.INFO, "Connection closed with client due to IOException", e);
             silentlyClose(key);
         }
     }
@@ -478,7 +480,7 @@ public class Server {
     }
 
     public void sendLogout() {
-        routeTable.sendTo(parentSocketAddress, new LogoutRequestPacket(address, routeTable.neighbors().stream().filter(n -> !n.equals(parentSocketAddress)).toList()));
+        routeTable.sendTo(parentSocketAddress, new LogoutRequestPacket(new IDPacket(address), routeTable.neighbors().stream().filter(n -> !n.equals(parentSocketAddress)).map(IDPacket::new).toList()));
     }
 
     /**
