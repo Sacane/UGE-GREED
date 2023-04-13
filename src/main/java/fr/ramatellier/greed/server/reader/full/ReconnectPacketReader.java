@@ -2,6 +2,7 @@ package fr.ramatellier.greed.server.reader.full;
 
 import fr.ramatellier.greed.server.packet.sub.IDPacket;
 import fr.ramatellier.greed.server.packet.full.ReconnectPacket;
+import fr.ramatellier.greed.server.packet.sub.IDPacketList;
 import fr.ramatellier.greed.server.reader.FullPacketReader;
 import fr.ramatellier.greed.server.reader.sub.IDReader;
 import fr.ramatellier.greed.server.reader.Reader;
@@ -50,7 +51,7 @@ public class ReconnectPacketReader implements FullPacketReader {
             if(ids.size() == sizeReader.get()) {
                 state = State.DONE;
 
-                value = new ReconnectPacket(idReader.get(), ids);
+                value = new ReconnectPacket(idReader.get(), new IDPacketList(ids));
             }
         }
 

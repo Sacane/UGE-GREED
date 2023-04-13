@@ -2,6 +2,7 @@ package fr.ramatellier.greed.server.reader.full;
 
 import fr.ramatellier.greed.server.packet.sub.IDPacket;
 import fr.ramatellier.greed.server.packet.full.LogoutRequestPacket;
+import fr.ramatellier.greed.server.packet.sub.IDPacketList;
 import fr.ramatellier.greed.server.reader.FullPacketReader;
 import fr.ramatellier.greed.server.reader.sub.IDReader;
 import fr.ramatellier.greed.server.reader.Reader;
@@ -49,7 +50,7 @@ public class LogoutRequestPacketReader implements FullPacketReader {
 
             if(ids.size() == sizeReader.get()) {
                 state = State.DONE;
-                value = new LogoutRequestPacket(idMother.get(), ids);
+                value = new LogoutRequestPacket(idMother.get(), new IDPacketList(ids));
             }
         }
 

@@ -8,9 +8,7 @@ import fr.ramatellier.greed.server.compute.ComputationIdentifier;
 import fr.ramatellier.greed.server.compute.SharingProcessExecutor;
 import fr.ramatellier.greed.server.compute.SocketUcIdentifier;
 import fr.ramatellier.greed.server.packet.full.*;
-import fr.ramatellier.greed.server.packet.sub.IDPacket;
-import fr.ramatellier.greed.server.packet.sub.RangePacket;
-import fr.ramatellier.greed.server.packet.sub.ResponsePacket;
+import fr.ramatellier.greed.server.packet.sub.*;
 import fr.uge.ugegreed.Client;
 
 import java.io.IOException;
@@ -39,7 +37,10 @@ public class ReceivePacketVisitor implements PacketVisitor {
         logger.info("Connection demand received from " + packet.idPacket().getSocket() + " " + packet.idPacket().getPort());
         if(server.isRunning()) {
             logger.info("Connection accepted");
-            var response = new ConnectOKPacket(new IDPacket(server.getAddress()), server.registeredAddresses().stream().map(IDPacket::new).toList());
+            var list = new IDPacketList(server.registeredAddresses().stream().map(IDPacket::new).toList());
+            System.out.println("List of neighbors: " + list);
+            var response = new ConnectOKPacket(new IDPacket(server.getAddress()),
+                    list);
             context.queuePacket(response);
             InetSocketAddress socket = packet.idPacket().getSocket();
             server.addRoot(socket, socket, context);
@@ -57,7 +58,8 @@ public class ReceivePacketVisitor implements PacketVisitor {
         logger.info("Connection accepted from " + packet.idMother().getSocket() + " on port " + packet.idMother().getPort());
         var addressMother = packet.idMother();
         server.updateParentAddress(addressMother.getSocket());
-        for(var neighbor: packet.neighbours()) {
+        for(var neighbor: packet.neighbours().idPacketList()) {
+            System.out.println("Add neighbor " + neighbor.getSocket() + " to root table");
             server.addRoot(neighbor.getSocket(), addressMother.getSocket(), context);
         }
         server.addRoot(addressMother.getSocket(), addressMother.getSocket(), context);
@@ -81,13 +83,13 @@ public class ReceivePacketVisitor implements PacketVisitor {
         if(server.isRunning()) {
             var deltaComputingPossibility = Server.MAXIMUM_COMPUTATION - server.currentOnWorkingComputationsValue();
             if(deltaComputingPossibility > 0) { //He is accepting the computation
-                server.addRoom(new ComputationEntity(new ComputationIdentifier(packet.requestId(), packet.src().getSocket()),
+                server.addRoom(new ComputationEntity(new ComputationIdentifier(packet.requestId().get(), packet.src().getSocket()),
                         new ComputeInfo(packet.checker().url(), packet.checker().className(), packet.range().start(), packet.range().end())));
                 server.transfer(packet.src().getSocket(), new WorkRequestResponsePacket(
                         packet.src(),
                         packet.dst(),
                         packet.requestId(),
-                        deltaComputingPossibility
+                        new LongPacketPart(deltaComputingPossibility)
                 ));
             }
         }
@@ -96,7 +98,7 @@ public class ReceivePacketVisitor implements PacketVisitor {
                     packet.src(),
                     packet.dst(),
                     packet.requestId(),
-                    0
+                    new LongPacketPart(0L)
             ));
         }
     }
@@ -109,7 +111,7 @@ public class ReceivePacketVisitor implements PacketVisitor {
     @Override
     public void visit(WorkAssignmentPacket packet) {
         System.out.println("Start computation...");
-        var idContext = new ComputationIdentifier(packet.requestId(), packet.src().getSocket());
+        var idContext = new ComputationIdentifier(packet.requestId().get(), packet.src().getSocket());
         server.updateRoom(idContext, packet.range().start(), packet.range().end());
         var entityResponse = server.findComputationById(idContext);
         if(entityResponse.isEmpty()) {
@@ -208,7 +210,7 @@ public class ReceivePacketVisitor implements PacketVisitor {
         switch(packet.responsePacket().getResponseCode()){
             case 0x00 -> {
                 System.out.println(responsePacket.getResponse().value());
-                var id = new ComputationIdentifier(packet.requestID(), server.getAddress());
+                var id = new ComputationIdentifier(packet.requestID().get(), server.getAddress());
                 try {
                     server.treatComputationResult(id, packet.result());
                 } catch (IOException e) {
@@ -225,13 +227,14 @@ public class ReceivePacketVisitor implements PacketVisitor {
     @Override
     public void visit(LogoutRequestPacket packet) {
         if(server.isRunning()) {
+            System.out.println("LOGOUT REQUEST");
             context.queuePacket(new LogoutGrantedPacket());
-            if(packet.daughters().size() == 0) {
+            if(packet.daughters().sizeList() == 0) {
                 server.broadcast(new DisconnectedPacket(new IDPacket(server.getAddress()), packet.id()), server.getAddress());
                 server.deleteAddress(packet.id().getSocket());
             }
             else {
-                server.newLogoutRequest(packet.id().getSocket(), packet.daughters().stream().map(IDPacket::getSocket).toList());
+                server.newLogoutRequest(packet.id().getSocket(), packet.daughters().idPacketList().stream().map(IDPacket::getSocket).toList());
             }
         }
         else {
@@ -246,6 +249,7 @@ public class ReceivePacketVisitor implements PacketVisitor {
 
     @Override
     public void visit(LogoutGrantedPacket packet) {
+        System.out.println("LOGOUT GRANTED");
         var daughtersContext = server.daughtersContext();
 
         for(var daughterContext: daughtersContext) {
@@ -267,7 +271,7 @@ public class ReceivePacketVisitor implements PacketVisitor {
         server.receiveReconnect(packet.id().getSocket());
         server.addRoot(packet.id().getSocket(), packet.id().getSocket(), context);
 
-        for(var id: packet.ancestors()) {
+        for(var id: packet.ancestors().idPacketList()) {
             server.addRoot(id.getSocket(), packet.id().getSocket(), context);
         }
 
@@ -297,16 +301,16 @@ public class ReceivePacketVisitor implements PacketVisitor {
 
     @Override
     public void visit(WorkRequestResponsePacket packet) {
-        if(packet.nb_uc() == 0){
+        if(packet.nb_uc().get() == 0){
             return;
         }
-        var computeId = new ComputationIdentifier(packet.requestID(), server.getAddress());
+        var computeId = new ComputationIdentifier(packet.requestID().get(), server.getAddress());
         var entity = server.retrieveWaitingComputation(computeId);
         if(entity == null){
             return;
         }
         server.incrementWaitingWorker(computeId);
-        server.storeComputation(computeId, new SocketUcIdentifier(packet.src().getSocket(), packet.nb_uc()));
+        server.storeComputation(computeId, new SocketUcIdentifier(packet.src().getSocket(), packet.nb_uc().get()));
         if(server.isRoomReady(computeId)){
             var process = new SharingProcessExecutor(
                     server.availableSocketsUc(computeId),

@@ -2,9 +2,7 @@ package fr.ramatellier.greed.server;
 
 import fr.ramatellier.greed.server.compute.*;
 import fr.ramatellier.greed.server.packet.full.*;
-import fr.ramatellier.greed.server.packet.sub.CheckerPacket;
-import fr.ramatellier.greed.server.packet.sub.IDPacket;
-import fr.ramatellier.greed.server.packet.sub.RangePacket;
+import fr.ramatellier.greed.server.packet.sub.*;
 import fr.ramatellier.greed.server.util.ComputeCommandParser;
 import fr.ramatellier.greed.server.util.LogoutInformation;
 import fr.ramatellier.greed.server.util.RouteTable;
@@ -294,9 +292,7 @@ public class Server {
         var id = new ComputationIdentifier(computationIdentifierValue++, address);
         var entity = new ComputationEntity(id, info);
         if(routeTable.neighbors().size() == 0) {
-            var results = new ArrayList<String>();
             var response = Client.checkerFromHTTP(info.url(), info.className());
-
             if(response.isEmpty()) {
                 logger.severe("FAILED TO GET CHECKER");
                 return ;
@@ -318,10 +314,10 @@ public class Server {
             computationRoomHandler.prepare(entity, routeTable.size());
             routeTable.performOnAllAddress(address -> transfer(address.address(), new WorkRequestPacket(
                     new IDPacket(this.address), new IDPacket(address.address()),
-                    id.id(),
+                    new LongPacketPart(id.id()),
                     new CheckerPacket(info.url(), info.className()),
                     new RangePacket(info.start(), info.end()),
-                    info.end() - info.start()
+                    new LongPacketPart(info.end() - info.start())
             )));
         }
     }
@@ -344,7 +340,7 @@ public class Server {
         parentSocketChannel.connect(parentSocketAddress);
         parentKey = parentSocketChannel.register(selector, SelectionKey.OP_CONNECT);
         var context = new ServerApplicationContext(this, parentKey);
-        context.queuePacket(new ReconnectPacket(new IDPacket(address), ancestors.stream().map(IDPacket::new).collect(Collectors.toList())));
+        context.queuePacket(new ReconnectPacket(new IDPacket(address), new IDPacketList(ancestors.stream().map(IDPacket::new).collect(Collectors.toList()))));
         parentKey.interestOps(SelectionKey.OP_CONNECT);
         parentKey.attach(context);
         deleteAddress(oldParentAddress);
@@ -381,11 +377,13 @@ public class Server {
     }
 
     private void initConnection() throws IOException {
+        System.out.println("Enter a command");
         Thread.ofPlatform()
                 .daemon()
                 .start(this::consoleRun);
         while (!Thread.interrupted()) {
             try {
+                System.out.println("Waiting for a connection");
                 selector.select(this::treatKey);
                 processCommand();
             } catch (UncheckedIOException tunneled) {
@@ -480,7 +478,9 @@ public class Server {
     }
 
     public void sendLogout() {
-        routeTable.sendTo(parentSocketAddress, new LogoutRequestPacket(new IDPacket(address), routeTable.neighbors().stream().filter(n -> !n.equals(parentSocketAddress)).map(IDPacket::new).toList()));
+        routeTable.sendTo(parentSocketAddress, new LogoutRequestPacket(new IDPacket(address),
+                new IDPacketList(routeTable.neighbors().stream().filter(n -> !n.equals(parentSocketAddress)).map(IDPacket::new).toList())
+        ));
     }
 
     /**

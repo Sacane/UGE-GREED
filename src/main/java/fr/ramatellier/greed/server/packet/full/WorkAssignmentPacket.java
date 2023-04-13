@@ -1,12 +1,13 @@
 package fr.ramatellier.greed.server.packet.full;
 
 import fr.ramatellier.greed.server.packet.sub.IDPacket;
+import fr.ramatellier.greed.server.packet.sub.LongPacketPart;
 import fr.ramatellier.greed.server.packet.sub.RangePacket;
 import fr.ramatellier.greed.server.util.OpCodes;
 
 import java.nio.ByteBuffer;
 
-public record WorkAssignmentPacket(IDPacket src, IDPacket dst, long requestId, RangePacket range) implements TransferPacket {
+public record WorkAssignmentPacket(IDPacket src, IDPacket dst, LongPacketPart requestId, RangePacket range) implements TransferPacket {
 
     @Override
     public OpCodes opCode() {
@@ -17,7 +18,7 @@ public record WorkAssignmentPacket(IDPacket src, IDPacket dst, long requestId, R
     public void put(ByteBuffer buffer) {
         src.putInBuffer(buffer);
         dst.putInBuffer(buffer);
-        buffer.putLong(requestId);
+        buffer.putLong(requestId.get());
         range.putInBuffer(buffer);
     }
 

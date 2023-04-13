@@ -2,6 +2,7 @@ package fr.ramatellier.greed.server.reader.full;
 
 import fr.ramatellier.greed.server.packet.full.ConnectOKPacket;
 import fr.ramatellier.greed.server.packet.sub.IDPacket;
+import fr.ramatellier.greed.server.packet.sub.IDPacketList;
 import fr.ramatellier.greed.server.reader.FullPacketReader;
 import fr.ramatellier.greed.server.reader.sub.IDReader;
 import fr.ramatellier.greed.server.reader.Reader;
@@ -28,31 +29,33 @@ public class ConnectOKPacketReader implements FullPacketReader {
         if (state == State.DONE || state == State.ERROR) {
             throw new IllegalStateException();
         }
-
         if(state == State.WAITING_ID) {
             var status = idMotherReader.process(buffer);
 
             if(status == ProcessStatus.DONE) {
                 state = State.WAITING_SIZE;
+                System.out.println(status);
             }
         }
         if(state == State.WAITING_SIZE) {
             var status = sizeReader.process(buffer);
-
+            System.out.println("SIZE : " + sizeReader.get());
             if(status == ProcessStatus.DONE) {
                 state = State.WAITING_IDS;
-
+                System.out.println(status);
                 ids = new ArrayList<>();
             }
         }
         if(state == State.WAITING_IDS) {
             Buffers.fillList(ids, sizeReader.get(), idReader, buffer);
-
+            System.out.println("SIZE: " + sizeReader.get() + " IDS: " + ids.size());
             if(ids.size() == sizeReader.get()) {
+                System.out.println("READ");
                 state = State.DONE;
 
-                value = new ConnectOKPacket(idMotherReader.get(), ids.stream().toList());
+                value = new ConnectOKPacket(idMotherReader.get(), new IDPacketList(ids.stream().toList()));
             }
+            System.out.println("SIZE: " + sizeReader.get() + " IDS: " + ids.size());
         }
 
         if (state != State.DONE) {

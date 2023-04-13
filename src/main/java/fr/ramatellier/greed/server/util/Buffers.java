@@ -33,7 +33,10 @@ public final class Buffers {
             var status = reader.process(buffer);
 
             if(status == Reader.ProcessStatus.DONE) {
+                System.out.println(buffer.limit());
+                System.out.println("READ LIST");
                 list.add(reader.get());
+                System.out.println("SIZE: " + size + " LIST: " + list.size());
                 reader.reset();
             }
         }

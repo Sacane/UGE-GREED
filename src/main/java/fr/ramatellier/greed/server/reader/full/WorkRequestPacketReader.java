@@ -1,6 +1,7 @@
 package fr.ramatellier.greed.server.reader.full;
 
 import fr.ramatellier.greed.server.packet.full.WorkRequestPacket;
+import fr.ramatellier.greed.server.packet.sub.LongPacketPart;
 import fr.ramatellier.greed.server.reader.FullPacketReader;
 import fr.ramatellier.greed.server.reader.sub.DestinationPacketReader;
 import fr.ramatellier.greed.server.reader.sub.RangePacketReader;
@@ -64,7 +65,7 @@ public class WorkRequestPacketReader implements FullPacketReader {
 
                 value = new WorkRequestPacket(destinationPacketReader.get().getIdSrc(),
                         destinationPacketReader.get().getIdDst(),
-                        requestIdReader.get(), checkerPacketReader.get(), rangePacketReader.get(), maxReader.get());
+                        new LongPacketPart(requestIdReader.get()), checkerPacketReader.get(), rangePacketReader.get(), new LongPacketPart(maxReader.get()));
             }
         }
 
