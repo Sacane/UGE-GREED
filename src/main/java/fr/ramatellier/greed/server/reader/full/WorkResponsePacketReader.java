@@ -1,7 +1,6 @@
 package fr.ramatellier.greed.server.reader.full;
 
 import fr.ramatellier.greed.server.packet.full.WorkResponsePacket;
-import fr.ramatellier.greed.server.packet.sub.LongPacketPart;
 import fr.ramatellier.greed.server.reader.FullPacketReader;
 import fr.ramatellier.greed.server.reader.sub.DestinationPacketReader;
 import fr.ramatellier.greed.server.reader.sub.ResponsePacketReader;
@@ -45,7 +44,7 @@ public class WorkResponsePacketReader implements FullPacketReader {
             if(status == ProcessStatus.DONE) {
                 state = State.DONE;
 
-                value = new WorkResponsePacket(destinationPacketReader.get().getIdSrc(), destinationPacketReader.get().getIdDst(), new LongPacketPart(requestIdReader.get()), responsePacketReader.get());
+                value = new WorkResponsePacket(destinationPacketReader.get().getIdSrc(), destinationPacketReader.get().getIdDst(), requestIdReader.get(), responsePacketReader.get());
             }
         }
 

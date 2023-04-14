@@ -83,13 +83,13 @@ public class ReceivePacketVisitor implements PacketVisitor {
         if(server.isRunning()) {
             var deltaComputingPossibility = Server.MAXIMUM_COMPUTATION - server.currentOnWorkingComputationsValue();
             if(deltaComputingPossibility > 0) { //He is accepting the computation
-                server.addRoom(new ComputationEntity(new ComputationIdentifier(packet.requestId().get(), packet.src().getSocket()),
+                server.addRoom(new ComputationEntity(new ComputationIdentifier(packet.requestId(), packet.src().getSocket()),
                         new ComputeInfo(packet.checker().url(), packet.checker().className(), packet.range().start(), packet.range().end())));
                 server.transfer(packet.src().getSocket(), new WorkRequestResponsePacket(
                         packet.src(),
                         packet.dst(),
                         packet.requestId(),
-                        new LongPacketPart(deltaComputingPossibility)
+                        deltaComputingPossibility
                 ));
             }
         }
@@ -98,7 +98,7 @@ public class ReceivePacketVisitor implements PacketVisitor {
                     packet.src(),
                     packet.dst(),
                     packet.requestId(),
-                    new LongPacketPart(0L)
+                    0L
             ));
         }
     }
@@ -111,7 +111,7 @@ public class ReceivePacketVisitor implements PacketVisitor {
     @Override
     public void visit(WorkAssignmentPacket packet) {
         System.out.println("Start computation...");
-        var idContext = new ComputationIdentifier(packet.requestId().get(), packet.src().getSocket());
+        var idContext = new ComputationIdentifier(packet.requestId(), packet.src().getSocket());
         server.updateRoom(idContext, packet.range().start(), packet.range().end());
         var entityResponse = server.findComputationById(idContext);
         if(entityResponse.isEmpty()) {
@@ -210,7 +210,7 @@ public class ReceivePacketVisitor implements PacketVisitor {
         switch(packet.responsePacket().getResponseCode()){
             case 0x00 -> {
                 System.out.println(responsePacket.getResponse().value());
-                var id = new ComputationIdentifier(packet.requestID().get(), server.getAddress());
+                var id = new ComputationIdentifier(packet.requestID(), server.getAddress());
                 try {
                     server.treatComputationResult(id, packet.result());
                 } catch (IOException e) {
@@ -301,16 +301,16 @@ public class ReceivePacketVisitor implements PacketVisitor {
 
     @Override
     public void visit(WorkRequestResponsePacket packet) {
-        if(packet.nb_uc().get() == 0){
+        if(packet.nb_uc() == 0){
             return;
         }
-        var computeId = new ComputationIdentifier(packet.requestID().get(), server.getAddress());
+        var computeId = new ComputationIdentifier(packet.requestID(), server.getAddress());
         var entity = server.retrieveWaitingComputation(computeId);
         if(entity == null){
             return;
         }
         server.incrementWaitingWorker(computeId);
-        server.storeComputation(computeId, new SocketUcIdentifier(packet.src().getSocket(), packet.nb_uc().get()));
+        server.storeComputation(computeId, new SocketUcIdentifier(packet.src().getSocket(), packet.nb_uc()));
         if(server.isRoomReady(computeId)){
             var process = new SharingProcessExecutor(
                     server.availableSocketsUc(computeId),

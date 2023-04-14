@@ -2,7 +2,10 @@ package fr.ramatellier.greed.server;
 
 import fr.ramatellier.greed.server.compute.*;
 import fr.ramatellier.greed.server.packet.full.*;
-import fr.ramatellier.greed.server.packet.sub.*;
+import fr.ramatellier.greed.server.packet.sub.CheckerPacket;
+import fr.ramatellier.greed.server.packet.sub.IDPacket;
+import fr.ramatellier.greed.server.packet.sub.IDPacketList;
+import fr.ramatellier.greed.server.packet.sub.RangePacket;
 import fr.ramatellier.greed.server.util.ComputeCommandParser;
 import fr.ramatellier.greed.server.util.LogoutInformation;
 import fr.ramatellier.greed.server.util.RouteTable;
@@ -18,7 +21,6 @@ import java.nio.channels.*;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -314,10 +316,10 @@ public class Server {
             computationRoomHandler.prepare(entity, routeTable.size());
             routeTable.performOnAllAddress(address -> transfer(address.address(), new WorkRequestPacket(
                     new IDPacket(this.address), new IDPacket(address.address()),
-                    new LongPacketPart(id.id()),
+                    id.id(),
                     new CheckerPacket(info.url(), info.className()),
                     new RangePacket(info.start(), info.end()),
-                    new LongPacketPart(info.end() - info.start())
+                    info.end() - info.start()
             )));
         }
     }
@@ -459,6 +461,7 @@ public class Server {
     public void broadcast(FullPacket packet, InetSocketAddress src) {
         Objects.requireNonNull(packet);
         Objects.requireNonNull(src);
+        System.out.println("Broadcasting packet " + packet + " from " + src);
         routeTable.onNeighboursDo(src, addressContext -> addressContext.context().queuePacket(packet));
     }
 

@@ -21,7 +21,8 @@ public final class ComputationRoomHandler {
     }
 
     public void incrementComputation(ComputationIdentifier id) {
-        computations.stream().filter(computation -> computation.id().equals(id)).forEach(ComputationEntity::incrementUc);
+        var target = computations.stream().filter(computation -> computation.id().equals(id)).findFirst().orElseThrow();
+        target.incrementUc();
     }
 
     /**
