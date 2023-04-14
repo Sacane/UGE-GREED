@@ -17,7 +17,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- *
+ * This class is used to read any kind of {@link FullPacket} from a ByteBuffer.
+ * It uses the {@link OpCodes} to know which Packet to create.
  */
 public class PacketReaderAdapter {
     private record PacketComponents(Class<? extends FullPacket> packet, Class<?>[] components){}
