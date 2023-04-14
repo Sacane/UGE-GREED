@@ -3,27 +3,10 @@ package fr.ramatellier.greed.server.packet.full;
 import fr.ramatellier.greed.server.packet.sub.IDPacket;
 import fr.ramatellier.greed.server.util.OpCodes;
 
-import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
-public final class ConnectPacket implements LocalPacket {
-    private final IDPacket idPacket;
+public record ConnectPacket(IDPacket idPacket) implements LocalPacket {
 
-    public ConnectPacket(InetSocketAddress address) {
-        idPacket = new IDPacket(address);
-    }
-
-    public String getAddress() {
-        return idPacket.getHostname();
-    }
-
-    public int getPort() {
-        return idPacket.getPort();
-    }
-
-    public InetSocketAddress getSocket() {
-        return idPacket.getSocket();
-    }
 
     @Override
     public OpCodes opCode() {

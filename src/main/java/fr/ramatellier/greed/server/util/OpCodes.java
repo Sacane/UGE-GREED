@@ -1,8 +1,5 @@
 package fr.ramatellier.greed.server.util;
 
-import fr.ramatellier.greed.server.reader.FullPacketReader;
-import fr.ramatellier.greed.server.reader.full.*;
-
 public enum OpCodes {
     CONNECT((byte)0x01),
     KO((byte)0x02),
@@ -31,23 +28,5 @@ public enum OpCodes {
             }
         }
         return null;
-    }
-    public FullPacketReader reader(){
-        return switch(this) {
-            case ADD_NODE -> new AddNodePacketReader();
-            case WORK -> new WorkRequestPacketReader();
-            case WORK_ASSIGNMENT -> new WorkAssignmentPacketReader();
-            case WORK_RESPONSE -> new WorkResponsePacketReader();
-            case WORK_REQUEST_RESPONSE -> new WorkRequestResponseReader();
-            case PLEASE_RECONNECT -> new PleaseReconnectPacketReader();
-            case LOGOUT_REQUEST -> new LogoutRequestPacketReader();
-            case DISCONNECTED -> new DisconnectedPacketReader();
-            case RECONNECT -> new ReconnectPacketReader();
-            case OK -> new ConnectOKPacketReader();
-            case CONNECT -> new ConnectPacketReader();
-            case KO -> new ConnectKOPacketReader();
-            case LOGOUT_DENIED -> new LogoutDeniedPacketReader();
-            case LOGOUT_GRANTED -> new LogoutGrantedPacketReader();
-        };
     }
 }

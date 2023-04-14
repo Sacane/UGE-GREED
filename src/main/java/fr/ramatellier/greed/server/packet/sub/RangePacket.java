@@ -4,7 +4,7 @@ import fr.ramatellier.greed.server.packet.Packet;
 
 import java.nio.ByteBuffer;
 
-public record RangePacket(long start, long end) implements Packet {
+public record RangePacket(long start, long end) implements Packet, Part {
 
     @Override
     public void putInBuffer(ByteBuffer buffer) {

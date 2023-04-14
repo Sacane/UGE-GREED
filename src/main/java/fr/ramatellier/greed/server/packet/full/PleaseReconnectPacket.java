@@ -3,19 +3,9 @@ package fr.ramatellier.greed.server.packet.full;
 import fr.ramatellier.greed.server.packet.sub.IDPacket;
 import fr.ramatellier.greed.server.util.OpCodes;
 
-import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
-public final class PleaseReconnectPacket implements LocalPacket {
-    private final IDPacket id;
-
-    public PleaseReconnectPacket(InetSocketAddress address) {
-        id = new IDPacket(address);
-    }
-
-    public IDPacket getId() {
-        return id;
-    }
+public record PleaseReconnectPacket(IDPacket id) implements LocalPacket {
 
     @Override
     public OpCodes opCode() {

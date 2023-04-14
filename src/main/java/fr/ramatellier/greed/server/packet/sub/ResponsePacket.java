@@ -4,7 +4,7 @@ import fr.ramatellier.greed.server.packet.Packet;
 
 import java.nio.ByteBuffer;
 
-public final class ResponsePacket implements Packet {
+public final class ResponsePacket implements Packet, Part {
     private final byte responseCode;
     private final StringPacket response;
     private final long value;

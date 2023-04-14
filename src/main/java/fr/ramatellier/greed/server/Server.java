@@ -2,23 +2,28 @@ package fr.ramatellier.greed.server;
 
 import fr.ramatellier.greed.server.compute.*;
 import fr.ramatellier.greed.server.packet.full.*;
+import fr.ramatellier.greed.server.packet.sub.CheckerPacket;
 import fr.ramatellier.greed.server.packet.sub.IDPacket;
-import fr.ramatellier.greed.server.util.*;
+import fr.ramatellier.greed.server.packet.sub.IDPacketList;
+import fr.ramatellier.greed.server.packet.sub.RangePacket;
+import fr.ramatellier.greed.server.util.ComputeCommandParser;
+import fr.ramatellier.greed.server.util.LogoutInformation;
+import fr.ramatellier.greed.server.util.RouteTable;
+import fr.ramatellier.greed.server.util.TramKind;
 import fr.ramatellier.greed.server.util.file.ResponseToFileBuilder;
 import fr.ramatellier.greed.server.util.file.ResultFormatHandler;
 import fr.uge.ugegreed.Client;
 
-import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.*;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 public class Server {
     private static final Logger logger = Logger.getLogger(Server.class.getName());
@@ -42,6 +47,7 @@ public class Server {
     private SocketChannel parentSocketChannel;
     private InetSocketAddress parentSocketAddress;
     private SelectionKey parentKey;
+    private final LinkedBlockingQueue<SendInformation> packets = new LinkedBlockingQueue<>();
     // Others
     private enum ServerState{
         ON_GOING, SHUTDOWN, STOPPED
@@ -290,9 +296,7 @@ public class Server {
         var id = new ComputationIdentifier(computationIdentifierValue++, address);
         var entity = new ComputationEntity(id, info);
         if(routeTable.neighbors().size() == 0) {
-            var results = new ArrayList<String>();
             var response = Client.checkerFromHTTP(info.url(), info.className());
-
             if(response.isEmpty()) {
                 logger.severe("FAILED TO GET CHECKER");
                 return ;
@@ -313,12 +317,10 @@ public class Server {
         else {
             computationRoomHandler.prepare(entity, routeTable.size());
             routeTable.performOnAllAddress(address -> transfer(address.address(), new WorkRequestPacket(
-                    this.address, address.address(),
+                    new IDPacket(this.address), new IDPacket(address.address()),
                     id.id(),
-                    info.url(),
-                    info.className(),
-                    info.start(),
-                    info.end(),
+                    new CheckerPacket(info.url(), info.className()),
+                    new RangePacket(info.start(), info.end()),
                     info.end() - info.start()
             )));
         }
@@ -342,7 +344,7 @@ public class Server {
         parentSocketChannel.connect(parentSocketAddress);
         parentKey = parentSocketChannel.register(selector, SelectionKey.OP_CONNECT);
         var context = new ServerApplicationContext(this, parentKey);
-        context.queuePacket(new ReconnectPacket(address, ancestors));
+        context.queuePacket(new ReconnectPacket(new IDPacket(address), new IDPacketList(ancestors.stream().map(IDPacket::new).collect(Collectors.toList()))));
         parentKey.interestOps(SelectionKey.OP_CONNECT);
         parentKey.attach(context);
         deleteAddress(oldParentAddress);
@@ -358,7 +360,7 @@ public class Server {
         parentSocketChannel.connect(parentSocketAddress);
         parentKey = parentSocketChannel.register(selector, SelectionKey.OP_CONNECT);
         var context = new ServerApplicationContext(this, parentKey);
-        context.queuePacket(new ConnectPacket(address));
+        context.queuePacket(new ConnectPacket(new IDPacket(address)));
         parentKey.interestOps(SelectionKey.OP_CONNECT);
         parentKey.attach(context);
         initConnection();
@@ -378,12 +380,23 @@ public class Server {
         selector.wakeup();
     }
 
+    private void processPacket() {
+        while(!packets.isEmpty()) {
+            var packet = packets.poll();
+
+            routeTable.sendTo(packet.address(), packet.packet());
+        }
+    }
+
     private void initConnection() throws IOException {
+        System.out.println("Enter a command");
         Thread.ofPlatform()
                 .daemon()
                 .start(this::consoleRun);
+
         while (!Thread.interrupted()) {
             try {
+                processPacket();
                 selector.select(this::treatKey);
                 processCommand();
             } catch (UncheckedIOException tunneled) {
@@ -413,7 +426,7 @@ public class Server {
                 ((ServerApplicationContext) key.attachment()).doRead();
             }
         } catch (IOException e) {
-            logger.log(Level.INFO, "Connection closed with client due to IOException", e);
+//            logger.log(Level.INFO, "Connection closed with client due to IOException", e);
             silentlyClose(key);
         }
     }
@@ -459,6 +472,7 @@ public class Server {
     public void broadcast(FullPacket packet, InetSocketAddress src) {
         Objects.requireNonNull(packet);
         Objects.requireNonNull(src);
+        System.out.println("Broadcasting packet " + packet + " from " + src);
         routeTable.onNeighboursDo(src, addressContext -> addressContext.context().queuePacket(packet));
     }
 
@@ -468,18 +482,24 @@ public class Server {
      * @param packet packet to transfer
      */
     public void transfer(InetSocketAddress dst, FullPacket packet) {
-        if(packet.kind() != TramKind.TRANSFER){
+        if(packet.kind() != TramKind.TRANSFER) {
             throw new AssertionError("Only transfer packet can be transferred");
         }
-        if(dst.equals(address)){
+        if(dst.equals(address)) {
             return;
         }
-        routeTable.sendTo(dst, packet);
+        try {
+            packets.put(new SendInformation(dst, packet));
+        } catch (InterruptedException e) {
+        }
     }
 
     public void sendLogout() {
-        routeTable.sendTo(parentSocketAddress, new LogoutRequestPacket(address, routeTable.neighbors().stream().filter(n -> !n.equals(parentSocketAddress)).toList()));
+        routeTable.sendTo(parentSocketAddress, new LogoutRequestPacket(new IDPacket(address),
+                new IDPacketList(routeTable.neighbors().stream().filter(n -> !n.equals(parentSocketAddress)).map(IDPacket::new).toList())
+        ));
     }
+
 
     /**
      * Shutdown the current server and close all connections.

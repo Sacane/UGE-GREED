@@ -5,7 +5,7 @@ import fr.ramatellier.greed.server.packet.Packet;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
-public final class DestinationPacket implements Packet {
+public final class DestinationPacket implements Packet, Part {
     private final IDPacket idSrc;
     private final IDPacket idDst;
 
