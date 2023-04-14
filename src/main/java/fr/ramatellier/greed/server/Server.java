@@ -495,8 +495,11 @@ public class Server {
     }
 
     public void sendLogout() {
-        routeTable.sendTo(parentSocketAddress, new LogoutRequestPacket(address, routeTable.neighbors().stream().filter(n -> !n.equals(parentSocketAddress)).toList()));
+        routeTable.sendTo(parentSocketAddress, new LogoutRequestPacket(new IDPacket(address),
+                new IDPacketList(routeTable.neighbors().stream().filter(n -> !n.equals(parentSocketAddress)).map(IDPacket::new).toList())
+        ));
     }
+
 
     /**
      * Shutdown the current server and close all connections.
