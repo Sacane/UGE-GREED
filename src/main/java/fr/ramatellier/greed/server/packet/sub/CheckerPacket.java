@@ -5,7 +5,7 @@ import fr.ramatellier.greed.server.packet.Packet;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
-public record CheckerPacket(String url, String className) implements Packet {
+public record CheckerPacket(String url, String className) implements Packet, Part {
     public CheckerPacket {
         Objects.requireNonNull(url);
         Objects.requireNonNull(className);

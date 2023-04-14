@@ -5,21 +5,23 @@ import fr.ramatellier.greed.server.reader.primitive.ByteReader;
 import fr.ramatellier.greed.server.util.OpCodes;
 import fr.ramatellier.greed.server.util.TramKind;
 
+import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
-import java.util.HashMap;
 
 public class PacketReader implements FullPacketReader {
     private enum State {
         DONE, WAITING_LOCATION, WAITING_CODE, WAITING_PACKET, ERROR
     }
+    private final PacketReaderAdapter fullReaderFactory = new PacketReaderAdapter();
     private State state = State.WAITING_LOCATION;
     private final ByteReader locationReader = new ByteReader();
     private final ByteReader codeReader = new ByteReader();
-    private final HashMap<OpCodes, FullPacketReader> readers = createReaders();
+
     private FullPacket value;
 
     @Override
     public ProcessStatus process(ByteBuffer buffer) {
+        System.out.println("PacketReader state : " + state);
         if (state == State.DONE || state == State.ERROR) {
             throw new IllegalStateException();
         }
@@ -43,11 +45,15 @@ public class PacketReader implements FullPacketReader {
             if (tramKind == null) return ProcessStatus.ERROR;
             var opcode = OpCodes.fromByte(codeReader.get());
             if (opcode == null) return ProcessStatus.ERROR;
-            var reader = readers.get(opcode);
-            var status = reader.process(buffer);
-            if (status == ProcessStatus.DONE) {
-                state = State.DONE;
-                value = reader.get();
+            try {
+                var status = fullReaderFactory.process(buffer, opcode);
+                if(status == ProcessStatus.DONE) {
+                    state = State.DONE;
+                    value = fullReaderFactory.get();
+                }
+            } catch (NoSuchMethodException | IllegalAccessException | InstantiationException | InvocationTargetException e) {
+                System.err.println("Error while creating reader for opcode " + opcode + " : " + e.getMessage());
+                return ProcessStatus.ERROR;
             }
         }
 
@@ -55,7 +61,7 @@ public class PacketReader implements FullPacketReader {
             return ProcessStatus.REFILL;
         }
 
-        return Reader.ProcessStatus.DONE;
+        return ProcessStatus.DONE;
     }
 
     @Override
@@ -63,7 +69,6 @@ public class PacketReader implements FullPacketReader {
         if (state != State.DONE) {
             throw new IllegalStateException();
         }
-
         return value;
     }
 
@@ -72,20 +77,6 @@ public class PacketReader implements FullPacketReader {
         state = State.WAITING_LOCATION;
         locationReader.reset();
         codeReader.reset();
-        resetReaders();
-    }
-
-    private static HashMap<OpCodes, FullPacketReader> createReaders() {
-        var readers = new HashMap<OpCodes, FullPacketReader>();
-
-        for(var opcode : OpCodes.values()){
-            readers.put(opcode, opcode.reader());
-        }
-
-        return readers;
-    }
-
-    private void resetReaders() {
-        readers.values().forEach(Reader::reset);
+        fullReaderFactory.reset();
     }
 }

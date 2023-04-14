@@ -6,7 +6,7 @@ import fr.ramatellier.greed.server.util.OpCodes;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
-public record WorkRequestResponsePacket(IDPacket dst, IDPacket src, long requestID, long nb_uc) implements TransferPacket {
+public record WorkRequestResponsePacket(IDPacket dst, IDPacket src, Long requestID, Long nb_uc) implements TransferPacket {
 
     public WorkRequestResponsePacket{
         Objects.requireNonNull(dst);

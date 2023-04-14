@@ -4,8 +4,7 @@ import fr.ramatellier.greed.server.compute.*;
 import fr.ramatellier.greed.server.ServerApplicationContext;
 import fr.ramatellier.greed.server.Server;
 import fr.ramatellier.greed.server.packet.full.*;
-import fr.ramatellier.greed.server.packet.sub.IDPacket;
-import fr.ramatellier.greed.server.packet.sub.ResponsePacket;
+import fr.ramatellier.greed.server.packet.sub.*;
 import fr.uge.ugegreed.Client;
 
 import java.io.IOException;
@@ -53,12 +52,15 @@ public class ReceivePacketVisitor implements PacketVisitor {
 
     @Override
     public void visit(ConnectPacket packet) {
-        logger.info("Connection demand received from " + packet.getAddress() + " " + packet.getPort());
+        logger.info("Connection demand received from " + packet.idPacket().getSocket() + " " + packet.idPacket().getPort());
         if(server.isRunning()) {
             logger.info("Connection accepted");
-            var response = new ConnectOKPacket(server.getAddress(), server.registeredAddresses());
+            var list = new IDPacketList(server.registeredAddresses().stream().map(IDPacket::new).toList());
+            System.out.println("List of neighbors: " + list);
+            var response = new ConnectOKPacket(new IDPacket(server.getAddress()),
+                    list);
             context.queuePacket(response);
-            InetSocketAddress socket = packet.getSocket();
+            InetSocketAddress socket = packet.idPacket().getSocket();
             server.addRoot(socket, socket, context);
             var addNodePacket = new AddNodePacket(new IDPacket(server.getAddress()), new IDPacket(socket));
             server.broadcast(addNodePacket, socket);
@@ -71,13 +73,14 @@ public class ReceivePacketVisitor implements PacketVisitor {
 
     @Override
     public void visit(ConnectOKPacket packet) {
-        logger.info("Connection accepted from " + packet.getAddress() + " on port " + packet.getPort());
-        var addressMother = packet.getMotherAddress();
-        server.updateParentAddress(addressMother);
-        for(var neighbor: packet.neighbours()) {
-            server.addRoot(neighbor, addressMother, context);
+        logger.info("Connection accepted from " + packet.idMother().getSocket() + " on port " + packet.idMother().getPort());
+        var addressMother = packet.idMother();
+        server.updateParentAddress(addressMother.getSocket());
+        for(var neighbor: packet.neighbours().idPacketList()) {
+            System.out.println("Add neighbor " + neighbor.getSocket() + " to root table");
+            server.addRoot(neighbor.getSocket(), addressMother.getSocket(), context);
         }
-        server.addRoot(addressMother, addressMother, context);
+        server.addRoot(addressMother.getSocket(), addressMother.getSocket(), context);
     }
 
     @Override
@@ -98,12 +101,12 @@ public class ReceivePacketVisitor implements PacketVisitor {
         if(server.isRunning()) {
             var deltaComputingPossibility = Server.MAXIMUM_COMPUTATION - server.currentOnWorkingComputationsValue();
             if(deltaComputingPossibility > 0) { //He is accepting the computation
-                server.addRoom(new ComputationEntity(new ComputationIdentifier(packet.getRequestId(), packet.src().getSocket()),
-                        new ComputeInfo(packet.getChecker().url(), packet.getChecker().className(), packet.getRange().start(), packet.getRange().end())));
+                server.addRoom(new ComputationEntity(new ComputationIdentifier(packet.requestId(), packet.src().getSocket()),
+                        new ComputeInfo(packet.checker().url(), packet.checker().className(), packet.range().start(), packet.range().end())));
                 server.transfer(packet.src().getSocket(), new WorkRequestResponsePacket(
                         packet.src(),
                         packet.dst(),
-                        packet.getRequestId(),
+                        packet.requestId(),
                         deltaComputingPossibility
                 ));
             }
@@ -112,8 +115,8 @@ public class ReceivePacketVisitor implements PacketVisitor {
             server.transfer(packet.src().getSocket(), new WorkRequestResponsePacket(
                     packet.src(),
                     packet.dst(),
-                    packet.getRequestId(),
-                    0
+                    packet.requestId(),
+                    0L
             ));
         }
     }
@@ -126,14 +129,14 @@ public class ReceivePacketVisitor implements PacketVisitor {
     @Override
     public void visit(WorkAssignmentPacket packet) {
         System.out.println("Start computation...");
-        var idContext = new ComputationIdentifier(packet.getRequestId(), packet.src().getSocket());
-        server.updateRoom(idContext, packet.getRanges().start(), packet.getRanges().end());
+        var idContext = new ComputationIdentifier(packet.requestId(), packet.src().getSocket());
+        server.updateRoom(idContext, packet.range().start(), packet.range().end());
         var entityResponse = server.findComputationById(idContext);
         if(entityResponse.isEmpty()) {
             return ;
         }
         var entity = entityResponse.get();
-        var targetRange = packet.getRanges();
+        var targetRange = packet.range();
         var result = Client.checkerFromHTTP(entity.info().url(), entity.info().className());
         if(result.isEmpty()) {
             logger.severe("CANNOT GET THE CHECKER");
@@ -223,7 +226,7 @@ public class ReceivePacketVisitor implements PacketVisitor {
         server.transfer(origin.src().getSocket(), new WorkResponsePacket(
                 origin.dst(),
                 origin.src(),
-                origin.getRequestId(),
+                origin.requestId(),
                 new ResponsePacket(index, result, opcode)
         ));
     }
@@ -251,13 +254,14 @@ public class ReceivePacketVisitor implements PacketVisitor {
     @Override
     public void visit(LogoutRequestPacket packet) {
         if(server.isRunning()) {
+            System.out.println("LOGOUT REQUEST");
             context.queuePacket(new LogoutGrantedPacket());
-            if(packet.getDaughters().size() == 0) {
-                server.broadcast(new DisconnectedPacket(server.getAddress(), packet.getId().getSocket()), server.getAddress());
-                server.deleteAddress(packet.getId().getSocket());
+            if(packet.daughters().sizeList() == 0) {
+                server.broadcast(new DisconnectedPacket(new IDPacket(server.getAddress()), packet.id()), server.getAddress());
+                server.deleteAddress(packet.id().getSocket());
             }
             else {
-                server.newLogoutRequest(packet.getId().getSocket(), packet.getDaughters().stream().map(IDPacket::getSocket).toList());
+                server.newLogoutRequest(packet.id().getSocket(), packet.daughters().idPacketList().stream().map(IDPacket::getSocket).toList());
             }
         }
         else {
@@ -272,17 +276,18 @@ public class ReceivePacketVisitor implements PacketVisitor {
 
     @Override
     public void visit(LogoutGrantedPacket packet) {
+        System.out.println("LOGOUT GRANTED");
         var daughtersContext = server.daughtersContext();
 
         for(var daughterContext: daughtersContext) {
-            daughterContext.queuePacket(new PleaseReconnectPacket(server.getParentSocketAddress()));
+            daughterContext.queuePacket(new PleaseReconnectPacket(new IDPacket(server.getParentSocketAddress())));
         }
     }
 
     @Override
     public void visit(PleaseReconnectPacket packet) {
         try {
-            server.connectToNewParent(packet.getId());
+            server.connectToNewParent(packet.id());
         } catch (IOException e) {
             // Ignore exception
         }
@@ -290,15 +295,15 @@ public class ReceivePacketVisitor implements PacketVisitor {
 
     @Override
     public void visit(ReconnectPacket packet) {
-        server.receiveReconnect(packet.getId().getSocket());
-        server.addRoot(packet.getId().getSocket(), packet.getId().getSocket(), context);
+        server.receiveReconnect(packet.id().getSocket());
+        server.addRoot(packet.id().getSocket(), packet.id().getSocket(), context);
 
-        for(var id: packet.getAncestors()) {
-            server.addRoot(id.getSocket(), packet.getId().getSocket(), context);
+        for(var id: packet.ancestors().idPacketList()) {
+            server.addRoot(id.getSocket(), packet.id().getSocket(), context);
         }
 
         if(server.allConnected()) {
-            server.broadcast(new DisconnectedPacket(server.getAddress(), server.getAddressLogout()), server.getAddress());
+            server.broadcast(new DisconnectedPacket(new IDPacket(server.getAddress()), new IDPacket(server.getAddressLogout())), server.getAddress());
             server.deleteAddress(server.getAddressLogout());
 
             if(server.isShutdown()) {
@@ -341,10 +346,10 @@ public class ReceivePacketVisitor implements PacketVisitor {
             var socketRangeList = process.shareAndGet(entity.info().start());
             for(var socketRange: socketRangeList){
                 var workAssignmentPacket = new WorkAssignmentPacket(
-                        server.getAddress(),
-                        socketRange.socketAddress(),
+                        new IDPacket(server.getAddress()),
+                        new IDPacket(socketRange.socketAddress()),
                         packet.requestID(),
-                        socketRange.range()
+                        new RangePacket(socketRange.range().start(), socketRange.range().end())
                 );
                 server.transfer(socketRange.socketAddress(), workAssignmentPacket);
             }
