@@ -1,7 +1,8 @@
-package fr.ramatellier.greed.server.reader;
+package fr.ramatellier.greed.server.reader.sub;
 
 import fr.ramatellier.greed.server.packet.sub.IDPacket;
 import fr.ramatellier.greed.server.packet.sub.IDPacketList;
+import fr.ramatellier.greed.server.reader.Reader;
 import fr.ramatellier.greed.server.reader.primitive.IntReader;
 import fr.ramatellier.greed.server.reader.sub.IDReader;
 

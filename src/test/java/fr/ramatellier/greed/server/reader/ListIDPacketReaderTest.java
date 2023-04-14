@@ -1,8 +1,8 @@
 package fr.ramatellier.greed.server.reader;
 
-import fr.ramatellier.greed.server.packet.full.ConnectOKPacket;
 import fr.ramatellier.greed.server.packet.sub.IDPacket;
 import fr.ramatellier.greed.server.packet.sub.IDPacketList;
+import fr.ramatellier.greed.server.reader.sub.IDListReader;
 import org.junit.jupiter.api.Test;
 
 import java.net.InetSocketAddress;
