@@ -6,7 +6,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 
-public class IpAddressPacket implements Packet {
+public final class IpAddressPacket implements Packet, Part {
     private final byte size;
     private final String address;
     private final byte[] ipAddress;

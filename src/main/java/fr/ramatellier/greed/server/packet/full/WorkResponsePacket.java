@@ -1,15 +1,16 @@
 package fr.ramatellier.greed.server.packet.full;
 
-import fr.ramatellier.greed.server.packet.sub.ResponsePacket;
 import fr.ramatellier.greed.server.packet.sub.IDPacket;
+import fr.ramatellier.greed.server.packet.sub.ResponsePacket;
 import fr.ramatellier.greed.server.util.OpCodes;
+
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
 public record WorkResponsePacket(
     IDPacket src,
     IDPacket dst,
-    long requestID,
+    Long requestID,
     ResponsePacket responsePacket
 ) implements TransferPacket {
     public WorkResponsePacket{
@@ -36,13 +37,6 @@ public record WorkResponsePacket(
         return Byte.BYTES * 2 + Long.BYTES + src.size() + dst.size() + responsePacket.size();
     }
 
-    public IDPacket src() {
-        return src;
-    }
-
-    public IDPacket dst() {
-        return dst;
-    }
     public String result(){
         return responsePacket.getResponse().value();
     }
