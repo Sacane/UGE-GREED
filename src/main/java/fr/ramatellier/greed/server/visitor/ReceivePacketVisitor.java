@@ -28,28 +28,25 @@ public class ReceivePacketVisitor implements PacketVisitor {
         this.server = Objects.requireNonNull(server);
         this.context = Objects.requireNonNull(context);
         computation = new ThreadComputation(100);
-
+        preStartComputation();
+    }
+    private void preStartComputation(){
         Thread.ofPlatform().daemon().start(() -> {
             for(;;) {
                 try {
                     var response = computation.takeResponse();
-
                     sendResponseWithOPCode(response.packet(), response.value(), response.response(), response.code());
-
                     server.incrementComputation(response.id());
-
                     if(server.isShutdown() && !server.isComputing()) {
                         server.sendLogout();
                     }
-
                     server.wakeup();
                 } catch (InterruptedException e) {
-                    // Ignore exception
+                    return;
                 }
             }
         });
     }
-
     @Override
     public void visit(ConnectPacket packet) {
         logger.info("Connection demand received from " + packet.idPacket().getSocket() + " " + packet.idPacket().getPort());
@@ -254,7 +251,6 @@ public class ReceivePacketVisitor implements PacketVisitor {
     @Override
     public void visit(LogoutRequestPacket packet) {
         if(server.isRunning()) {
-            System.out.println("LOGOUT REQUEST");
             context.queuePacket(new LogoutGrantedPacket());
             if(packet.daughters().sizeList() == 0) {
                 server.broadcast(new DisconnectedPacket(new IDPacket(server.getAddress()), packet.id()), server.getAddress());
