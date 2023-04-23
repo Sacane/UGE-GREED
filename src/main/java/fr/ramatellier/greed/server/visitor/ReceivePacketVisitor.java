@@ -5,10 +5,13 @@ import fr.ramatellier.greed.server.ServerApplicationContext;
 import fr.ramatellier.greed.server.Server;
 import fr.ramatellier.greed.server.packet.full.*;
 import fr.ramatellier.greed.server.packet.sub.*;
+import fr.ramatellier.greed.server.util.http.CommandRequestAdapter;
+import fr.ramatellier.greed.server.util.http.HttpClient;
 import fr.uge.ugegreed.Client;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.URL;
 import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -30,6 +33,7 @@ public class ReceivePacketVisitor implements PacketVisitor {
         computation = new ThreadComputation(100);
         preStartComputation();
     }
+    //TODO remove it from this class
     private void preStartComputation(){
         Thread.ofPlatform().daemon().start(() -> {
             for(;;) {
@@ -135,20 +139,48 @@ public class ReceivePacketVisitor implements PacketVisitor {
         var entity = entityResponse.get();
         var targetRange = packet.range();
         var result = Client.checkerFromHTTP(entity.info().url(), entity.info().className());
-        if(result.isEmpty()) {
+
+        // HTTP non-blocking
+        try {
+            var pathRequest = CommandRequestAdapter.adapt(new URL(entity.info().url()));
+            var httpClient = new HttpClient(pathRequest.path(), pathRequest.request());
+            httpClient.onDone(body -> {
+                var checkerResult = Client.checkerFromDisk(httpClient.getPath(), entity.info().className());
+                if(checkerResult.isEmpty()) {
+                    logger.severe("CANNOT GET THE CHECKER");
+                    LongStream.range(targetRange.start(), targetRange.end()).forEach(i -> sendResponseWithOPCode(packet, i, "CANNOT GET THE CHECKER", (byte) 0x03));
+                    return;
+                }
+                var checker = checkerResult.get();
+                for(var i = targetRange.start(); i < targetRange.end(); i++) {
+                    try {
+                        computation.putTask(new TaskComputation(packet, checker, entity.id(), i));
+                    } catch (InterruptedException e) {
+                        // Ignore exception
+                    }
+                }
+            });
+            httpClient.launch();
+        }catch (IOException e) {
             logger.severe("CANNOT GET THE CHECKER");
             LongStream.range(targetRange.start(), targetRange.end()).forEach(i -> sendResponseWithOPCode(packet, i, "CANNOT GET THE CHECKER", (byte) 0x03));
             return;
         }
-        var checker = result.get();
-
-        for(var i = targetRange.start(); i < targetRange.end(); i++) {
-            try {
-                computation.putTask(new TaskComputation(packet, checker, entity.id(), i));
-            } catch (InterruptedException e) {
-                // Ignore exception
-            }
-        }
+        //
+//        if(result.isEmpty()) {
+//            logger.severe("CANNOT GET THE CHECKER");
+//            LongStream.range(targetRange.start(), targetRange.end()).forEach(i -> sendResponseWithOPCode(packet, i, "CANNOT GET THE CHECKER", (byte) 0x03));
+//            return;
+//        }
+//        var checker = result.get();
+//
+//        for(var i = targetRange.start(); i < targetRange.end(); i++) {
+//            try {
+//                computation.putTask(new TaskComputation(packet, checker, entity.id(), i));
+//            } catch (InterruptedException e) {
+//                // Ignore exception
+//            }
+//        }
 
         /*Thread.ofPlatform().start(() -> {
             for(var i = targetRange.start(); i < targetRange.end(); i++) {

@@ -65,15 +65,14 @@ public class HTTPHeaderReader implements Reader<HTTPHeader> {
         buffer.flip();
         var done = false;
         while(buffer.hasRemaining()){
-            b = buffer.get(); // lit un octet du buffer
-            builder.append((char) b); // ajoute l'octet au header
+            b = buffer.get();
+            builder.append((char) b);
             if (builder.length() > 3 && builder.substring(builder.length() - 4).equals("\r\n\r\n")) {
-                // fin des en-têtes
                 done = true;
                 break;
             }
         }
-        if(!done){
+        if(!done){ //This case occurs when the buffer has end its reading state but the header is not complete
             return null;
         }
         buffer.compact();

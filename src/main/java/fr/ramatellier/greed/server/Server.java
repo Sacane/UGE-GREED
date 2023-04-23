@@ -479,9 +479,9 @@ public class Server {
     /**
      * transfer the packet to the destination.
      * @param dst destination
-     * @param packet packet to transfer
+     * @param packet packet to transfer, the packet must implement the {@link TransferPacket} kind
      */
-    public void transfer(InetSocketAddress dst, FullPacket packet) {
+    public void transfer(InetSocketAddress dst, TransferPacket packet) {
         if(packet.kind() != TramKind.TRANSFER) {
             throw new AssertionError("Only transfer packet can be transferred");
         }

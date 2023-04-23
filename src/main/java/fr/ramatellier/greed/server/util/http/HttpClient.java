@@ -8,6 +8,8 @@ import java.net.URL;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
+import java.nio.file.Path;
+import java.util.function.Consumer;
 
 public final class HttpClient {
     private final SocketChannel sc;
@@ -15,9 +17,12 @@ public final class HttpClient {
     private final InetSocketAddress targetAddress;
     private boolean isDone = false;
     private byte[] body;
+    private final Path path;
+    Consumer<byte[]> onDone;
 
     public HttpClient(String path, String request) throws IOException {
         var url = new URL(path);
+        this.path = Path.of(url.getPath());
         this.sc = SocketChannel.open();
         this.selector = Selector.open();
         sc.configureBlocking(false);
@@ -25,6 +30,10 @@ public final class HttpClient {
         sc.connect(targetAddress);
         var key = sc.register(selector, SelectionKey.OP_CONNECT);
         key.attach(new HttpContext(this, key, request));
+    }
+
+    public Path getPath(){
+        return path;
     }
 
     void setBody(byte[] body){
@@ -47,6 +56,13 @@ public final class HttpClient {
                 throw tunneled.getCause();
             }
         }
+        if(onDone != null){
+            onDone.accept(body);
+        }
+    }
+
+    public void onDone(Consumer<byte[]> onDone){
+        this.onDone = onDone;
     }
     public boolean isDone(){
         return isDone;
