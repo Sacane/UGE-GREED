@@ -1,12 +1,13 @@
 package fr.ramatellier.greed.server.util.http;
 
 import fr.ramatellier.greed.server.reader.Reader;
+import fr.ramatellier.greed.server.util.Buffers;
 
 import java.nio.ByteBuffer;
 
 public class HTTPReader implements Reader<byte[]> {
     private final HTTPHeaderReader headerReader = new HTTPHeaderReader();
-    private final ByteBuffer bodyBuffer = ByteBuffer.allocate(1024);;
+    private ByteBuffer bodyBuffer;
     private byte[] body;
     private State state = State.WAITING_HEADER;
     private enum State {
@@ -34,7 +35,9 @@ public class HTTPReader implements Reader<byte[]> {
                 return ProcessStatus.ERROR;
             }
             try {
+                System.out.println(header);
                 var contentLength = header.getContentLength();
+                bodyBuffer = ByteBuffer.allocate(contentLength);
                 if(contentLength == 0){
                     state = State.DONE;
                     return ProcessStatus.DONE;
@@ -46,7 +49,9 @@ public class HTTPReader implements Reader<byte[]> {
                     return ProcessStatus.REFILL;
                 }
                 body = new byte[contentLength];
-                bodyBuffer.put(buffer);
+                Buffers.fillBuffer(buffer, bodyBuffer);
+//                bodyBuffer.put(buffer);
+
                 bodyBuffer.flip();
                 bodyBuffer.get(body);
                 bodyBuffer.compact();
@@ -75,6 +80,7 @@ public class HTTPReader implements Reader<byte[]> {
     public void reset() {
         state = State.WAITING_HEADER;
         headerReader.reset();
-        bodyBuffer.clear();
+        bodyBuffer = null;
+
     }
 }

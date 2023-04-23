@@ -9,7 +9,7 @@ import java.nio.channels.SocketChannel;
 import java.util.Objects;
 import java.util.logging.Logger;
 
-public class HttpContext{
+public final class HttpContext{
     private static final int BUFFER_SIZE = 8192;
     private final ByteBuffer bufferIn = ByteBuffer.allocate(BUFFER_SIZE);
     private final ByteBuffer bufferOut = ByteBuffer.allocate(BUFFER_SIZE);
@@ -18,7 +18,8 @@ public class HttpContext{
     private final SocketChannel sc;
     private final HttpClient client;
     private final String request;
-    private final HTTPHeaderReader headerReader = new HTTPHeaderReader();
+    private boolean isRequestSent;
+    private final HTTPReader reader = new HTTPReader();
     private static final Logger LOGGER = Logger.getLogger(HttpContext.class.getName());
 
     HttpContext(HttpClient client, SelectionKey key, String request) {
@@ -58,35 +59,15 @@ public class HttpContext{
         if(!sc.finishConnect()){
             return;
         }
-        bufferOut.put(request.getBytes());
         key.interestOps(SelectionKey.OP_WRITE);
     }
 
-    private void processIn() throws IOException {
-        System.out.println("PROCESS IN WITH -> " + bufferIn.remaining() + " REMAINING");
+    private void processIn() {
         while(true){
-            var response = headerReader.process(bufferIn);
+            var response = reader.process(bufferIn);
             if(response == Reader.ProcessStatus.DONE){
-                var header = headerReader.get();
-                System.out.println("CODE -> " + header.getCode());
-                if(header.getCode() == 200){
-                    var contentLength = header.getContentLength();
-                    var body = new byte[contentLength];
-                    bufferIn.flip();
-                    int toReadLeft = bufferIn.remaining();
-                    bufferIn.get(body);
-                    while(toReadLeft < contentLength){
-                        bufferIn.clear();
-                        sc.read(bufferIn);
-                        bufferIn.flip();
-                        bufferIn.get(body, contentLength - toReadLeft, toReadLeft);
-                        contentLength -= toReadLeft;
-                        toReadLeft = bufferIn.remaining();
-                    }
-                    client.setBody(body);
-                    System.out.println("BODY GET");
-                }
-                break;
+                client.setBody(reader.get());
+                reader.reset();
             } else if(response == Reader.ProcessStatus.REFILL){
                 return;
             } else if(response == Reader.ProcessStatus.ERROR){
@@ -97,22 +78,28 @@ public class HttpContext{
     }
 
     public void doWrite() throws IOException {
+        if(isRequestSent){
+            return;
+        }
+        processOut();
         bufferOut.flip();
         sc.write(bufferOut);
         bufferOut.compact();
         updateInterestOps();
     }
-    public void doRead() {
-        System.out.println("doRead");
 
-        try {
-            var readValue = sc.read(bufferIn);
-            if (readValue == -1) {
-                closed = true;
-            }
-            processIn();
-            updateInterestOps();
-        } catch (IOException ignored) {
+    private void processOut() {
+        System.out.println(request.getBytes().length);
+        bufferOut.put(request.getBytes());
+        isRequestSent = true;
+    }
+
+    public void doRead() throws IOException {
+        var readValue = sc.read(bufferIn);
+        if (readValue == -1) {
+            closed = true;
         }
+        processIn();
+        updateInterestOps();
     }
 }

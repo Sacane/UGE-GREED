@@ -48,11 +48,16 @@ public final class HttpClient {
             }
         }
     }
-
-    String resourceTemplate(String resource){
-        return "GET " + resource + " HTTP/1.1\r\nHost: " + targetAddress.getHostName() + "\r\n\r\n";
+    public boolean isDone(){
+        return isDone;
     }
+    public void close(){
+        try {
+            sc.close();
+        } catch (IOException ignored) {
 
+        }
+    }
 
     private void treatKey(SelectionKey key) {
         var uniqueContext = (HttpContext) key.attachment();
