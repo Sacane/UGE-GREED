@@ -131,4 +131,75 @@ public class HTTPReaderTest {
 //            server.shutdown();
 //        }
 //    }
+
+    @Test
+    public void basicHeaderReaderTest() throws IOException {
+        var reader = new HTTPHeaderReader();
+        var bb = ByteBuffer.allocate(1024);
+        bb.put("HTTP/1.1 200 OK\r\n\r\n".getBytes(StandardCharsets.US_ASCII));
+        assertEquals(Reader.ProcessStatus.DONE, reader.process(bb));
+        var header = reader.get();
+        assertNotNull(header);
+        assertEquals(200, header.getCode());
+    }
+
+    @Test
+    public void headerWithContentReaderTest() throws HTTPException {
+        var reader = new HTTPHeaderReader();
+        var bb = ByteBuffer.allocate(1024);
+        bb.put("HTTP/1.1 200 OK\r\nContent-Length: 10\r\n\r\n".getBytes(StandardCharsets.US_ASCII));
+        assertEquals(Reader.ProcessStatus.DONE, reader.process(bb));
+        var header = reader.get();
+        assertNotNull(header);
+        assertEquals(200, header.getCode());
+        assertEquals(10, header.getContentLength());
+    }
+
+    @Test
+    public void simpleHeaderWithBodyTest(){
+        var httpReader = new HTTPReader();
+        ByteBuffer byteBuffer = ByteBuffer.allocate(1024);
+
+        byte[] responseBytes = ("HTTP/1.1 200 OK\r\n" +
+                "Content-Type: text/plain\r\n" +
+                "Content-Length: 12\r\n" +
+                "\r\n" +
+                "Hello World!").getBytes();
+        byteBuffer.put(responseBytes);
+        var status = httpReader.process(byteBuffer);
+
+        assertEquals(Reader.ProcessStatus.DONE, status);
+
+        var responseBody = httpReader.get();
+
+        assertEquals(12, responseBody.length);
+        assertEquals("Hello World!", new String(responseBody));
+        assertArrayEquals("Hello World!".getBytes(), responseBody);
+    }
+    @Test
+    public void incompleteHttpResponseTest(){
+        var httpReader = new HTTPReader();
+        ByteBuffer byteBuffer = ByteBuffer.allocate(1024);
+
+        byte[] incompleteResponseBytes = ("HTTP/1.1 200 OK\r\n" +
+                "Content-Type: text/plain\r\n" +
+                "Content-Length: 12\r\n" +
+                "\r\n" +
+                "Hello ").getBytes();
+        var responseBytesLeft = ("World!").getBytes();
+        byteBuffer.put(incompleteResponseBytes);
+        var status = httpReader.process(byteBuffer);
+
+        assertEquals(Reader.ProcessStatus.REFILL, status);
+
+        byteBuffer.put(responseBytesLeft);
+        status = httpReader.process(byteBuffer);
+        assertEquals(Reader.ProcessStatus.DONE, status);
+
+        var responseBody = httpReader.get();
+
+        assertEquals(12, responseBody.length);
+        assertEquals("Hello World!", new String(responseBody));
+        assertArrayEquals("Hello World!".getBytes(), responseBody);
+    }
 }

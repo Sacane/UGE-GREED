@@ -71,7 +71,6 @@ public class HttpContext{
                 System.out.println("CODE -> " + header.getCode());
                 if(header.getCode() == 200){
                     var contentLength = header.getContentLength();
-                    System.out.println(header);
                     var body = new byte[contentLength];
                     bufferIn.flip();
                     int toReadLeft = bufferIn.remaining();
