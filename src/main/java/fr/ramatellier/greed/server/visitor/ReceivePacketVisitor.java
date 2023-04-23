@@ -138,7 +138,7 @@ public class ReceivePacketVisitor implements PacketVisitor {
         }
         var entity = entityResponse.get();
         var targetRange = packet.range();
-        var result = Client.checkerFromHTTP(entity.info().url(), entity.info().className());
+//        var result = Client.checkerFromHTTP(entity.info().url(), entity.info().className());
 
         // HTTP non-blocking
         try {
