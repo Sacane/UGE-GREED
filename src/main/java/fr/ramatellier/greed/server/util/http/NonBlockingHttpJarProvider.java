@@ -1,6 +1,5 @@
 package fr.ramatellier.greed.server.util.http;
 
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
@@ -8,6 +7,7 @@ import java.net.URL;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
+import java.nio.file.Path;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
@@ -19,12 +19,11 @@ public final class NonBlockingHttpJarProvider {
     private final SocketChannel sc;
     private final Selector selector;
     private boolean isDone = false;
-    private byte[] body;
     private final String filePath;
     private Consumer<byte[]> onDone;
     private final Logger LOGGER = Logger.getLogger(NonBlockingHttpJarProvider.class.getName());
 
-    public NonBlockingHttpJarProvider(String path, String request, String filePath) throws IOException {
+    private NonBlockingHttpJarProvider(String path, String request, String filePath) throws IOException {
         this.filePath = Objects.requireNonNullElse(filePath, "result.jar");
         Objects.requireNonNull(path);
         Objects.requireNonNull(request);
@@ -36,22 +35,22 @@ public final class NonBlockingHttpJarProvider {
         var key = sc.register(selector, SelectionKey.OP_CONNECT);
         key.attach(new HttpContext(this, key, request));
     }
+    private record HostRequestFile(String host, String request, String file) {}
 
+    public static NonBlockingHttpJarProvider fromURL(URL url) throws IOException {
+        var request = toRequest(url);
+        return new NonBlockingHttpJarProvider(request.host(), request.request(), request.file());
+    }
+    private static HostRequestFile toRequest(URL request){
+        var path = request.getPath();
+        var host = request.getHost();
+        var requestString = "GET " + path + " HTTP/1.1\r\nHost: " + host + "\r\n\r\n";
+        System.out.println("Path: " + path + " request: " + requestString);
+        return new HostRequestFile("http" + "://"+host, requestString, Path.of(path).getFileName().toString());
+    }
 
     public String getFilePath(){
         return filePath;
-    }
-
-    void setBody(byte[] body){
-        this.body = body;
-        isDone = true;
-    }
-
-    public byte[] getBody(){
-        if(!isDone){
-            throw new IllegalStateException("The request is not done yet");
-        }
-        return body;
     }
 
     public void launch() throws IOException {
@@ -102,17 +101,4 @@ public final class NonBlockingHttpJarProvider {
     void done() {
         isDone = true;
     }
-
-//    public static void main(String[] args) throws IOException {
-//        var filePath = "Factorizer.jar";
-//        var client = new NonBlockingHttpJarProvider("http" + "://www-igm.univ-mlv.fr", "GET /~carayol/Factorizer.jar HTTP/1.1\r\nHost: igm.univ-mlv.fr\r\n\r\n", filePath);
-//        client.onDone(bytes -> {
-//            try(var fos = new FileOutputStream(client.getFilePath())){
-//                fos.write(bytes);
-//                fos.flush();
-//                System.out.println("File saved at " + client.getFilePath());
-//            } catch (IOException ignored) {}
-//        });
-//        client.launch();
-//    }
 }

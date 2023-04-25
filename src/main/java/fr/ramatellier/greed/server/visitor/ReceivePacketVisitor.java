@@ -1,11 +1,13 @@
 package fr.ramatellier.greed.server.visitor;
 
-import fr.ramatellier.greed.server.compute.*;
-import fr.ramatellier.greed.server.ServerApplicationContext;
 import fr.ramatellier.greed.server.Server;
+import fr.ramatellier.greed.server.ServerApplicationContext;
+import fr.ramatellier.greed.server.compute.*;
 import fr.ramatellier.greed.server.packet.full.*;
-import fr.ramatellier.greed.server.packet.sub.*;
-import fr.ramatellier.greed.server.util.http.CommandRequestAdapter;
+import fr.ramatellier.greed.server.packet.sub.IDPacket;
+import fr.ramatellier.greed.server.packet.sub.IDPacketList;
+import fr.ramatellier.greed.server.packet.sub.RangePacket;
+import fr.ramatellier.greed.server.packet.sub.ResponsePacket;
 import fr.ramatellier.greed.server.util.http.NonBlockingHttpJarProvider;
 import fr.uge.ugegreed.Client;
 
@@ -139,15 +141,11 @@ public class ReceivePacketVisitor implements PacketVisitor {
         }
         var entity = entityResponse.get();
         var targetRange = packet.range();
-//        var result = Client.checkerFromHTTP(entity.info().url(), entity.info().className());
-
         // HTTP non-blocking
         try {
-            System.out.println(entity.info().url());
-            var pathRequest = CommandRequestAdapter.adapt(new URL(entity.info().url()));
-            var httpClient = new NonBlockingHttpJarProvider(pathRequest.path(), pathRequest.request(), pathRequest.file());
+            var httpClient = NonBlockingHttpJarProvider.fromURL(new URL(entity.info().url()));
             httpClient.onDone(body -> {
-                var path = Path.of(pathRequest.file());
+                var path = Path.of(httpClient.getFilePath());
                 System.out.println(path);
                 var checkerResult = Client.checkerFromDisk(path, entity.info().className());
                 if(checkerResult.isEmpty()) {
@@ -169,7 +167,6 @@ public class ReceivePacketVisitor implements PacketVisitor {
             System.err.println(e.getMessage());
             logger.severe("CANNOT GET THE CHECKER");
             LongStream.range(targetRange.start(), targetRange.end()).forEach(i -> sendResponseWithOPCode(packet, i, "CANNOT GET THE CHECKER", (byte) 0x03));
-            return;
         }
         //
 //        if(result.isEmpty()) {
@@ -268,7 +265,7 @@ public class ReceivePacketVisitor implements PacketVisitor {
     @Override
     public void visit(WorkResponsePacket packet) {
         var responsePacket = packet.responsePacket();
-        switch(packet.responsePacket().getResponseCode()){
+        switch(responsePacket.getResponseCode()){
             case 0x00 -> {
                 System.out.println(responsePacket.getResponse().value());
                 var id = new ComputationIdentifier(packet.requestID(), server.getAddress());
