@@ -5,6 +5,9 @@ import java.util.*;
 
 import static fr.ramatellier.greed.server.util.http.HTTPException.ensure;
 
+/**
+ * Class representing an HTTP Header, property of Gustave eiffel University.
+ */
 public class HTTPHeader {
 
     /**
@@ -73,7 +76,7 @@ public class HTTPHeader {
             return -1;
         }
         try {
-            return Integer.valueOf(contentString.trim());
+            return Integer.parseInt(contentString.trim());
         } catch (NumberFormatException e) {
             throw new HTTPException("Invalid Content-Length field value :\n" + contentString);
         }

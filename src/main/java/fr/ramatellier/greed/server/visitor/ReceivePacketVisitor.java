@@ -8,7 +8,7 @@ import fr.ramatellier.greed.server.packet.sub.IDPacket;
 import fr.ramatellier.greed.server.packet.sub.IDPacketList;
 import fr.ramatellier.greed.server.packet.sub.RangePacket;
 import fr.ramatellier.greed.server.packet.sub.ResponsePacket;
-import fr.ramatellier.greed.server.util.http.NonBlockingHttpJarProvider;
+import fr.ramatellier.greed.server.util.http.NonBlockingHTTPJarProvider;
 import fr.uge.ugegreed.Client;
 
 import java.io.IOException;
@@ -143,7 +143,7 @@ public class ReceivePacketVisitor implements PacketVisitor {
         var targetRange = packet.range();
         // HTTP non-blocking
         try {
-            var httpClient = NonBlockingHttpJarProvider.fromURL(new URL(entity.info().url()));
+            var httpClient = NonBlockingHTTPJarProvider.fromURL(new URL(entity.info().url()));
             httpClient.onDone(body -> {
                 var path = Path.of(httpClient.getFilePath());
                 System.out.println(path);

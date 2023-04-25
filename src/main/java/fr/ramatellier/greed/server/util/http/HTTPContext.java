@@ -10,20 +10,20 @@ import java.nio.channels.SocketChannel;
 import java.util.Objects;
 import java.util.logging.Logger;
 
-public final class HttpContext{
+public final class HTTPContext {
     private static final int BUFFER_SIZE = 8192;
     private final ByteBuffer bufferIn = ByteBuffer.allocate(BUFFER_SIZE);
     private final ByteBuffer bufferOut = ByteBuffer.allocate(BUFFER_SIZE);
     private boolean closed = false;
     private final SelectionKey key;
     private final SocketChannel sc;
-    private final NonBlockingHttpJarProvider client;
+    private final NonBlockingHTTPJarProvider client;
     private final String request;
     private boolean isRequestSent;
     private final HTTPReader reader = new HTTPReader();
-    private static final Logger LOGGER = Logger.getLogger(HttpContext.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(HTTPContext.class.getName());
 
-    HttpContext(NonBlockingHttpJarProvider client, SelectionKey key, String request) {
+    HTTPContext(NonBlockingHTTPJarProvider client, SelectionKey key, String request) {
         Objects.requireNonNull(key);
         this.client = Objects.requireNonNull(client);
         this.key = key;

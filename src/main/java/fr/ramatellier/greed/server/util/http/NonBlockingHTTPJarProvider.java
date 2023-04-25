@@ -13,40 +13,40 @@ import java.util.function.Consumer;
 import java.util.logging.Logger;
 
 /**
- * This class aims to be a simple HTTP client but in non-blocking mode and only perform request to get jar file from a server.
+ * This class aims to be a simple HTTP client but in non-blocking mode and only to perform request to get jar file from a server.
  */
-public final class NonBlockingHttpJarProvider {
+public final class NonBlockingHTTPJarProvider {
     private final SocketChannel sc;
     private final Selector selector;
     private boolean isDone = false;
     private final String filePath;
     private Consumer<byte[]> onDone;
-    private final Logger LOGGER = Logger.getLogger(NonBlockingHttpJarProvider.class.getName());
+    private final Logger LOGGER = Logger.getLogger(NonBlockingHTTPJarProvider.class.getName());
 
-    private NonBlockingHttpJarProvider(String path, String request, String filePath) throws IOException {
+    private NonBlockingHTTPJarProvider(String host, String request, String filePath) throws IOException {
         this.filePath = Objects.requireNonNullElse(filePath, "result.jar");
-        Objects.requireNonNull(path);
+        Objects.requireNonNull(host);
         Objects.requireNonNull(request);
-        var url = new URL(path);
         this.sc = SocketChannel.open();
         this.selector = Selector.open();
         sc.configureBlocking(false);
-        sc.connect(new InetSocketAddress(url.getHost(), url.getPort() != -1 ? url.getPort() : 80));
+        sc.connect(new InetSocketAddress(host, 80));
         var key = sc.register(selector, SelectionKey.OP_CONNECT);
-        key.attach(new HttpContext(this, key, request));
+        key.attach(new HTTPContext(this, key, request));
     }
     private record HostRequestFile(String host, String request, String file) {}
 
-    public static NonBlockingHttpJarProvider fromURL(URL url) throws IOException {
-        var request = toRequest(url);
-        return new NonBlockingHttpJarProvider(request.host(), request.request(), request.file());
+    public static NonBlockingHTTPJarProvider fromURL(URL url) throws IOException {
+        Objects.requireNonNull(url);
+        var request = urlToRequest(url);
+        System.out.println(request);
+        return new NonBlockingHTTPJarProvider(request.host(), request.request(), request.file());
     }
-    private static HostRequestFile toRequest(URL request){
+    private static HostRequestFile urlToRequest(URL request){
         var path = request.getPath();
         var host = request.getHost();
         var requestString = "GET " + path + " HTTP/1.1\r\nHost: " + host + "\r\n\r\n";
-        System.out.println("Path: " + path + " request: " + requestString);
-        return new HostRequestFile("http" + "://"+host, requestString, Path.of(path).getFileName().toString());
+        return new HostRequestFile(host, requestString, Path.of(path).getFileName().toString());
     }
 
     public String getFilePath(){
@@ -68,9 +68,19 @@ public final class NonBlockingHttpJarProvider {
     void executeOnDone(byte[] body){
         this.onDone.accept(body);
     }
+
+    /**
+     * Set the callback to execute when the request is done.
+     * @param onDone the callback to execute when the request is done.
+     */
     public void onDone(Consumer<byte[]> onDone){
+        Objects.requireNonNull(onDone);
         this.onDone = onDone;
     }
+
+    /**
+     * @return true if the request is done.
+     */
     public boolean isDone(){
         return isDone;
     }
@@ -83,7 +93,7 @@ public final class NonBlockingHttpJarProvider {
     }
 
     private void treatKey(SelectionKey key) {
-        var uniqueContext = (HttpContext) key.attachment();
+        var uniqueContext = (HTTPContext) key.attachment();
         try {
             if (key.isValid() && key.isConnectable()) {
                 uniqueContext.doConnect();
