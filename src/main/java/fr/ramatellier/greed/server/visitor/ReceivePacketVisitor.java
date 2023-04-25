@@ -5,10 +5,14 @@ import fr.ramatellier.greed.server.ServerApplicationContext;
 import fr.ramatellier.greed.server.Server;
 import fr.ramatellier.greed.server.packet.full.*;
 import fr.ramatellier.greed.server.packet.sub.*;
+import fr.ramatellier.greed.server.util.http.CommandRequestAdapter;
+import fr.ramatellier.greed.server.util.http.NonBlockingHttpJarProvider;
 import fr.uge.ugegreed.Client;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.URL;
+import java.nio.file.Path;
 import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -28,28 +32,26 @@ public class ReceivePacketVisitor implements PacketVisitor {
         this.server = Objects.requireNonNull(server);
         this.context = Objects.requireNonNull(context);
         computation = new ThreadComputation(100);
-
+        preStartComputation();
+    }
+    //TODO remove it from this class
+    private void preStartComputation(){
         Thread.ofPlatform().daemon().start(() -> {
             for(;;) {
                 try {
                     var response = computation.takeResponse();
-
                     sendResponseWithOPCode(response.packet(), response.value(), response.response(), response.code());
-
                     server.incrementComputation(response.id());
-
                     if(server.isShutdown() && !server.isComputing()) {
                         server.sendLogout();
                     }
-
                     server.wakeup();
                 } catch (InterruptedException e) {
-                    // Ignore exception
+                    return;
                 }
             }
         });
     }
-
     @Override
     public void visit(ConnectPacket packet) {
         logger.info("Connection demand received from " + packet.idPacket().getSocket() + " " + packet.idPacket().getPort());
@@ -137,21 +139,53 @@ public class ReceivePacketVisitor implements PacketVisitor {
         }
         var entity = entityResponse.get();
         var targetRange = packet.range();
-        var result = Client.checkerFromHTTP(entity.info().url(), entity.info().className());
-        if(result.isEmpty()) {
+//        var result = Client.checkerFromHTTP(entity.info().url(), entity.info().className());
+
+        // HTTP non-blocking
+        try {
+            System.out.println(entity.info().url());
+            var pathRequest = CommandRequestAdapter.adapt(new URL(entity.info().url()));
+            var httpClient = new NonBlockingHttpJarProvider(pathRequest.path(), pathRequest.request(), pathRequest.file());
+            httpClient.onDone(body -> {
+                var path = Path.of(pathRequest.file());
+                System.out.println(path);
+                var checkerResult = Client.checkerFromDisk(path, entity.info().className());
+                if(checkerResult.isEmpty()) {
+                    logger.severe("CANNOT GET THE CHECKER");
+                    LongStream.range(targetRange.start(), targetRange.end()).forEach(i -> sendResponseWithOPCode(packet, i, "CANNOT GET THE CHECKER", (byte) 0x03));
+                    return;
+                }
+                var checker = checkerResult.get();
+                for(var i = targetRange.start(); i < targetRange.end(); i++) {
+                    try {
+                        computation.putTask(new TaskComputation(packet, checker, entity.id(), i));
+                    } catch (InterruptedException e) {
+                        // Ignore exception
+                    }
+                }
+            });
+            httpClient.launch();
+        }catch (IOException e) {
+            System.err.println(e.getMessage());
             logger.severe("CANNOT GET THE CHECKER");
             LongStream.range(targetRange.start(), targetRange.end()).forEach(i -> sendResponseWithOPCode(packet, i, "CANNOT GET THE CHECKER", (byte) 0x03));
             return;
         }
-        var checker = result.get();
-
-        for(var i = targetRange.start(); i < targetRange.end(); i++) {
-            try {
-                computation.putTask(new TaskComputation(packet, checker, entity.id(), i));
-            } catch (InterruptedException e) {
-                // Ignore exception
-            }
-        }
+        //
+//        if(result.isEmpty()) {
+//            logger.severe("CANNOT GET THE CHECKER");
+//            LongStream.range(targetRange.start(), targetRange.end()).forEach(i -> sendResponseWithOPCode(packet, i, "CANNOT GET THE CHECKER", (byte) 0x03));
+//            return;
+//        }
+//        var checker = result.get();
+//
+//        for(var i = targetRange.start(); i < targetRange.end(); i++) {
+//            try {
+//                computation.putTask(new TaskComputation(packet, checker, entity.id(), i));
+//            } catch (InterruptedException e) {
+//                // Ignore exception
+//            }
+//        }
 
         /*Thread.ofPlatform().start(() -> {
             for(var i = targetRange.start(); i < targetRange.end(); i++) {
@@ -254,7 +288,6 @@ public class ReceivePacketVisitor implements PacketVisitor {
     @Override
     public void visit(LogoutRequestPacket packet) {
         if(server.isRunning()) {
-            System.out.println("LOGOUT REQUEST");
             context.queuePacket(new LogoutGrantedPacket());
             if(packet.daughters().sizeList() == 0) {
                 server.broadcast(new DisconnectedPacket(new IDPacket(server.getAddress()), packet.id()), server.getAddress());
