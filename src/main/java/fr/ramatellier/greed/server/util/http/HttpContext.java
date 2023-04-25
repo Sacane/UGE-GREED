@@ -2,6 +2,7 @@ package fr.ramatellier.greed.server.util.http;
 
 import fr.ramatellier.greed.server.reader.Reader;
 
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
@@ -66,16 +67,23 @@ public final class HttpContext{
         while(true){
             var response = reader.process(bufferIn);
             if(response == Reader.ProcessStatus.DONE){
-                client.setBody(reader.get());
+                var contentBody = reader.get();
+                try(var fos = new FileOutputStream(client.getFilePath())){
+                    fos.write(contentBody);
+                    fos.flush();
+                    System.out.println("Jar has been received and saved at " + client.getFilePath());
+                } catch (IOException e) {
+                    LOGGER.warning("Error while writing file");
+                    silentlyClose();
+                    return;
+                }
+                client.executeOnDone(contentBody);
                 reader.reset();
                 client.done();
-                System.out.println("DONE");
                 break;
             } else if(response == Reader.ProcessStatus.REFILL){
-                System.out.println("REFILL");
                 return;
             } else if(response == Reader.ProcessStatus.ERROR){
-                System.out.println("ERROR");
                 break;
             }
         }

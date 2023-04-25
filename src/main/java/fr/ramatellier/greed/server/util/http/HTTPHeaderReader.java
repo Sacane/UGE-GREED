@@ -38,7 +38,6 @@ public class HTTPHeaderReader implements Reader<HTTPHeader> {
                 }
                 map.merge(key, value, (newValue, old) -> String.join(";", old, newValue));
             }
-//            System.out.println(map);
             header = HTTPHeader.create(response, map);
             state = State.DONE;
             return ProcessStatus.DONE;

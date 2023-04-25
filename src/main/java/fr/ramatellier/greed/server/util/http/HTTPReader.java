@@ -11,30 +11,31 @@ public class HTTPReader implements Reader<byte[]> {
     private byte[] body;
     private State state = State.WAITING_HEADER;
     private enum State {
-        DONE, WAITING_HEADER, WAITING_BODY, ERROR
+        DONE, WAITING_HEADER, WAITING_BODY, REFILL, ERROR
     }
 
     @Override
     public ProcessStatus process(ByteBuffer buffer) {
-        System.out.println(buffer.remaining() + "remaining");
         if(state == State.DONE || state == State.ERROR){
             throw new IllegalStateException();
         }
         if(state == State.WAITING_HEADER){
-            var status = headerReader.process(buffer);
-            if(status == ProcessStatus.DONE) {
+            Buffers.runOnProcess(buffer, headerReader, () -> {
                 state = State.WAITING_BODY;
                 var header = headerReader.get();
                 try {
                     bodyBuffer = ByteBuffer.allocate(header.getContentLength());
                 }catch (HTTPException e){
                     state = State.ERROR;
-                    return ProcessStatus.ERROR;
                 }
-            }
-            else if(status == ProcessStatus.REFILL){
+            }, () -> state = State.REFILL, () -> state = State.ERROR);
+            if(state == State.REFILL){
                 return ProcessStatus.REFILL;
             }
+            else if(state == State.ERROR){
+                return ProcessStatus.ERROR;
+            }
+
         }
         if(state == State.WAITING_BODY){
             var header = headerReader.get();
@@ -43,7 +44,6 @@ public class HTTPReader implements Reader<byte[]> {
                 return ProcessStatus.ERROR;
             }
             try {
-                System.out.println(header);
                 var contentLength = header.getContentLength();
 
                 if(contentLength == 0){

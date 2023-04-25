@@ -1,9 +1,11 @@
 package fr.ramatellier.greed.server.util.http;
 
 import java.io.IOException;
+import java.io.Serial;
 
 public class HTTPException extends IOException {
 
+    @Serial
     private static final long serialVersionUID = -1810727803680020453L;
 
     public HTTPException() {

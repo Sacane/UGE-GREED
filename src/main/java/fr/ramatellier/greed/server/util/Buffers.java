@@ -41,4 +41,11 @@ public final class Buffers {
             }
         }
     }
+    public static void runOnProcess(ByteBuffer buffer, Reader<?> reader, Runnable onDone, Runnable onRefill, Runnable onError){
+        switch(reader.process(buffer)){
+            case DONE -> onDone.run();
+            case REFILL -> onRefill.run();
+            case ERROR -> onError.run();
+        }
+    }
 }
