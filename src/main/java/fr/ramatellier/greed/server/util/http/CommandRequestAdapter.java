@@ -22,7 +22,8 @@ public final class CommandRequestAdapter {
         var path = request.getPath();
         var host = request.getHost();
         var requestString = "GET " + path + " HTTP/1.1\r\nHost: " + host + "\r\n\r\n";
-        return new PathRequest(path, requestString);
+        System.out.println("Path: " + path + " request: " + requestString);
+        return new PathRequest("http://"+host, requestString, Path.of(path).getFileName().toString());
     }
 
     public static void main(String[] args) throws MalformedURLException {

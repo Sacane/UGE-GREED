@@ -490,7 +490,8 @@ public class Server {
         }
         try {
             packets.put(new SendInformation(dst, packet));
-        } catch (InterruptedException e) {
+        } catch (InterruptedException ignored) {
+            silentlyClose(parentKey);
         }
     }
 

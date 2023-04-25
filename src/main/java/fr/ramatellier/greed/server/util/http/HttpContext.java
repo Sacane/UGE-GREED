@@ -16,13 +16,13 @@ public final class HttpContext{
     private boolean closed = false;
     private final SelectionKey key;
     private final SocketChannel sc;
-    private final HttpClient client;
+    private final NonBlockingHttpJarProvider client;
     private final String request;
     private boolean isRequestSent;
     private final HTTPReader reader = new HTTPReader();
     private static final Logger LOGGER = Logger.getLogger(HttpContext.class.getName());
 
-    HttpContext(HttpClient client, SelectionKey key, String request) {
+    HttpContext(NonBlockingHttpJarProvider client, SelectionKey key, String request) {
         Objects.requireNonNull(key);
         this.client = Objects.requireNonNull(client);
         this.key = key;
@@ -68,7 +68,11 @@ public final class HttpContext{
             if(response == Reader.ProcessStatus.DONE){
                 client.setBody(reader.get());
                 reader.reset();
+                client.done();
+                System.out.println("DONE");
+                break;
             } else if(response == Reader.ProcessStatus.REFILL){
+                System.out.println("REFILL");
                 return;
             } else if(response == Reader.ProcessStatus.ERROR){
                 System.out.println("ERROR");

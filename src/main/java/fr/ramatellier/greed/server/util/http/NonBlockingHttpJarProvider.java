@@ -9,31 +9,44 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.nio.file.Path;
+import java.util.Objects;
 import java.util.function.Consumer;
 
-public final class HttpClient {
+/**
+ * This class aims to be a simple HTTP client but in non-blocking mode.
+ * At the moment, for the current purpose of the project the class only perform GET requests.
+ */
+public final class NonBlockingHttpJarProvider {
     private final SocketChannel sc;
     private final Selector selector;
-    private final InetSocketAddress targetAddress;
     private boolean isDone = false;
     private byte[] body;
-    private final Path path;
-    Consumer<byte[]> onDone;
+    private final Path requestPath;
+    private final String filePath;
+    private Consumer<byte[]> onDone;
 
-    public HttpClient(String path, String request) throws IOException {
+    public NonBlockingHttpJarProvider(String path, String request, String filePath) throws IOException {
+        this.filePath = Objects.requireNonNullElse(filePath, "result.jar");
         var url = new URL(path);
-        this.path = Path.of(url.getPath());
+        this.requestPath = Path.of(url.getPath());
         this.sc = SocketChannel.open();
         this.selector = Selector.open();
         sc.configureBlocking(false);
-        this.targetAddress = new InetSocketAddress(url.getHost(), url.getPort() != -1 ? url.getPort() : 80);
+        InetSocketAddress targetAddress = new InetSocketAddress(url.getHost(), url.getPort() != -1 ? url.getPort() : 80);
         sc.connect(targetAddress);
         var key = sc.register(selector, SelectionKey.OP_CONNECT);
         key.attach(new HttpContext(this, key, request));
+        System.out.println(path + " " + request + " " + filePath);
     }
 
-    public Path getPath(){
-        return path;
+
+
+    public Path getRequestPath(){
+        return requestPath;
+    }
+
+    public String getFilePath(){
+        return filePath;
     }
 
     void setBody(byte[] body){
@@ -52,13 +65,20 @@ public final class HttpClient {
         while (!isDone) {
             try {
                 selector.select(this::treatKey);
+                System.out.println(isDone);
             } catch (UncheckedIOException tunneled) {
                 throw tunneled.getCause();
             }
         }
+        try(var fos = new FileOutputStream(filePath)){
+            fos.write(body);
+            fos.flush();
+            System.out.println("File saved at " + filePath);
+        }
         if(onDone != null){
             onDone.accept(body);
         }
+        close();
     }
 
     public void onDone(Consumer<byte[]> onDone){
@@ -93,13 +113,19 @@ public final class HttpClient {
     }
 
     public static void main(String[] args) throws IOException {
-        var client = new HttpClient("http://www-igm.univ-mlv.fr", "GET /~carayol/Factorizer.jar HTTP/1.1\r\nHost: igm.univ-mlv.fr\r\n\r\n");
+        var filePath = "Factorizer.jar";
+        var client = new NonBlockingHttpJarProvider("http" + "://www-igm.univ-mlv.fr", "GET /~carayol/Factorizer.jar HTTP/1.1\r\nHost: igm.univ-mlv.fr\r\n\r\n", filePath);
+        client.onDone(bytes -> {
+            try(var fos = new FileOutputStream(client.getFilePath())){
+                fos.write(client.getBody());
+                fos.flush();
+                System.out.println("File saved at " + client.getFilePath());
+            } catch (IOException ignored) {}
+        });
         client.launch();
-        var filePath = "./Factorizer.jar";
-        try(var fos = new FileOutputStream(filePath)){
-            fos.write(client.getBody());
-            fos.flush();
-            System.out.println("File saved at " + filePath);
-        }
+    }
+
+    void done() {
+        isDone = true;
     }
 }

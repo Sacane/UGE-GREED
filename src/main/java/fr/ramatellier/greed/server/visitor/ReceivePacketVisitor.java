@@ -6,12 +6,13 @@ import fr.ramatellier.greed.server.Server;
 import fr.ramatellier.greed.server.packet.full.*;
 import fr.ramatellier.greed.server.packet.sub.*;
 import fr.ramatellier.greed.server.util.http.CommandRequestAdapter;
-import fr.ramatellier.greed.server.util.http.HttpClient;
+import fr.ramatellier.greed.server.util.http.NonBlockingHttpJarProvider;
 import fr.uge.ugegreed.Client;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -142,10 +143,13 @@ public class ReceivePacketVisitor implements PacketVisitor {
 
         // HTTP non-blocking
         try {
+            System.out.println(entity.info().url());
             var pathRequest = CommandRequestAdapter.adapt(new URL(entity.info().url()));
-            var httpClient = new HttpClient(pathRequest.path(), pathRequest.request());
+            var httpClient = new NonBlockingHttpJarProvider(pathRequest.path(), pathRequest.request(), pathRequest.file());
             httpClient.onDone(body -> {
-                var checkerResult = Client.checkerFromDisk(httpClient.getPath(), entity.info().className());
+                var path = Path.of(pathRequest.file());
+                System.out.println(path);
+                var checkerResult = Client.checkerFromDisk(path, entity.info().className());
                 if(checkerResult.isEmpty()) {
                     logger.severe("CANNOT GET THE CHECKER");
                     LongStream.range(targetRange.start(), targetRange.end()).forEach(i -> sendResponseWithOPCode(packet, i, "CANNOT GET THE CHECKER", (byte) 0x03));
@@ -162,6 +166,7 @@ public class ReceivePacketVisitor implements PacketVisitor {
             });
             httpClient.launch();
         }catch (IOException e) {
+            System.err.println(e.getMessage());
             logger.severe("CANNOT GET THE CHECKER");
             LongStream.range(targetRange.start(), targetRange.end()).forEach(i -> sendResponseWithOPCode(packet, i, "CANNOT GET THE CHECKER", (byte) 0x03));
             return;

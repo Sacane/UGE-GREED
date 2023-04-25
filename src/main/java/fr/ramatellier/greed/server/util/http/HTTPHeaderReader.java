@@ -22,6 +22,7 @@ public class HTTPHeaderReader implements Reader<HTTPHeader> {
             var map = new HashMap<String, String>();
             String contentHeader = read(buffer);
             if(contentHeader == null || contentHeader.isEmpty()){
+                System.out.println("Refill header");
                 return ProcessStatus.REFILL;
             }
             var response = Arrays.stream(contentHeader.split("\n")).toArray(String[]::new)[0];

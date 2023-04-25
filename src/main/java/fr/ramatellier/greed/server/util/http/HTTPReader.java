@@ -16,6 +16,7 @@ public class HTTPReader implements Reader<byte[]> {
 
     @Override
     public ProcessStatus process(ByteBuffer buffer) {
+        System.out.println(buffer.remaining() + "remaining");
         if(state == State.DONE || state == State.ERROR){
             throw new IllegalStateException();
         }
@@ -23,6 +24,13 @@ public class HTTPReader implements Reader<byte[]> {
             var status = headerReader.process(buffer);
             if(status == ProcessStatus.DONE) {
                 state = State.WAITING_BODY;
+                var header = headerReader.get();
+                try {
+                    bodyBuffer = ByteBuffer.allocate(header.getContentLength());
+                }catch (HTTPException e){
+                    state = State.ERROR;
+                    return ProcessStatus.ERROR;
+                }
             }
             else if(status == ProcessStatus.REFILL){
                 return ProcessStatus.REFILL;
@@ -37,21 +45,16 @@ public class HTTPReader implements Reader<byte[]> {
             try {
                 System.out.println(header);
                 var contentLength = header.getContentLength();
-                bodyBuffer = ByteBuffer.allocate(contentLength);
+
                 if(contentLength == 0){
                     state = State.DONE;
                     return ProcessStatus.DONE;
                 }
-                buffer.flip();
-                bodyBuffer.put(buffer);
-                if(bodyBuffer.position() < contentLength){
-                    buffer.compact();
+                Buffers.fillBuffer(buffer, bodyBuffer);
+                if(bodyBuffer.hasRemaining()){
                     return ProcessStatus.REFILL;
                 }
                 body = new byte[contentLength];
-                Buffers.fillBuffer(buffer, bodyBuffer);
-//                bodyBuffer.put(buffer);
-
                 bodyBuffer.flip();
                 bodyBuffer.get(body);
                 bodyBuffer.compact();
