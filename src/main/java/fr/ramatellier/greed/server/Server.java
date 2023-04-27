@@ -24,7 +24,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
-import java.util.stream.LongStream;
 
 public class Server {
     private static final Logger logger = Logger.getLogger(Server.class.getName());
@@ -213,7 +212,7 @@ public class Server {
         return computationRoomHandler.isComputing();
     }
 
-    public void addRoot(InetSocketAddress src, InetSocketAddress dst, ServerApplicationContext context) {
+    public void addRoot(InetSocketAddress src, InetSocketAddress dst, Context context) {
         if(!src.equals(address)) {
             logger.info("Root table has been updated");
             routeTable.putOrUpdate(src, dst, context);
@@ -362,7 +361,7 @@ public class Server {
         parentSocketChannel.configureBlocking(false);
         parentSocketChannel.connect(parentSocketAddress);
         parentKey = parentSocketChannel.register(selector, SelectionKey.OP_CONNECT);
-        var context = new ServerApplicationContext(this, parentKey);
+        var context = new ClientApplicationContext(this, parentKey);
         context.queuePacket(new ReconnectPacket(new IDPacket(address), new IDPacketList(ancestors.stream().map(IDPacket::new).collect(Collectors.toList()))));
         parentKey.interestOps(SelectionKey.OP_CONNECT);
         parentKey.attach(context);
@@ -375,10 +374,12 @@ public class Server {
             throw new IllegalStateException("This server is a root server");
         }
         logger.info("Trying to connect to " + parentSocketAddress + " ...");
+        serverSocketChannel.configureBlocking(false);
+        serverKey = serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
         parentSocketChannel.configureBlocking(false);
         parentSocketChannel.connect(parentSocketAddress);
         parentKey = parentSocketChannel.register(selector, SelectionKey.OP_CONNECT);
-        var context = new ServerApplicationContext(this, parentKey);
+        var context = new ClientApplicationContext(this, parentKey);
         context.queuePacket(new ConnectPacket(new IDPacket(address)));
         parentKey.interestOps(SelectionKey.OP_CONNECT);
         parentKey.attach(context);
@@ -425,35 +426,27 @@ public class Server {
     private void treatKey(SelectionKey key) {
         try {
             if (key.isValid() && key.isConnectable()) {
-                doConnect(key);
+                ((ClientApplicationContext) key.attachment()).doConnect();
             }
             if (key.isValid() && key.isAcceptable()) {
                 doAccept(key);
+                // ((ServerApplicationContext) key.attachment()).doAccept(key, selector, this);
+
             }
         } catch (IOException ioe) {
             throw new UncheckedIOException(ioe);
         }
         try {
             if (key.isValid() && key.isWritable()) {
-                ((ServerApplicationContext) key.attachment()).doWrite();
+                ((Context) key.attachment()).doWrite();
             }
             if (key.isValid() && key.isReadable()) {
-                ((ServerApplicationContext) key.attachment()).doRead();
+                ((Context) key.attachment()).doRead();
             }
         } catch (IOException e) {
 //            logger.log(Level.INFO, "Connection closed with client due to IOException", e);
             silentlyClose(key);
         }
-    }
-
-    private void doConnect(SelectionKey key) throws IOException {
-        if (!parentSocketChannel.finishConnect()) {
-            return ;
-        }
-
-        key.interestOps(SelectionKey.OP_WRITE);
-        serverSocketChannel.configureBlocking(false);
-        serverKey = serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
     }
 
     private void doAccept(SelectionKey key) throws IOException {
@@ -530,7 +523,7 @@ public class Server {
         }
     }
 
-    public List<ServerApplicationContext> daughtersContext() {
+    public List<Context> daughtersContext() {
         return routeTable.daughtersContext(parentSocketAddress);
     }
 

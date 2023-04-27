@@ -1,5 +1,6 @@
 package fr.ramatellier.greed.server.util;
 
+import fr.ramatellier.greed.server.Context;
 import fr.ramatellier.greed.server.ServerApplicationContext;
 import fr.ramatellier.greed.server.packet.full.FullPacket;
 
@@ -21,11 +22,11 @@ public class RouteTable {
      * @param value the value of the entry
      * @param context the context of the entry
      */
-    public void putOrUpdate(InetSocketAddress destination, InetSocketAddress value, ServerApplicationContext context) {
+    public void putOrUpdate(InetSocketAddress destination, InetSocketAddress value, Context context) {
         table.merge(destination, new AddressContext(value, context), (old, newValue) -> newValue);
     }
 
-    public void updateToContext(InetSocketAddress oldAddress, InetSocketAddress newAddress, ServerApplicationContext context) {
+    public void updateToContext(InetSocketAddress oldAddress, InetSocketAddress newAddress, Context context) {
         for(var entry: table.entrySet()) {
             if(oldAddress.equals(entry.getValue().address())) {
                 putOrUpdate(entry.getKey(), newAddress, context);
@@ -96,8 +97,8 @@ public class RouteTable {
         return neighbors;
     }
 
-    public List<ServerApplicationContext> daughtersContext(InetSocketAddress parentAddress) {
-        var daughters = new ArrayList<ServerApplicationContext>();
+    public List<Context> daughtersContext(InetSocketAddress parentAddress) {
+        var daughters = new ArrayList<Context>();
 
         for(var entry: table.entrySet()) {
             if(entry.getKey().equals(entry.getValue().address()) && !parentAddress.equals(entry.getKey())) {
