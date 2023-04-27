@@ -25,33 +25,13 @@ import java.util.stream.LongStream;
 public class ReceivePacketVisitor implements PacketVisitor {
     private final Server server;
     private final ServerApplicationContext context;
-    private final ThreadComputation computation;
     private static final Logger logger = Logger.getLogger(ReceivePacketVisitor.class.getName());
 
     public ReceivePacketVisitor(Server server, ServerApplicationContext context) {
         this.server = Objects.requireNonNull(server);
         this.context = Objects.requireNonNull(context);
-        computation = new ThreadComputation(100);
-        preStartComputation();
     }
-    //TODO remove it from this class
-    private void preStartComputation(){
-        Thread.ofPlatform().daemon().start(() -> {
-            for(;;) {
-                try {
-                    var response = computation.takeResponse();
-                    sendResponseWithOPCode(response.packet(), response.value(), response.response(), response.code());
-                    server.incrementComputation(response.id());
-                    if(server.isShutdown() && !server.isComputing()) {
-                        server.sendLogout();
-                    }
-                    server.wakeup();
-                } catch (InterruptedException e) {
-                    return;
-                }
-            }
-        });
-    }
+
     @Override
     public void visit(ConnectPacket packet) {
         logger.info("Connection demand received from " + packet.idPacket().getSocket() + " " + packet.idPacket().getPort());
@@ -139,7 +119,6 @@ public class ReceivePacketVisitor implements PacketVisitor {
         }
         var entity = entityResponse.get();
         var targetRange = packet.range();
-//        var result = Client.checkerFromHTTP(entity.info().url(), entity.info().className());
 
         // HTTP non-blocking
         try {
@@ -157,103 +136,16 @@ public class ReceivePacketVisitor implements PacketVisitor {
                 }
                 var checker = checkerResult.get();
                 for(var i = targetRange.start(); i < targetRange.end(); i++) {
-                    try {
-                        computation.putTask(new TaskComputation(packet, checker, entity.id(), i));
-                    } catch (InterruptedException e) {
-                        // Ignore exception
-                    }
+                    server.addTask(new TaskComputation(packet, checker, entity.id(), i));
                 }
             });
             httpClient.launch();
-        }catch (IOException e) {
+        } catch (IOException e) {
             System.err.println(e.getMessage());
             logger.severe("CANNOT GET THE CHECKER");
             LongStream.range(targetRange.start(), targetRange.end()).forEach(i -> sendResponseWithOPCode(packet, i, "CANNOT GET THE CHECKER", (byte) 0x03));
             return;
         }
-        //
-//        if(result.isEmpty()) {
-//            logger.severe("CANNOT GET THE CHECKER");
-//            LongStream.range(targetRange.start(), targetRange.end()).forEach(i -> sendResponseWithOPCode(packet, i, "CANNOT GET THE CHECKER", (byte) 0x03));
-//            return;
-//        }
-//        var checker = result.get();
-//
-//        for(var i = targetRange.start(); i < targetRange.end(); i++) {
-//            try {
-//                computation.putTask(new TaskComputation(packet, checker, entity.id(), i));
-//            } catch (InterruptedException e) {
-//                // Ignore exception
-//            }
-//        }
-
-        /*Thread.ofPlatform().start(() -> {
-            for(var i = targetRange.start(); i < targetRange.end(); i++) {
-                try {
-                    computation.addTask(new TaskComputation(packet, checker, i));
-                    var checkerResult = checker.check(i);
-                    sendResponseWithOPCode(packet, i, checkerResult, (byte) 0x00);
-                } catch (InterruptedException e) {
-                    logger.severe("INTERRUPTED EXCEPTION");
-                    sendResponseWithOPCode(packet, i, null, (byte) 0x01);
-                } catch (Exception e) {
-                    sendResponseWithOPCode(packet, i, null, (byte) 0x01);
-                }
-
-                server.incrementComputation(entity.id());
-            }
-            System.out.println("Computation finished");
-            if(server.isShutdown() && !server.isComputing()) {
-                server.sendLogout();
-            }
-
-            server.wakeup();
-        });*/
-
-        /*
-        var lock = new ReentrantLock();
-        var results = new HashMap<Long, String>();
-
-        for(var i = targetRange.start(); i < targetRange.end(); i++) {
-            var value = i;
-
-            Thread.ofPlatform().start(() -> {
-                var checkerResult = "";
-
-                try{
-                    checkerResult = checker.check(value);
-                } catch (Exception e) {
-                    // Ignore exception
-                }
-
-                lock.lock();
-                try {
-                    results.put(value, checkerResult);
-                    server.incrementComputation(entity.id());
-                    // sendResponseWithOPCode(packet, value, checkerResult, (byte) 0x00);
-                } finally {
-                    lock.unlock();
-                }
-            });
-        }
-
-        while(results.size() != targetRange.end() - targetRange.start()) {
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-            }
-        }
-
-        for(var entry: results.entrySet()) {
-            sendResponseWithOPCode(packet, entry.getKey(), entry.getValue(), (byte) 0x00);
-        }
-
-        if(server.isShutdown() && !server.isComputing()) {
-            server.sendLogout();
-        }
-
-        server.wakeup();
-        */
     }
 
     private void sendResponseWithOPCode(WorkAssignmentPacket origin, long index, String result, byte opcode) {

@@ -2,28 +2,29 @@ package fr.ramatellier.greed.server;
 
 import fr.ramatellier.greed.server.compute.*;
 import fr.ramatellier.greed.server.packet.full.*;
-import fr.ramatellier.greed.server.packet.sub.CheckerPacket;
-import fr.ramatellier.greed.server.packet.sub.IDPacket;
-import fr.ramatellier.greed.server.packet.sub.IDPacketList;
-import fr.ramatellier.greed.server.packet.sub.RangePacket;
+import fr.ramatellier.greed.server.packet.sub.*;
 import fr.ramatellier.greed.server.util.ComputeCommandParser;
 import fr.ramatellier.greed.server.util.LogoutInformation;
 import fr.ramatellier.greed.server.util.RouteTable;
 import fr.ramatellier.greed.server.util.TramKind;
-import fr.ramatellier.greed.server.util.file.ResponseToFileBuilder;
 import fr.ramatellier.greed.server.util.file.ResultFormatHandler;
+import fr.ramatellier.greed.server.util.http.CommandRequestAdapter;
+import fr.ramatellier.greed.server.util.http.NonBlockingHttpJarProvider;
 import fr.uge.ugegreed.Client;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
+import java.net.URL;
 import java.nio.channels.*;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import java.util.stream.LongStream;
 
 public class Server {
     private static final Logger logger = Logger.getLogger(Server.class.getName());
@@ -47,15 +48,17 @@ public class Server {
     private SocketChannel parentSocketChannel;
     private InetSocketAddress parentSocketAddress;
     private SelectionKey parentKey;
+    private final ThreadComputation computation = new ThreadComputation(100);
     private final LinkedBlockingQueue<SendInformation> packets = new LinkedBlockingQueue<>();
     // Others
-    private enum ServerState{
+    private enum ServerState {
         ON_GOING, SHUTDOWN, STOPPED
     }
-    private enum Command{
+    private enum Command {
         INFO, STOP, SHUTDOWN, COMPUTE
     }
     private record CommandArgs(Command command, String[] args) {}
+    private record SendInformation(InetSocketAddress address, FullPacket packet) {}
 
     private Server(int port) throws IOException {
         address = new InetSocketAddress(port);
@@ -65,6 +68,7 @@ public class Server {
         parentSocketAddress = null;
         selector = Selector.open();
         this.isRoot = true;
+        sendResponseThread();
     }
 
     private Server(int hostPort, String IP, int connectPort) throws IOException {
@@ -75,11 +79,20 @@ public class Server {
         parentSocketAddress = new InetSocketAddress(IP, connectPort);
         selector = Selector.open();
         this.isRoot = false;
+        sendResponseThread();
     }
 
     public void addRoom(ComputationEntity computationEntity) {
         Objects.requireNonNull(computationEntity);
         computationRoomHandler.add(computationEntity);
+    }
+
+    public void addTask(TaskComputation taskComputation) {
+        try {
+            computation.putTask(taskComputation);
+        } catch (InterruptedException e) {
+            // Ignore exception
+        }
     }
 
     public ComputationEntity retrieveWaitingComputation(ComputationIdentifier idContext) {
@@ -166,7 +179,7 @@ public class Server {
                     }
                 }
             }
-        } catch (InterruptedException e){
+        } catch (InterruptedException e) {
             logger.info("Console Thread has been interrupted");
         } finally {
             logger.info("Console Thread has been stopped");
@@ -296,22 +309,28 @@ public class Server {
         var id = new ComputationIdentifier(computationIdentifierValue++, address);
         var entity = new ComputationEntity(id, info);
         if(routeTable.neighbors().size() == 0) {
-            var response = Client.checkerFromHTTP(info.url(), info.className());
-            if(response.isEmpty()) {
-                logger.severe("FAILED TO GET CHECKER");
-                return ;
-            }
-            var checker = response.get();
-            var fileBuilder = new ResponseToFileBuilder("result" + computationIdentifierValue + ".txt");
             try {
-                for(var i = info.start(); i < info.end(); i++) {
-                    fileBuilder.append(checker.check(i));
-                }
-                fileBuilder.build();
-            } catch (InterruptedException e) {
-                logger.severe("CHECKER INTERRUPTED");
+                System.out.println(entity.info().url());
+                computationRoomHandler.prepare(entity, routeTable.size());
+                var pathRequest = CommandRequestAdapter.adapt(new URL(entity.info().url()));
+                var httpClient = new NonBlockingHttpJarProvider(pathRequest.path(), pathRequest.request(), pathRequest.file());
+                httpClient.onDone(body -> {
+                    var path = Path.of(pathRequest.file());
+                    System.out.println(path);
+                    var checkerResult = Client.checkerFromDisk(path, entity.info().className());
+                    if(checkerResult.isEmpty()) {
+                        logger.severe("CANNOT GET THE CHECKER");
+                        return;
+                    }
+                    var checker = checkerResult.get();
+                    for(var i = info.start(); i < info.end(); i++) {
+                        addTask(new TaskComputation(new WorkAssignmentPacket(null, null, id.id(), null), checker, entity.id(), i));
+                    }
+                });
+                httpClient.launch();
             } catch (IOException e) {
-                logger.severe("FAILED TO WRITE FILE");
+                System.err.println(e.getMessage());
+                logger.severe("CANNOT GET THE CHECKER");
             }
         }
         else {
@@ -376,10 +395,6 @@ public class Server {
         initConnection();
     }
 
-    public void wakeup() {
-        selector.wakeup();
-    }
-
     private void processPacket() {
         while(!packets.isEmpty()) {
             var packet = packets.poll();
@@ -409,10 +424,10 @@ public class Server {
 
     private void treatKey(SelectionKey key) {
         try {
-            if (key.isValid() && key.equals(parentKey) && key.isConnectable()) {
+            if (key.isValid() && key.isConnectable()) {
                 doConnect(key);
             }
-            if (key.isValid() && key.equals(serverKey) && key.isAcceptable()) {
+            if (key.isValid() && key.isAcceptable()) {
                 doAccept(key);
             }
         } catch (IOException ioe) {
@@ -521,5 +536,41 @@ public class Server {
 
     public void updateRoom(ComputationIdentifier id, long start, long end) {
         computationRoomHandler.updateRange(id, start, end);
+    }
+
+    private void sendResponseThread() {
+        Thread.ofPlatform().daemon().start(() -> {
+            for(;;) {
+                try {
+                    var response = computation.takeResponse();
+
+                    if(response.packet().src() != null) {
+                        transfer(response.packet().src().getSocket(), new WorkResponsePacket(
+                                response.packet().dst(),
+                                response.packet().src(),
+                                response.packet().requestId(),
+                                new ResponsePacket(response.value(), response.response(), response.code())
+                        ));
+
+                        incrementComputation(response.id());
+                    }
+                    else {
+                        var id = new ComputationIdentifier(response.packet().requestId(), getAddress());
+
+                        treatComputationResult(id, response.response());
+                    }
+
+                    if(isShutdown() && !isComputing()) {
+                        sendLogout();
+                    }
+
+                    selector.wakeup();
+                } catch (InterruptedException e) {
+                    return;
+                } catch (IOException e) {
+                    // Ignore exception
+                }
+            }
+        });
     }
 }
