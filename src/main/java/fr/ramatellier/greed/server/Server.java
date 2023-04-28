@@ -8,8 +8,7 @@ import fr.ramatellier.greed.server.util.LogoutInformation;
 import fr.ramatellier.greed.server.util.RouteTable;
 import fr.ramatellier.greed.server.util.TramKind;
 import fr.ramatellier.greed.server.util.file.ResultFormatHandler;
-import fr.ramatellier.greed.server.util.http.CommandRequestAdapter;
-import fr.ramatellier.greed.server.util.http.NonBlockingHttpJarProvider;
+import fr.ramatellier.greed.server.util.http.NonBlockingHTTPJarProvider;
 import fr.uge.ugegreed.Client;
 
 import java.io.IOException;
@@ -311,10 +310,9 @@ public class Server {
             try {
                 System.out.println(entity.info().url());
                 computationRoomHandler.prepare(entity, routeTable.size());
-                var pathRequest = CommandRequestAdapter.adapt(new URL(entity.info().url()));
-                var httpClient = new NonBlockingHttpJarProvider(pathRequest.path(), pathRequest.request(), pathRequest.file());
+                var httpClient = NonBlockingHTTPJarProvider.fromURL(new URL(entity.info().url()));
                 httpClient.onDone(body -> {
-                    var path = Path.of(pathRequest.file());
+                    var path = Path.of(httpClient.getFilePath());
                     System.out.println(path);
                     var checkerResult = Client.checkerFromDisk(path, entity.info().className());
                     if(checkerResult.isEmpty()) {

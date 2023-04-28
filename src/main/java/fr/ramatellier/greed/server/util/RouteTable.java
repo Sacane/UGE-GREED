@@ -108,7 +108,7 @@ public class RouteTable {
 
         return daughters;
     }
-    public void onDaughtersDo(InetSocketAddress parentAddress, Consumer<ServerApplicationContext> action) {
+    public void onDaughtersDo(InetSocketAddress parentAddress, Consumer<Context> action) {
         for(var entry: table.entrySet()) {
             if(entry.getKey().equals(entry.getValue().address()) && !parentAddress.equals(entry.getKey())) {
                 action.accept(entry.getValue().context());
