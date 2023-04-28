@@ -3,6 +3,7 @@ package fr.ramatellier.greed.server.reader.sub;
 import fr.ramatellier.greed.server.packet.sub.IDPacket;
 import fr.ramatellier.greed.server.reader.Reader;
 import fr.ramatellier.greed.server.reader.primitive.IntReader;
+import fr.ramatellier.greed.server.util.Buffers;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -23,22 +24,20 @@ public class IDReader implements Reader<IDPacket> {
         }
 
         if(state == State.WAITING_IP) {
-            var status = ipReader.process(buffer);
-
-            if(status == ProcessStatus.DONE) {
-                state = State.WAITING_PORT;
-            }
+            Buffers.runOnProcess(buffer, ipReader,
+                    __ -> state = State.WAITING_PORT,
+                    () -> {},
+                    () -> state = State.ERROR);
         }
         if(state == State.WAITING_PORT) {
-            var status = portReader.process(buffer);
-
-            if(status == ProcessStatus.DONE) {
-                state = State.DONE;
-
-                value = new IDPacket(new InetSocketAddress(ipReader.get().getAddress(), portReader.get()));
-            }
+            Buffers.runOnProcess(buffer, portReader,
+                    result -> {
+                        state = State.DONE;
+                        value = new IDPacket(new InetSocketAddress(ipReader.get().getAddress(), result));
+                    },
+                    () -> {},
+                    () -> state = State.ERROR);
         }
-
         if (state != State.DONE) {
             return ProcessStatus.REFILL;
         }

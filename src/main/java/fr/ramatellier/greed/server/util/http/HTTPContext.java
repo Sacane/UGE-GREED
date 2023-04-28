@@ -2,6 +2,7 @@ package fr.ramatellier.greed.server.util.http;
 
 import fr.ramatellier.greed.server.reader.Reader;
 
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
@@ -9,19 +10,20 @@ import java.nio.channels.SocketChannel;
 import java.util.Objects;
 import java.util.logging.Logger;
 
-public class HttpContext{
+public final class HTTPContext {
     private static final int BUFFER_SIZE = 8192;
     private final ByteBuffer bufferIn = ByteBuffer.allocate(BUFFER_SIZE);
     private final ByteBuffer bufferOut = ByteBuffer.allocate(BUFFER_SIZE);
     private boolean closed = false;
     private final SelectionKey key;
     private final SocketChannel sc;
-    private final HttpClient client;
+    private final NonBlockingHTTPJarProvider client;
     private final String request;
-    private final HTTPHeaderReader headerReader = new HTTPHeaderReader();
-    private static final Logger LOGGER = Logger.getLogger(HttpContext.class.getName());
+    private boolean isRequestSent;
+    private final HTTPReader reader = new HTTPReader();
+    private static final Logger LOGGER = Logger.getLogger(HTTPContext.class.getName());
 
-    HttpContext(HttpClient client, SelectionKey key, String request) {
+    HTTPContext(NonBlockingHTTPJarProvider client, SelectionKey key, String request) {
         Objects.requireNonNull(key);
         this.client = Objects.requireNonNull(client);
         this.key = key;
@@ -58,62 +60,58 @@ public class HttpContext{
         if(!sc.finishConnect()){
             return;
         }
-        bufferOut.put(request.getBytes());
         key.interestOps(SelectionKey.OP_WRITE);
     }
 
-    private void processIn() throws IOException {
-        System.out.println("PROCESS IN WITH -> " + bufferIn.remaining() + " REMAINING");
+    private void processIn() {
         while(true){
-            var response = headerReader.process(bufferIn);
+            var response = reader.process(bufferIn);
             if(response == Reader.ProcessStatus.DONE){
-                var header = headerReader.get();
-                System.out.println("CODE -> " + header.getCode());
-                if(header.getCode() == 200){
-                    var contentLength = header.getContentLength();
-                    System.out.println(header);
-                    var body = new byte[contentLength];
-                    bufferIn.flip();
-                    int toReadLeft = bufferIn.remaining();
-                    bufferIn.get(body);
-                    while(toReadLeft < contentLength){
-                        bufferIn.clear();
-                        sc.read(bufferIn);
-                        bufferIn.flip();
-                        bufferIn.get(body, contentLength - toReadLeft, toReadLeft);
-                        contentLength -= toReadLeft;
-                        toReadLeft = bufferIn.remaining();
-                    }
-                    client.setBody(body);
-                    System.out.println("BODY GET");
+                var contentBody = reader.get();
+                try(var fos = new FileOutputStream(client.getFilePath())){
+                    fos.write(contentBody);
+                    fos.flush();
+                    System.out.println("Jar has been received and saved at " + client.getFilePath());
+                } catch (IOException e) {
+                    LOGGER.warning("Error while writing file");
+                    silentlyClose();
+                    return;
                 }
+                client.executeOnDone(contentBody);
+                reader.reset();
+                client.done();
                 break;
             } else if(response == Reader.ProcessStatus.REFILL){
                 return;
             } else if(response == Reader.ProcessStatus.ERROR){
-                System.out.println("ERROR");
                 break;
             }
         }
     }
 
     public void doWrite() throws IOException {
+        if(isRequestSent){
+            return;
+        }
+        processOut();
         bufferOut.flip();
         sc.write(bufferOut);
         bufferOut.compact();
         updateInterestOps();
     }
-    public void doRead() {
-        System.out.println("doRead");
 
-        try {
-            var readValue = sc.read(bufferIn);
-            if (readValue == -1) {
-                closed = true;
-            }
-            processIn();
-            updateInterestOps();
-        } catch (IOException ignored) {
+    private void processOut() {
+        System.out.println(request.getBytes().length);
+        bufferOut.put(request.getBytes());
+        isRequestSent = true;
+    }
+
+    public void doRead() throws IOException {
+        var readValue = sc.read(bufferIn);
+        if (readValue == -1) {
+            closed = true;
         }
+        processIn();
+        updateInterestOps();
     }
 }

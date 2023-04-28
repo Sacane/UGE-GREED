@@ -2,6 +2,7 @@ package fr.ramatellier.greed.server.reader.sub;
 
 import fr.ramatellier.greed.server.packet.sub.DestinationPacket;
 import fr.ramatellier.greed.server.reader.Reader;
+import fr.ramatellier.greed.server.util.Buffers;
 
 import java.nio.ByteBuffer;
 
@@ -19,28 +20,24 @@ public class DestinationPacketReader implements Reader<DestinationPacket> {
         if (state == State.DONE || state == State.ERROR) {
             throw new IllegalStateException();
         }
-
         if(state == State.WAITING_SRC) {
-            var status = idSrcReader.process(buffer);
-
-            if(status == ProcessStatus.DONE) {
-                state = State.WAITING_DST;
-            }
+            Buffers.runOnProcess(buffer, idSrcReader,
+                    __ -> state = State.WAITING_DST,
+                    () -> {},
+                    () -> state = State.ERROR);
         }
         if(state == State.WAITING_DST) {
-            var status = idDstReader.process(buffer);
-
-            if(status == ProcessStatus.DONE) {
-                state = State.DONE;
-
-                value = new DestinationPacket(idSrcReader.get().getSocket(), idDstReader.get().getSocket());
-            }
+            Buffers.runOnProcess(buffer, idDstReader,
+                    result -> {
+                        state = State.DONE;
+                        value = new DestinationPacket(idSrcReader.get().getSocket(), idDstReader.get().getSocket());
+                    },
+                    () -> {},
+                    () -> state = State.ERROR);
         }
-
         if (state != State.DONE) {
             return ProcessStatus.REFILL;
         }
-
         return ProcessStatus.DONE;
     }
 
