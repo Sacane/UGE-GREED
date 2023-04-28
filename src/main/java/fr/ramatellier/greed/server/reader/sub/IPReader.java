@@ -30,8 +30,8 @@ public class IPReader implements Reader<IpAddressPacket> {
                         state = State.WAITING_ADDRESS;
                         addressBuffer = ByteBuffer.allocate(result == 4 ? 4 : 16);
                     },
-                    () -> state = State.ERROR,
-                    () -> {});
+                    () -> {},
+                    () -> state = State.ERROR);
 //            var status = sizeReader.process(buffer);
 //
 //            if(status == ProcessStatus.DONE) {
