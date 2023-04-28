@@ -5,12 +5,12 @@ public enum TramKind {
 
     public final byte BYTES;
     public static TramKind toTramKind(byte value) {
-        for (TramKind tramKind : values()) {
-            if (tramKind.BYTES == value) {
-                return tramKind;
-            }
-        }
-        return null;
+        return switch(value){
+            case 0x00 -> LOCAL;
+            case 0x01 -> TRANSFER;
+            case 0x02 -> BROADCAST;
+            default -> null;
+        };
     }
     TramKind(byte value) {
         this.BYTES = value;

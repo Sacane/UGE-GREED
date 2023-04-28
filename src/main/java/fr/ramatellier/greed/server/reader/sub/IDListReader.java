@@ -5,6 +5,7 @@ import fr.ramatellier.greed.server.packet.sub.IDPacketList;
 import fr.ramatellier.greed.server.reader.Reader;
 import fr.ramatellier.greed.server.reader.primitive.IntReader;
 import fr.ramatellier.greed.server.reader.sub.IDReader;
+import fr.ramatellier.greed.server.util.Buffers;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -24,10 +25,7 @@ public class IDListReader implements Reader<IDPacketList> {
             throw new IllegalStateException();
         }
         if(state == State.WAITING_SIZE) {
-            var status = sizeReader.process(buffer);
-            if(status == ProcessStatus.DONE) {
-                state = State.WAITING_ID;
-            }
+            Buffers.runOnProcess(buffer, sizeReader, __ -> state = State.WAITING_ID, () -> {}, () -> state = State.ERROR);
         }
         if(state == State.WAITING_ID) {
             for(int i = 0; i < sizeReader.get(); i++) {

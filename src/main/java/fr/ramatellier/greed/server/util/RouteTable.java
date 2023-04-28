@@ -107,6 +107,13 @@ public class RouteTable {
 
         return daughters;
     }
+    public void onDaughtersDo(InetSocketAddress parentAddress, Consumer<ServerApplicationContext> action) {
+        for(var entry: table.entrySet()) {
+            if(entry.getKey().equals(entry.getValue().address()) && !parentAddress.equals(entry.getKey())) {
+                action.accept(entry.getValue().context());
+            }
+        }
+    }
 
     /**
      * Perform an action on all neighbours information except the one with the given address.

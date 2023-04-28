@@ -1,4 +1,4 @@
-UGE GREED
+# UGE GREED
 
 UGE GREED est un projet effectué dans le contexte de notre année de Master 1 à l'université de Gustave Eiffel pour la matière "Programmation Réseau".
 
@@ -13,7 +13,7 @@ Pour installer le projet, il vous suffit d'avoir maven d'installer sur votre mac
 mvn clean install
 ```
 Assurez-vous bien d'être situé à la racine de ce projet.
-Ceci vous génerera un fichier .jar dans le dossier target.
+Ceci vous génèrera un fichier .jar dans le dossier target.
 
 Vous avez maintenant deux possibilités pour lancer le projet :
 
@@ -35,7 +35,7 @@ Par la suite vous pourrez envoyer des conjectures à effectuer au réseau du ser
 START <lien vers le JAR> <nom de la classe implémentant l'interface Checker> <debut de la conjecture> <fin de la conjecture>
 ```
 
-Vous pouvez également Shutdown votre serveur si il n'est pas root via la commande suivante :
+Vous pouvez également Shutdown votre serveur s'il n'est pas root via la commande suivante :
 
 ```bash
 SHUTDOWN
@@ -46,4 +46,4 @@ Attention, vous ne pouvez shutdown une application root que si tous les serveurs
 Auteurs:
 
 - RAMAROSON RAKOTOMIHAMINA Johan
-- TELLIER Miora
+- TELLIER Quentin

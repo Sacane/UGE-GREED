@@ -25,17 +25,22 @@ public class StringReader implements Reader<String> {
         }
 
         if(state == State.WAITING_INT) {
-            var status = intReader.process(buffer);
-
-            if(status == ProcessStatus.DONE) {
-                var size = intReader.get();
-
-                if(size < 0 || size > 1024) {
-                    return ProcessStatus.ERROR;
-                }
-
-                stringBuffer = ByteBuffer.allocate(size);
-                state = State.WAITING_STRING;
+            Buffers.runOnProcess(
+                    buffer,
+                    intReader,
+                    size -> {
+                        if(size < 0 || size > 1024) {
+                            state = State.ERROR;
+                        } else {
+                            stringBuffer = ByteBuffer.allocate(size);
+                            state = State.WAITING_STRING;
+                        }
+                    },
+                    () -> {},
+                    () -> state = State.ERROR
+            );
+            if(state == State.ERROR) {
+                return ProcessStatus.ERROR;
             }
         }
         if(state == State.WAITING_STRING) {

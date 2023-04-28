@@ -3,6 +3,7 @@ package fr.ramatellier.greed.server.reader.sub;
 import fr.ramatellier.greed.server.packet.sub.RangePacket;
 import fr.ramatellier.greed.server.reader.Reader;
 import fr.ramatellier.greed.server.reader.primitive.LongReader;
+import fr.ramatellier.greed.server.util.Buffers;
 
 import java.nio.ByteBuffer;
 
@@ -22,20 +23,19 @@ public class RangePacketReader implements Reader<RangePacket> {
         }
 
         if(state == State.WAITING_START) {
-            var status = startReader.process(buffer);
-
-            if(status == ProcessStatus.DONE) {
-                state = State.WAITING_END;
-            }
+            Buffers.runOnProcess(buffer, startReader,
+                    __ -> state = State.WAITING_END,
+                    () -> {},
+                    () -> state = State.ERROR);
         }
         if(state == State.WAITING_END) {
-            var status = endReader.process(buffer);
-
-            if(status == ProcessStatus.DONE) {
-                state = State.DONE;
-
-                value = new RangePacket(startReader.get(), endReader.get());
-            }
+            Buffers.runOnProcess(buffer, endReader,
+                    result -> {
+                        state = State.DONE;
+                        value = new RangePacket(startReader.get(), result);
+                    },
+                    () -> {},
+                    () -> state = State.ERROR);
         }
 
         if (state != State.DONE) {

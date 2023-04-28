@@ -4,6 +4,7 @@ import fr.ramatellier.greed.server.packet.sub.ResponsePacket;
 import fr.ramatellier.greed.server.reader.Reader;
 import fr.ramatellier.greed.server.reader.primitive.ByteReader;
 import fr.ramatellier.greed.server.reader.primitive.LongReader;
+import fr.ramatellier.greed.server.util.Buffers;
 
 import java.nio.ByteBuffer;
 
@@ -24,33 +25,38 @@ public class ResponsePacketReader implements Reader<ResponsePacket> {
         }
 
         if(state == State.WAITING_VALUE) {
-            var status = valueReader.process(buffer);
-
-            if(status == ProcessStatus.DONE) {
-                state = State.WAITING_RESPONSE_CODE;
-            }
+            Buffers.runOnProcess(
+                    buffer,
+                    valueReader,
+                    __ -> state = State.WAITING_RESPONSE_CODE,
+                    () -> {},
+                    () -> state = State.ERROR
+            );
         }
         if(state == State.WAITING_RESPONSE_CODE) {
-            var status = codeReader.process(buffer);
-
-            if(status == ProcessStatus.DONE) {
-                state = State.WAITING_RESPONSE;
-            }
+            Buffers.runOnProcess(
+                    buffer,
+                    codeReader,
+                    __ -> state = State.WAITING_RESPONSE,
+                    () -> {},
+                    () -> state = State.ERROR
+            );
         }
         if(state == State.WAITING_RESPONSE) {
-            var status = responseReader.process(buffer);
-
-            if(status == ProcessStatus.DONE) {
-                state = State.DONE;
-
-                value = new ResponsePacket(valueReader.get(), responseReader.get(), codeReader.get());
-            }
+            Buffers.runOnProcess(
+                    buffer,
+                    responseReader,
+                    response -> {
+                        state = State.DONE;
+                        value = new ResponsePacket(valueReader.get(), response, codeReader.get());
+                    },
+                    () -> {},
+                    () -> state = State.ERROR
+            );
         }
-
         if(state != State.DONE) {
             return ProcessStatus.REFILL;
         }
-
         return ProcessStatus.DONE;
     }
 

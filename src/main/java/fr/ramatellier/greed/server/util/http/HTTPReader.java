@@ -20,9 +20,8 @@ public class HTTPReader implements Reader<byte[]> {
             throw new IllegalStateException();
         }
         if(state == State.WAITING_HEADER){
-            Buffers.runOnProcess(buffer, headerReader, () -> {
+            Buffers.runOnProcess(buffer, headerReader, header -> {
                 state = State.WAITING_BODY;
-                var header = headerReader.get();
                 try {
                     bodyBuffer = ByteBuffer.allocate(header.getContentLength());
                 }catch (HTTPException e){

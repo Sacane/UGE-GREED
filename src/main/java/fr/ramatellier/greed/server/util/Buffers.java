@@ -3,6 +3,7 @@ package fr.ramatellier.greed.server.util;
 import fr.ramatellier.greed.server.reader.Reader;
 
 import java.nio.ByteBuffer;
+import java.util.function.Consumer;
 
 /**
  * Singletons use to fill buffer and list
@@ -51,9 +52,9 @@ public final class Buffers {
      * @param onRefill the function to call if the reader need more data
      * @param onError the function to call if the reader encounter an error
      */
-    public static void runOnProcess(ByteBuffer buffer, Reader<?> reader, Runnable onDone, Runnable onRefill, Runnable onError){
+    public static <T> void runOnProcess(ByteBuffer buffer, Reader<T> reader, Consumer<T> onDone, Runnable onRefill, Runnable onError){
         switch(reader.process(buffer)){
-            case DONE -> onDone.run();
+            case DONE -> onDone.accept(reader.get());
             case REFILL -> onRefill.run();
             case ERROR -> onError.run();
         }
