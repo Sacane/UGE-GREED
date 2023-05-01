@@ -7,8 +7,10 @@ import fr.ramatellier.greed.server.packet.full.TransferPacket;
 import fr.ramatellier.greed.server.packet.sub.IDPacket;
 import fr.ramatellier.greed.server.reader.PacketReader;
 import fr.ramatellier.greed.server.visitor.ReceivePacketVisitor;
+import fr.ramatellier.greed.server.writer.FrameWriterAdapter;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
@@ -78,12 +80,17 @@ public abstract class Context {
     private void processOut() {
         while(!queue.isEmpty()) {
             var packet = queue.peek();
-
-            if(packet.size() <= bufferOut.remaining()) {
-                queue.poll();
-                packet.putInBuffer(bufferOut);
-            }
-            else {
+            try {
+                if (FrameWriterAdapter.size(packet) <= bufferOut.remaining()) {
+                    queue.poll();
+//                    packet.putInBuffer(bufferOut);
+                    FrameWriterAdapter.put(packet, bufferOut);
+                } else {
+                    break;
+                }
+            } catch (InvocationTargetException | IllegalAccessException e) {
+                System.out.println("Error while writing packet");
+                silentlyClose();
                 break;
             }
         }

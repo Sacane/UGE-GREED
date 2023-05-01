@@ -451,14 +451,13 @@ public class Server {
         logger.info("Accepting connection...");
         ServerSocketChannel ssc = (ServerSocketChannel) key.channel();
         SocketChannel sc = ssc.accept();
-
         if (sc == null) {
             return;
         }
-
         sc.configureBlocking(false);
         var socketKey = sc.register(selector, SelectionKey.OP_READ);
         socketKey.attach(new ServerApplicationContext(this, socketKey));
+        System.out.println("Connection accepted from " + sc.getRemoteAddress());
     }
 
     private void silentlyClose(SelectionKey key) {

@@ -29,12 +29,9 @@ public sealed interface FullPacket extends Packet permits BroadcastPacket, Local
      * @param buffer the buffer that receive the packet
      */
     void put(ByteBuffer buffer);
-    default void putHeader(ByteBuffer buffer) {
+    default void putInBuffer(ByteBuffer buffer) {
         buffer.put(kind().BYTES);
         buffer.put(opCode().BYTES);
-    }
-    default void putInBuffer(ByteBuffer buffer) {
-        putHeader(buffer);
         put(buffer);
     }
 }
