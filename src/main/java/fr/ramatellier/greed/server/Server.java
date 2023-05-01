@@ -9,6 +9,7 @@ import fr.ramatellier.greed.server.util.RouteTable;
 import fr.ramatellier.greed.server.util.TramKind;
 import fr.ramatellier.greed.server.util.file.ResultFormatHandler;
 import fr.ramatellier.greed.server.util.http.NonBlockingHTTPJarProvider;
+import fr.uge.ugegreed.Checker;
 import fr.uge.ugegreed.Client;
 
 import java.io.IOException;
@@ -161,6 +162,7 @@ public class Server {
      * COMPUTE C:/Users/johan/Documents/dev_project/SlowChecker.jar fr.uge.slow.SlowChecker 10 20
      * COMPUTE http://www-igm.univ-mlv.fr/~carayol/Factorizer.jar fr.uge.factors.Factorizer 10 20
      * COMPUTE http://www-igm.univ-mlv.fr/~carayol/SlowChecker.jar fr.uge.slow.SlowChecker 10 20
+     * COMPUTE http://www-igm.univ-mlv.fr/~carayol/Collatz.jar fr.uge.collatz.Collatz 0 2
      */
     private void consoleRun() {
         try {
@@ -315,11 +317,14 @@ public class Server {
                     var path = Path.of(httpClient.getFilePath());
                     System.out.println(path);
                     var checkerResult = Client.checkerFromDisk(path, entity.info().className());
+                    Checker checker;
                     if(checkerResult.isEmpty()) {
                         logger.severe("CANNOT GET THE CHECKER");
-                        return;
+                        checker = null;
                     }
-                    var checker = checkerResult.get();
+                    else {
+                        checker = checkerResult.get();
+                    }
                     for(var i = info.start(); i < info.end(); i++) {
                         addTask(new TaskComputation(new WorkAssignmentPacket(null, null, id.id(), null), checker, entity.id(), i));
                     }

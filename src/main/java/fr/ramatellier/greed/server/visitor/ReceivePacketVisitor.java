@@ -9,6 +9,7 @@ import fr.ramatellier.greed.server.packet.sub.IDPacketList;
 import fr.ramatellier.greed.server.packet.sub.RangePacket;
 import fr.ramatellier.greed.server.packet.sub.ResponsePacket;
 import fr.ramatellier.greed.server.util.http.NonBlockingHTTPJarProvider;
+import fr.uge.ugegreed.Checker;
 import fr.uge.ugegreed.Client;
 
 import java.io.IOException;
@@ -129,12 +130,14 @@ public class ReceivePacketVisitor implements PacketVisitor {
                 var path = Path.of(httpClient.getFilePath());
                 System.out.println(path);
                 var checkerResult = Client.checkerFromDisk(path, entity.info().className());
+                Checker checker;
                 if(checkerResult.isEmpty()) {
                     logger.severe("CANNOT GET THE CHECKER");
-                    LongStream.range(targetRange.start(), targetRange.end()).forEach(i -> sendResponseWithOPCode(packet, i, "CANNOT GET THE CHECKER", (byte) 0x03));
-                    return;
+                    checker = null;
                 }
-                var checker = checkerResult.get();
+                else {
+                    checker = checkerResult.get();
+                }
                 for(var i = targetRange.start(); i < targetRange.end(); i++) {
                     server.addTask(new TaskComputation(packet, checker, entity.id(), i));
                 }
@@ -159,20 +162,20 @@ public class ReceivePacketVisitor implements PacketVisitor {
     @Override
     public void visit(WorkResponsePacket packet) {
         var responsePacket = packet.responsePacket();
-        switch(responsePacket.getResponseCode()){
-            case 0x00 -> {
-                System.out.println(responsePacket.getResponse().value());
-                var id = new ComputationIdentifier(packet.requestID(), server.getAddress());
-                try {
-                    server.treatComputationResult(id, packet.result());
-                } catch (IOException e) {
-                    logger.log(Level.SEVERE, "The file cannot be written : ", e);
-                }
-            }
+
+        switch(responsePacket.getResponseCode()) {
+            case 0x00 -> System.out.println(responsePacket.getResponse().value());
             case 0x01 -> System.out.println("An exception has occur while computing the value : " + responsePacket.getValue());
             case 0x02 -> System.out.println("Time out while computing the value : " + responsePacket.getValue());
             case 0x03 -> System.out.println("Cannot get the checker");
             default -> logger.severe("UNKNOWN RESPONSE CODE");
+        }
+
+        var id = new ComputationIdentifier(packet.requestID(), server.getAddress());
+        try {
+            server.treatComputationResult(id, packet.result());
+        } catch (IOException e) {
+            logger.log(Level.SEVERE, "The file cannot be written : ", e);
         }
     }
 
