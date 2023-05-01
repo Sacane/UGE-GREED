@@ -14,10 +14,10 @@ public final class Frames {
 
     private Frames(){}
 
-    public static <T extends Frame> int size(T recordPacket) throws InvocationTargetException, IllegalAccessException {
+    public static <T extends Frame> int size(T frame) throws InvocationTargetException, IllegalAccessException {
         var sizes = new int[5];
         sizes[0] += Byte.BYTES * 2;
-        adapt(recordPacket,
+        parseOnEachComponentOf(frame,
                 __ -> sizes[1] += Byte.BYTES,
                 __ -> sizes[2] += Integer.BYTES,
                 __ -> sizes[3] += Long.BYTES,
@@ -27,10 +27,10 @@ public final class Frames {
 
     public static <T extends Frame> void put(T frame, ByteBuffer buffer) throws InvocationTargetException, IllegalAccessException {
         buffer.put(frame.kind().BYTES).put(frame.opCode().BYTES);
-        adapt(frame, buffer::put, buffer::putInt, buffer::putLong, packet -> packet.putInBuffer(buffer));
+        parseOnEachComponentOf(frame, buffer::put, buffer::putInt, buffer::putLong, packet -> packet.putInBuffer(buffer));
     }
 
-    private static <T extends Frame> void adapt(T frame, Consumer<Byte> byteConsumer, IntConsumer intConsumer, LongConsumer longConsumer, Consumer<GreedComponent> greedConsumer) throws InvocationTargetException, IllegalAccessException {
+    private static <T extends Frame> void parseOnEachComponentOf(T frame, Consumer<Byte> byteConsumer, IntConsumer intConsumer, LongConsumer longConsumer, Consumer<GreedComponent> greedConsumer) throws InvocationTargetException, IllegalAccessException {
         var components = frame.getClass().getRecordComponents();
         for(var component: components){
             var type = component.getType();
