@@ -1,6 +1,6 @@
 package fr.ramatellier.greed.server.reader.sub;
 
-import fr.ramatellier.greed.server.packet.sub.ResponsePacket;
+import fr.ramatellier.greed.server.packet.component.ResponseComponent;
 import fr.ramatellier.greed.server.reader.Reader;
 import fr.ramatellier.greed.server.reader.primitive.ByteReader;
 import fr.ramatellier.greed.server.reader.primitive.LongReader;
@@ -8,7 +8,7 @@ import fr.ramatellier.greed.server.util.Buffers;
 
 import java.nio.ByteBuffer;
 
-public class ResponsePacketReader implements Reader<ResponsePacket> {
+public class ResponsePacketReader implements Reader<ResponseComponent> {
     enum State {
         DONE, WAITING_VALUE, WAITING_RESPONSE_CODE, WAITING_RESPONSE, ERROR
     }
@@ -16,7 +16,7 @@ public class ResponsePacketReader implements Reader<ResponsePacket> {
     private final LongReader valueReader = new LongReader();
     private final ByteReader codeReader = new ByteReader();
     private final StringReader responseReader = new StringReader();
-    private ResponsePacket value;
+    private ResponseComponent value;
 
     @Override
     public ProcessStatus process(ByteBuffer buffer) {
@@ -48,7 +48,7 @@ public class ResponsePacketReader implements Reader<ResponsePacket> {
                     responseReader,
                     response -> {
                         state = State.DONE;
-                        value = new ResponsePacket(valueReader.get(), response, codeReader.get());
+                        value = new ResponseComponent(valueReader.get(), response, codeReader.get());
                     },
                     () -> {},
                     () -> state = State.ERROR
@@ -61,7 +61,7 @@ public class ResponsePacketReader implements Reader<ResponsePacket> {
     }
 
     @Override
-    public ResponsePacket get() {
+    public ResponseComponent get() {
         if(state != State.DONE) {
             throw new IllegalStateException();
         }

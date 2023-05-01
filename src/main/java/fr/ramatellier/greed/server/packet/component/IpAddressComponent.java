@@ -1,19 +1,18 @@
-package fr.ramatellier.greed.server.packet.sub;
-
-import fr.ramatellier.greed.server.packet.GreedComponent;
+package fr.ramatellier.greed.server.packet.component;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 
-public final class IpAddressPacket implements GreedComponent {
+public final class IpAddressComponent implements GreedComponent {
     private final byte size;
     private final String address;
     private final byte[] ipAddress;
 
-    public IpAddressPacket(String address) {
+    public IpAddressComponent(String address) {
+        this.address = Objects.requireNonNull(address);
         this.size = address.contains(".") ? (byte)0x04 : (byte)0x06;
-        this.address = address;
         try {
             ipAddress = InetAddress.getByName(address).getAddress();
         } catch (UnknownHostException e) {

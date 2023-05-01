@@ -1,12 +1,10 @@
-package fr.ramatellier.greed.server.packet.sub;
-
-import fr.ramatellier.greed.server.packet.GreedComponent;
+package fr.ramatellier.greed.server.packet.component;
 
 import java.nio.ByteBuffer;
 
-public final class ResponsePacket implements GreedComponent {
+public final class ResponseComponent implements GreedComponent {
     private final byte responseCode;
-    private final StringPacket response;
+    private final StringComponent response;
     private final long value;
 
     /**
@@ -15,8 +13,8 @@ public final class ResponsePacket implements GreedComponent {
      * @param response The response of the checker
      * @param responseCode The byte that represents the status of the computation
      */
-    public ResponsePacket(long value, String response, byte responseCode) {
-        this.response = (response != null) ? new StringPacket(response) : null;
+    public ResponseComponent(long value, String response, byte responseCode) {
+        this.response = (response != null) ? new StringComponent(response) : null;
         this.responseCode = responseCode;
         this.value = value;
     }
@@ -37,7 +35,7 @@ public final class ResponsePacket implements GreedComponent {
         return responseCode;
     }
 
-    public StringPacket getResponse() {
+    public StringComponent getResponse() {
         return response;
     }
 

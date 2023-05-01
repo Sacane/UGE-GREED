@@ -3,11 +3,11 @@ package fr.ramatellier.greed.server.visitor;
 import fr.ramatellier.greed.server.Context;
 import fr.ramatellier.greed.server.compute.*;
 import fr.ramatellier.greed.server.Server;
-import fr.ramatellier.greed.server.packet.full.*;
-import fr.ramatellier.greed.server.packet.sub.IDPacket;
-import fr.ramatellier.greed.server.packet.sub.IDPacketList;
-import fr.ramatellier.greed.server.packet.sub.RangePacket;
-import fr.ramatellier.greed.server.packet.sub.ResponsePacket;
+import fr.ramatellier.greed.server.packet.frame.*;
+import fr.ramatellier.greed.server.packet.component.IDComponent;
+import fr.ramatellier.greed.server.packet.component.IDListComponent;
+import fr.ramatellier.greed.server.packet.component.RangePacket;
+import fr.ramatellier.greed.server.packet.component.ResponseComponent;
 import fr.ramatellier.greed.server.util.http.NonBlockingHTTPJarProvider;
 import fr.uge.ugegreed.Checker;
 import fr.uge.ugegreed.Client;
@@ -40,14 +40,14 @@ public class ReceivePacketVisitor implements PacketVisitor {
         logger.info("Connection demand received from " + packet.idPacket().getSocket() + " " + packet.idPacket().getPort());
         if(server.isRunning()) {
             logger.info("Connection accepted");
-            var list = new IDPacketList(server.registeredAddresses().stream().map(IDPacket::new).toList());
+            var list = new IDListComponent(server.registeredAddresses().stream().map(IDComponent::new).toList());
             System.out.println("List of neighbors: " + list);
-            var response = new ConnectOKPacket(new IDPacket(server.getAddress()),
+            var response = new ConnectOKPacket(new IDComponent(server.getAddress()),
                     list);
             context.queuePacket(response);
             InetSocketAddress socket = packet.idPacket().getSocket();
             server.addRoot(socket, socket, context);
-            var addNodePacket = new AddNodePacket(new IDPacket(server.getAddress()), new IDPacket(socket));
+            var addNodePacket = new AddNodePacket(new IDComponent(server.getAddress()), new IDComponent(socket));
             server.broadcast(addNodePacket, socket);
         }
         else {
@@ -155,7 +155,7 @@ public class ReceivePacketVisitor implements PacketVisitor {
                 origin.dst(),
                 origin.src(),
                 origin.requestId(),
-                new ResponsePacket(index, result, opcode)
+                new ResponseComponent(index, result, opcode)
         ));
     }
 
@@ -184,11 +184,11 @@ public class ReceivePacketVisitor implements PacketVisitor {
         if(server.isRunning()) {
             context.queuePacket(new LogoutGrantedPacket());
             if(packet.daughters().sizeList() == 0) {
-                server.broadcast(new DisconnectedPacket(new IDPacket(server.getAddress()), packet.id()), server.getAddress());
+                server.broadcast(new DisconnectedPacket(new IDComponent(server.getAddress()), packet.id()), server.getAddress());
                 server.deleteAddress(packet.id().getSocket());
             }
             else {
-                server.newLogoutRequest(packet.id().getSocket(), packet.daughters().idPacketList().stream().map(IDPacket::getSocket).toList());
+                server.newLogoutRequest(packet.id().getSocket(), packet.daughters().idPacketList().stream().map(IDComponent::getSocket).toList());
             }
         }
         else {
@@ -207,7 +207,7 @@ public class ReceivePacketVisitor implements PacketVisitor {
         var daughtersContext = server.daughtersContext();
 
         for(var daughterContext: daughtersContext) {
-            daughterContext.queuePacket(new PleaseReconnectPacket(new IDPacket(server.getParentSocketAddress())));
+            daughterContext.queuePacket(new PleaseReconnectPacket(new IDComponent(server.getParentSocketAddress())));
         }
     }
 
@@ -230,7 +230,7 @@ public class ReceivePacketVisitor implements PacketVisitor {
         }
 
         if(server.allConnected()) {
-            server.broadcast(new DisconnectedPacket(new IDPacket(server.getAddress()), new IDPacket(server.getAddressLogout())), server.getAddress());
+            server.broadcast(new DisconnectedPacket(new IDComponent(server.getAddress()), new IDComponent(server.getAddressLogout())), server.getAddress());
             server.deleteAddress(server.getAddressLogout());
 
             if(server.isShutdown()) {
@@ -273,8 +273,8 @@ public class ReceivePacketVisitor implements PacketVisitor {
             var socketRangeList = process.shareAndGet(entity.info().start());
             for(var socketRange: socketRangeList){
                 var workAssignmentPacket = new WorkAssignmentPacket(
-                        new IDPacket(server.getAddress()),
-                        new IDPacket(socketRange.socketAddress()),
+                        new IDComponent(server.getAddress()),
+                        new IDComponent(socketRange.socketAddress()),
                         packet.requestID(),
                         new RangePacket(socketRange.range().start(), socketRange.range().end())
                 );

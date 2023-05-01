@@ -1,6 +1,6 @@
 package fr.ramatellier.greed.server.reader.sub;
 
-import fr.ramatellier.greed.server.packet.sub.IDPacket;
+import fr.ramatellier.greed.server.packet.component.IDComponent;
 import fr.ramatellier.greed.server.reader.Reader;
 import fr.ramatellier.greed.server.reader.primitive.IntReader;
 import fr.ramatellier.greed.server.util.Buffers;
@@ -8,14 +8,14 @@ import fr.ramatellier.greed.server.util.Buffers;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
-public class IDReader implements Reader<IDPacket> {
+public class IDReader implements Reader<IDComponent> {
     private enum State {
         DONE, WAITING_IP, WAITING_PORT, ERROR
     }
     private State state = State.WAITING_IP;
     private final IPReader ipReader = new IPReader();
     private final IntReader portReader = new IntReader();
-    private IDPacket value;
+    private IDComponent value;
 
     @Override
     public ProcessStatus process(ByteBuffer buffer) {
@@ -33,7 +33,7 @@ public class IDReader implements Reader<IDPacket> {
             Buffers.runOnProcess(buffer, portReader,
                     result -> {
                         state = State.DONE;
-                        value = new IDPacket(new InetSocketAddress(ipReader.get().getAddress(), result));
+                        value = new IDComponent(new InetSocketAddress(ipReader.get().getAddress(), result));
                     },
                     () -> {},
                     () -> state = State.ERROR);
@@ -46,7 +46,7 @@ public class IDReader implements Reader<IDPacket> {
     }
 
     @Override
-    public IDPacket get() {
+    public IDComponent get() {
         if (state != State.DONE) {
             throw new IllegalStateException();
         }

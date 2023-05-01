@@ -1,6 +1,6 @@
 package fr.ramatellier.greed.server.reader.sub;
 
-import fr.ramatellier.greed.server.packet.sub.IpAddressPacket;
+import fr.ramatellier.greed.server.packet.component.IpAddressComponent;
 import fr.ramatellier.greed.server.reader.Reader;
 import fr.ramatellier.greed.server.reader.primitive.ByteReader;
 import fr.ramatellier.greed.server.util.Buffers;
@@ -9,14 +9,14 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 
-public class IPReader implements Reader<IpAddressPacket> {
+public class IPReader implements Reader<IpAddressComponent> {
     private enum State {
         DONE, WAITING_SIZE, WAITING_ADDRESS, ERROR
     }
     private State state = State.WAITING_SIZE;
     private final ByteReader sizeReader = new ByteReader();
     private ByteBuffer addressBuffer;
-    private IpAddressPacket value;
+    private IpAddressComponent value;
 
     @Override
     public ProcessStatus process(ByteBuffer buffer) {
@@ -48,7 +48,7 @@ public class IPReader implements Reader<IpAddressPacket> {
                 try {
                     var bytes = new byte[addressBuffer.remaining()];
                     var address = InetAddress.getByAddress(bytes);
-                    value = new IpAddressPacket(address.getHostAddress());
+                    value = new IpAddressComponent(address.getHostAddress());
                     state = State.DONE;
                 } catch (UnknownHostException e) {
                     return ProcessStatus.ERROR;
@@ -64,7 +64,7 @@ public class IPReader implements Reader<IpAddressPacket> {
     }
 
     @Override
-    public IpAddressPacket get() {
+    public IpAddressComponent get() {
         if (state != State.DONE) {
             throw new IllegalStateException();
         }

@@ -1,17 +1,15 @@
-package fr.ramatellier.greed.server.packet.sub;
-
-import fr.ramatellier.greed.server.packet.GreedComponent;
+package fr.ramatellier.greed.server.packet.component;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
-public final class IDPacket implements GreedComponent {
-    private final IpAddressPacket ipAddressPacket;
+public final class IDComponent implements GreedComponent {
+    private final IpAddressComponent ipAddressPacket;
     private final int port;
     private final InetSocketAddress address;
 
-    public IDPacket(InetSocketAddress address) {
-        ipAddressPacket = new IpAddressPacket(address.getHostName());
+    public IDComponent(InetSocketAddress address) {
+        ipAddressPacket = new IpAddressComponent(address.getHostName());
         this.port = address.getPort();
         this.address = address;
     }

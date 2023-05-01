@@ -1,24 +1,24 @@
 package fr.ramatellier.greed.server.writer;
 
-import fr.ramatellier.greed.server.packet.GreedComponent;
-import fr.ramatellier.greed.server.packet.full.FullPacket;
+import fr.ramatellier.greed.server.packet.component.GreedComponent;
+import fr.ramatellier.greed.server.packet.frame.Frame;
 
 import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
 
 public class FrameWriterAdapter {
 
-    public static <T extends FullPacket> int size(T recordPacket) throws InvocationTargetException, IllegalAccessException {
-        int size = 0;
+    public static <T extends Frame> int size(T recordPacket) throws InvocationTargetException, IllegalAccessException {
+        int size = Byte.BYTES * 2;
         var recordClass = recordPacket.getClass();
         var components = recordClass.getRecordComponents();
         for(var component: components){
             var type = component.getType();
-            if(type == byte.class) {
+            if(type == byte.class || type == Byte.class) {
                 size += Byte.BYTES;
-            }else if(type == int.class){
+            }else if(type == int.class || type == Integer.class){
                 size += Integer.BYTES;
-            } else if(type == long.class){
+            } else if(type == long.class || type == Long.class){
                 size += Long.BYTES;
             } else if(GreedComponent.class.isAssignableFrom(type)){
                 GreedComponent packet = (GreedComponent) component.getAccessor().invoke(recordPacket);
@@ -28,11 +28,10 @@ public class FrameWriterAdapter {
         return size;
     }
 
-    public static <T extends FullPacket> void put(T frame, ByteBuffer buffer) throws InvocationTargetException, IllegalAccessException {
+    public static <T extends Frame> void put(T frame, ByteBuffer buffer) throws InvocationTargetException, IllegalAccessException {
         var recordClass = frame.getClass();
         var components = recordClass.getRecordComponents();
-        buffer.put(frame.kind().BYTES);
-        buffer.put(frame.opCode().BYTES);
+        buffer.put(frame.kind().BYTES).put(frame.opCode().BYTES);
         for(var component: components){
             var type = component.getType();
             if(type == byte.class || type == Byte.class) {

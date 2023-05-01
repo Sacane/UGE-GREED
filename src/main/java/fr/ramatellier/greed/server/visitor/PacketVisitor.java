@@ -1,6 +1,6 @@
 package fr.ramatellier.greed.server.visitor;
 
-import fr.ramatellier.greed.server.packet.full.*;
+import fr.ramatellier.greed.server.packet.frame.*;
 
 public interface PacketVisitor {
     void visit(ConnectPacket packet);
@@ -18,7 +18,7 @@ public interface PacketVisitor {
     void visit(ReconnectPacket packet);
     void visit(DisconnectedPacket packet);
 
-    default void visit(FullPacket packet) {
+    default void visit(Frame packet) {
         switch(packet) {
             case ConnectPacket p -> visit(p);
             case ConnectOKPacket p -> visit(p);

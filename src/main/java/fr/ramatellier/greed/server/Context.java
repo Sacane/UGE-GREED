@@ -1,10 +1,10 @@
 package fr.ramatellier.greed.server;
 
-import fr.ramatellier.greed.server.packet.full.BroadcastPacket;
-import fr.ramatellier.greed.server.packet.full.FullPacket;
-import fr.ramatellier.greed.server.packet.full.LocalPacket;
-import fr.ramatellier.greed.server.packet.full.TransferPacket;
-import fr.ramatellier.greed.server.packet.sub.IDPacket;
+import fr.ramatellier.greed.server.packet.frame.BroadcastFrame;
+import fr.ramatellier.greed.server.packet.frame.Frame;
+import fr.ramatellier.greed.server.packet.frame.LocalFrame;
+import fr.ramatellier.greed.server.packet.frame.TransferFrame;
+import fr.ramatellier.greed.server.packet.component.IDComponent;
 import fr.ramatellier.greed.server.reader.PacketReader;
 import fr.ramatellier.greed.server.visitor.ReceivePacketVisitor;
 import fr.ramatellier.greed.server.writer.FrameWriterAdapter;
@@ -24,7 +24,7 @@ public abstract class Context {
     private final ByteBuffer bufferIn = ByteBuffer.allocate(BUFFER_SIZE);
     private final ByteBuffer bufferOut = ByteBuffer.allocate(BUFFER_SIZE);
     private final PacketReader packetReader = new PacketReader();
-    private final ArrayDeque<FullPacket> queue = new ArrayDeque<>();
+    private final ArrayDeque<Frame> queue = new ArrayDeque<>();
     private boolean closed = false;
     private final Server server;
 
@@ -52,25 +52,25 @@ public abstract class Context {
         }
     }
 
-    private void processPacket(FullPacket packet) {
+    private void processPacket(Frame packet) {
         switch(packet) {
-            case BroadcastPacket b -> {
+            case BroadcastFrame b -> {
                 b.accept(visitor);
                 var oldSrc = b.src().getSocket();
-                server.broadcast(b.withNewSource(new IDPacket(server.getAddress())), oldSrc);
+                server.broadcast(b.withNewSource(new IDComponent(server.getAddress())), oldSrc);
             }
-            case TransferPacket t -> {
+            case TransferFrame t -> {
                 if(t.dst().getSocket().equals(server.getAddress())){
                     t.accept(visitor);
                 } else {
                     server.transfer(t.dst().getSocket(), t);
                 }
             }
-            case LocalPacket l -> l.accept(visitor);
+            case LocalFrame l -> l.accept(visitor);
         }
     }
 
-    public void queuePacket(FullPacket packet) {
+    public void queuePacket(Frame packet) {
         queue.offer(packet);
 
         processOut();

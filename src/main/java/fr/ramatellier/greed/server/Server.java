@@ -1,12 +1,12 @@
 package fr.ramatellier.greed.server;
 
 import fr.ramatellier.greed.server.compute.*;
-import fr.ramatellier.greed.server.packet.full.*;
-import fr.ramatellier.greed.server.packet.sub.*;
+import fr.ramatellier.greed.server.packet.frame.*;
+import fr.ramatellier.greed.server.packet.component.*;
 import fr.ramatellier.greed.server.util.ComputeCommandParser;
 import fr.ramatellier.greed.server.util.LogoutInformation;
 import fr.ramatellier.greed.server.util.RouteTable;
-import fr.ramatellier.greed.server.util.TramKind;
+import fr.ramatellier.greed.server.util.FrameKind;
 import fr.ramatellier.greed.server.util.file.ResultFormatHandler;
 import fr.ramatellier.greed.server.util.http.NonBlockingHTTPJarProvider;
 import fr.uge.ugegreed.Checker;
@@ -57,7 +57,7 @@ public class Server {
         INFO, STOP, SHUTDOWN, COMPUTE
     }
     private record CommandArgs(Command command, String[] args) {}
-    private record SendInformation(InetSocketAddress address, FullPacket packet) {}
+    private record SendInformation(InetSocketAddress address, Frame packet) {}
 
     private Server(int port) throws IOException {
         address = new InetSocketAddress(port);
@@ -338,9 +338,9 @@ public class Server {
         else {
             computationRoomHandler.prepare(entity, routeTable.size());
             routeTable.performOnAllAddress(address -> transfer(address.address(), new WorkRequestPacket(
-                    new IDPacket(this.address), new IDPacket(address.address()),
+                    new IDComponent(this.address), new IDComponent(address.address()),
                     id.id(),
-                    new CheckerPacket(info.url(), info.className()),
+                    new CheckerComponent(info.url(), info.className()),
                     new RangePacket(info.start(), info.end()),
                     info.end() - info.start()
             )));
@@ -355,7 +355,7 @@ public class Server {
         }
     }
 
-    public void connectToNewParent(IDPacket packet) throws IOException {
+    public void connectToNewParent(IDComponent packet) throws IOException {
         var oldParentAddress = parentSocketAddress;
         var ancestors = routeTable.ancestors(parentSocketAddress);
         parentSocketChannel = SocketChannel.open();
@@ -365,7 +365,7 @@ public class Server {
         parentSocketChannel.connect(parentSocketAddress);
         parentKey = parentSocketChannel.register(selector, SelectionKey.OP_CONNECT);
         var context = new ClientApplicationContext(this, parentKey);
-        context.queuePacket(new ReconnectPacket(new IDPacket(address), new IDPacketList(ancestors.stream().map(IDPacket::new).collect(Collectors.toList()))));
+        context.queuePacket(new ReconnectPacket(new IDComponent(address), new IDListComponent(ancestors.stream().map(IDComponent::new).collect(Collectors.toList()))));
         parentKey.interestOps(SelectionKey.OP_CONNECT);
         parentKey.attach(context);
         deleteAddress(oldParentAddress);
@@ -383,7 +383,7 @@ public class Server {
         parentSocketChannel.connect(parentSocketAddress);
         parentKey = parentSocketChannel.register(selector, SelectionKey.OP_CONNECT);
         var context = new ClientApplicationContext(this, parentKey);
-        context.queuePacket(new ConnectPacket(new IDPacket(address)));
+        context.queuePacket(new ConnectPacket(new IDComponent(address)));
         parentKey.interestOps(SelectionKey.OP_CONNECT);
         parentKey.attach(context);
         initConnection();
@@ -479,7 +479,7 @@ public class Server {
      * @param packet the packet to broadcast
      * @param src the source of the packet (the packet won't be sent to this address)
      */
-    public void broadcast(FullPacket packet, InetSocketAddress src) {
+    public void broadcast(Frame packet, InetSocketAddress src) {
         Objects.requireNonNull(packet);
         Objects.requireNonNull(src);
         System.out.println("Broadcasting packet " + packet + " from " + src);
@@ -489,10 +489,10 @@ public class Server {
     /**
      * transfer the packet to the destination.
      * @param dst destination
-     * @param packet packet to transfer, the packet must implement the {@link TransferPacket} kind
+     * @param packet packet to transfer, the packet must implement the {@link TransferFrame} kind
      */
-    public void transfer(InetSocketAddress dst, TransferPacket packet) {
-        if(packet.kind() != TramKind.TRANSFER) {
+    public void transfer(InetSocketAddress dst, TransferFrame packet) {
+        if(packet.kind() != FrameKind.TRANSFER) {
             throw new AssertionError("Only transfer packet can be transferred");
         }
         if(dst.equals(address)) {
@@ -506,8 +506,8 @@ public class Server {
     }
 
     public void sendLogout() {
-        routeTable.sendTo(parentSocketAddress, new LogoutRequestPacket(new IDPacket(address),
-                new IDPacketList(routeTable.neighbors().stream().filter(n -> !n.equals(parentSocketAddress)).map(IDPacket::new).toList())
+        routeTable.sendTo(parentSocketAddress, new LogoutRequestPacket(new IDComponent(address),
+                new IDListComponent(routeTable.neighbors().stream().filter(n -> !n.equals(parentSocketAddress)).map(IDComponent::new).toList())
         ));
     }
 
@@ -544,7 +544,7 @@ public class Server {
                                 response.packet().dst(),
                                 response.packet().src(),
                                 response.packet().requestId(),
-                                new ResponsePacket(response.value(), response.response(), response.code())
+                                new ResponseComponent(response.value(), response.response(), response.code())
                         ));
 
                         incrementComputation(response.id());

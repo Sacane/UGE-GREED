@@ -1,11 +1,9 @@
-package fr.ramatellier.greed.server.packet.sub;
-
-import fr.ramatellier.greed.server.packet.GreedComponent;
+package fr.ramatellier.greed.server.packet.component;
 
 import java.nio.ByteBuffer;
 import java.util.List;
 
-public record IDPacketList(List<IDPacket> idPacketList) implements GreedComponent {
+public record IDListComponent(List<IDComponent> idPacketList) implements GreedComponent {
     @Override
     public void putInBuffer(ByteBuffer buffer) {
         buffer.putInt(idPacketList.size());
@@ -20,6 +18,6 @@ public record IDPacketList(List<IDPacket> idPacketList) implements GreedComponen
 
     @Override
     public int size() {
-        return Integer.BYTES + idPacketList.stream().mapToInt(IDPacket::size).sum();
+        return Integer.BYTES + idPacketList.stream().mapToInt(IDComponent::size).sum();
     }
 }

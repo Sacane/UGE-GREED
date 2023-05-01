@@ -1,7 +1,7 @@
 package fr.ramatellier.greed.server.reader;
 
-import fr.ramatellier.greed.server.packet.full.*;
-import fr.ramatellier.greed.server.packet.sub.*;
+import fr.ramatellier.greed.server.packet.frame.*;
+import fr.ramatellier.greed.server.packet.component.*;
 import fr.ramatellier.greed.server.reader.primitive.ByteReader;
 import fr.ramatellier.greed.server.reader.primitive.IntReader;
 import fr.ramatellier.greed.server.reader.primitive.LongReader;
@@ -17,14 +17,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * This class is used to read any kind of {@link FullPacket} from a ByteBuffer.
+ * This class is used to read any kind of {@link Frame} from a ByteBuffer.
  * It uses the {@link OpCodes} to know which Packet to create.
  */
 public class PacketReaderAdapter {
-    private record PacketComponents(Class<? extends FullPacket> packet, Class<?>[] components){}
+    private record PacketComponents(Class<? extends Frame> packet, Class<?>[] components){}
     private static final Map<OpCodes, PacketComponents> opCodeToConstructors = new HashMap<>();
     private final Map<Class<?>, Reader<?>> packetToReader = initPacketReader();
-    private FullPacket value;
+    private Frame value;
     private int currentPosition;
     private final ArrayList<Object> currentValues = new ArrayList<>();
     private enum State{
@@ -33,14 +33,14 @@ public class PacketReaderAdapter {
     private State state = State.WAITING_PAYLOAD;
     private Map<Class<?>, Reader<?>> initPacketReader(){
         var packetToReader = new HashMap<Class<?>, Reader<?>>();
-        packetToReader.put(StringPacket.class, new StringReader());
-        packetToReader.put(IDPacket.class, new IDReader());
-        packetToReader.put(IpAddressPacket.class, new IPReader());
-        packetToReader.put(CheckerPacket.class, new CheckerPacketReader());
+        packetToReader.put(StringComponent.class, new StringReader());
+        packetToReader.put(IDComponent.class, new IDReader());
+        packetToReader.put(IpAddressComponent.class, new IPReader());
+        packetToReader.put(CheckerComponent.class, new CheckerPacketReader());
         packetToReader.put(RangePacket.class, new RangePacketReader());
         packetToReader.put(DestinationPacket.class, new DestinationPacketReader());
-        packetToReader.put(ResponsePacket.class, new ResponsePacketReader());
-        packetToReader.put(IDPacketList.class, new IDListReader());
+        packetToReader.put(ResponseComponent.class, new ResponsePacketReader());
+        packetToReader.put(IDListComponent.class, new IDListReader());
         packetToReader.put(Long.class, new LongReader());
         packetToReader.put(Integer.class, new IntReader());
         packetToReader.put(Byte.class, new ByteReader());
@@ -58,7 +58,7 @@ public class PacketReaderAdapter {
         }
     }
 
-    private static Class<? extends FullPacket> packetFromOpCode(OpCodes opcode){
+    private static Class<? extends Frame> packetFromOpCode(OpCodes opcode){
         return switch(opcode){
             case ADD_NODE -> AddNodePacket.class;
             case CONNECT -> ConnectPacket.class;
@@ -104,7 +104,7 @@ public class PacketReaderAdapter {
         return Reader.ProcessStatus.DONE;
     }
 
-    public FullPacket get() {
+    public Frame get() {
         if(state != State.DONE)
             throw new IllegalStateException("Reader not done");
         return value;

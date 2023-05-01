@@ -1,6 +1,6 @@
 package fr.ramatellier.greed.server.reader.sub;
 
-import fr.ramatellier.greed.server.packet.sub.DestinationPacket;
+import fr.ramatellier.greed.server.packet.component.DestinationPacket;
 import fr.ramatellier.greed.server.reader.Reader;
 import fr.ramatellier.greed.server.util.Buffers;
 
@@ -25,6 +25,9 @@ public class DestinationPacketReader implements Reader<DestinationPacket> {
                     __ -> state = State.WAITING_DST,
                     () -> {},
                     () -> state = State.ERROR);
+            if(state == State.ERROR) {
+                return ProcessStatus.ERROR;
+            }
         }
         if(state == State.WAITING_DST) {
             Buffers.runOnProcess(buffer, idDstReader,
@@ -34,6 +37,9 @@ public class DestinationPacketReader implements Reader<DestinationPacket> {
                     },
                     () -> {},
                     () -> state = State.ERROR);
+            if(state == State.ERROR) {
+                return ProcessStatus.ERROR;
+            }
         }
         if (state != State.DONE) {
             return ProcessStatus.REFILL;

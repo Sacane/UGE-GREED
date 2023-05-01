@@ -1,19 +1,19 @@
 package fr.ramatellier.greed.server.reader.sub;
 
-import fr.ramatellier.greed.server.packet.sub.CheckerPacket;
+import fr.ramatellier.greed.server.packet.component.CheckerComponent;
 import fr.ramatellier.greed.server.reader.Reader;
 import fr.ramatellier.greed.server.util.Buffers;
 
 import java.nio.ByteBuffer;
 
-public class CheckerPacketReader implements Reader<CheckerPacket> {
+public class CheckerPacketReader implements Reader<CheckerComponent> {
     private enum State {
         DONE, WAITING_URL, WAITING_CLASSNAME, ERROR
     }
     private State state = State.WAITING_URL;
     private final StringReader urlReader = new StringReader();
     private final StringReader classNameReader = new StringReader();
-    private CheckerPacket value;
+    private CheckerComponent value;
 
     @Override
     public ProcessStatus process(ByteBuffer buffer) {
@@ -30,7 +30,7 @@ public class CheckerPacketReader implements Reader<CheckerPacket> {
             Buffers.runOnProcess(buffer, classNameReader,
                     result -> {
                         state = State.DONE;
-                        value = new CheckerPacket(urlReader.get(), result);
+                        value = new CheckerComponent(urlReader.get(), result);
                     },
                     () -> {},
                     () -> state = State.ERROR);
@@ -43,7 +43,7 @@ public class CheckerPacketReader implements Reader<CheckerPacket> {
     }
 
     @Override
-    public CheckerPacket get() {
+    public CheckerComponent get() {
         if (state != State.DONE) {
             throw new IllegalStateException();
         }

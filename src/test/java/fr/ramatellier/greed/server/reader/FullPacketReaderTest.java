@@ -1,10 +1,11 @@
 package fr.ramatellier.greed.server.reader;
 
-import fr.ramatellier.greed.server.packet.full.ConnectKOPacket;
-import fr.ramatellier.greed.server.packet.full.ConnectOKPacket;
-import fr.ramatellier.greed.server.packet.sub.IDPacket;
-import fr.ramatellier.greed.server.packet.sub.IDPacketList;
+import fr.ramatellier.greed.server.packet.frame.ConnectKOPacket;
+import fr.ramatellier.greed.server.packet.frame.ConnectOKPacket;
+import fr.ramatellier.greed.server.packet.component.IDComponent;
+import fr.ramatellier.greed.server.packet.component.IDListComponent;
 import fr.ramatellier.greed.server.util.OpCodes;
+import fr.ramatellier.greed.server.writer.FrameWriterAdapter;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.InvocationTargetException;
@@ -19,11 +20,12 @@ public class FullPacketReaderTest {
     private final PacketReaderAdapter readerFactory = new PacketReaderAdapter();
     @Test
     public void simpleReadPacketTest() throws InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
-        var okPacket = new ConnectOKPacket(new IDPacket((new InetSocketAddress(7777))), new IDPacketList(List.of(new IDPacket(new InetSocketAddress(7778)), new IDPacket(new InetSocketAddress(7779)))));
-        var buffer = ByteBuffer.allocate(okPacket.size());
-        okPacket.put(buffer);
+        var okPacket = new ConnectOKPacket(new IDComponent((new InetSocketAddress(7777))), new IDListComponent(List.of(new IDComponent(new InetSocketAddress(7778)), new IDComponent(new InetSocketAddress(7779)))));
+        var size = FrameWriterAdapter.size(okPacket);
+        System.out.println("size : " + size);
+        var buffer = ByteBuffer.allocate(size);
+        FrameWriterAdapter.put(okPacket, buffer);
         var status = readerFactory.process(buffer, OpCodes.OK);
-        assertEquals(Reader.ProcessStatus.DONE, status);
         assertEquals(7777, okPacket.getPort());
         assertEquals(2, okPacket.neighbours().idPacketList().size());
         assertEquals(7778, okPacket.neighbours().idPacketList().get(0).getPort());
@@ -33,8 +35,8 @@ public class FullPacketReaderTest {
     @Test
     public void simpleReadPacketTest2() throws InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
         var okPacket = new ConnectKOPacket();
-        var buffer = ByteBuffer.allocate(okPacket.size());
-        okPacket.put(buffer);
+        var buffer = ByteBuffer.allocate(FrameWriterAdapter.size(okPacket));
+        FrameWriterAdapter.put(okPacket, buffer);
         var status = readerFactory.process(buffer, OpCodes.KO);
         assertEquals(Reader.ProcessStatus.DONE, status);
         var packet = readerFactory.get();

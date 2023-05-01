@@ -1,9 +1,9 @@
 package fr.ramatellier.greed.server.reader;
 
-import fr.ramatellier.greed.server.packet.full.FullPacket;
+import fr.ramatellier.greed.server.packet.frame.Frame;
 import fr.ramatellier.greed.server.reader.primitive.ByteReader;
 import fr.ramatellier.greed.server.util.OpCodes;
-import fr.ramatellier.greed.server.util.TramKind;
+import fr.ramatellier.greed.server.util.FrameKind;
 
 import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
@@ -17,7 +17,7 @@ public class PacketReader implements FullPacketReader {
     private final ByteReader locationReader = new ByteReader();
     private final ByteReader codeReader = new ByteReader();
 
-    private FullPacket value;
+    private Frame value;
 
     @Override
     public ProcessStatus process(ByteBuffer buffer) {
@@ -41,7 +41,7 @@ public class PacketReader implements FullPacketReader {
             }
         }
         if(state == State.WAITING_PACKET) {
-            var tramKind = TramKind.toTramKind(locationReader.get());
+            var tramKind = FrameKind.toTramKind(locationReader.get());
             if (tramKind == null) return ProcessStatus.ERROR;
             var opcode = OpCodes.fromByte(codeReader.get());
             if (opcode == null) return ProcessStatus.ERROR;
@@ -65,7 +65,7 @@ public class PacketReader implements FullPacketReader {
     }
 
     @Override
-    public FullPacket get() {
+    public Frame get() {
         if (state != State.DONE) {
             throw new IllegalStateException();
         }
