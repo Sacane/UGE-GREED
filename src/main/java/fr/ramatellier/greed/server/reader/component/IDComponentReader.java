@@ -1,4 +1,4 @@
-package fr.ramatellier.greed.server.reader.sub;
+package fr.ramatellier.greed.server.reader.component;
 
 import fr.ramatellier.greed.server.packet.component.IDComponent;
 import fr.ramatellier.greed.server.reader.Reader;
@@ -8,12 +8,12 @@ import fr.ramatellier.greed.server.util.Buffers;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
-public class IDReader implements Reader<IDComponent> {
+public class IDComponentReader implements Reader<IDComponent> {
     private enum State {
         DONE, WAITING_IP, WAITING_PORT, ERROR
     }
     private State state = State.WAITING_IP;
-    private final IPReader ipReader = new IPReader();
+    private final IpAddressComponentReader ipReader = new IpAddressComponentReader();
     private final IntReader portReader = new IntReader();
     private IDComponent value;
 

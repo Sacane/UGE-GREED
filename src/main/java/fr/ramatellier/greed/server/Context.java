@@ -5,7 +5,7 @@ import fr.ramatellier.greed.server.packet.frame.Frame;
 import fr.ramatellier.greed.server.packet.frame.LocalFrame;
 import fr.ramatellier.greed.server.packet.frame.TransferFrame;
 import fr.ramatellier.greed.server.packet.component.IDComponent;
-import fr.ramatellier.greed.server.reader.PacketReader;
+import fr.ramatellier.greed.server.reader.FrameReader;
 import fr.ramatellier.greed.server.visitor.ReceivePacketVisitor;
 import fr.ramatellier.greed.server.writer.FrameWriterAdapter;
 
@@ -23,7 +23,7 @@ public abstract class Context {
     private final ReceivePacketVisitor visitor;
     private final ByteBuffer bufferIn = ByteBuffer.allocate(BUFFER_SIZE);
     private final ByteBuffer bufferOut = ByteBuffer.allocate(BUFFER_SIZE);
-    private final PacketReader packetReader = new PacketReader();
+    private final FrameReader packetReader = new FrameReader();
     private final ArrayDeque<Frame> queue = new ArrayDeque<>();
     private boolean closed = false;
     private final Server server;

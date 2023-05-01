@@ -1,4 +1,4 @@
-package fr.ramatellier.greed.server.reader.sub;
+package fr.ramatellier.greed.server.reader.component;
 
 import fr.ramatellier.greed.server.packet.component.DestinationPacket;
 import fr.ramatellier.greed.server.reader.Reader;
@@ -6,13 +6,13 @@ import fr.ramatellier.greed.server.util.Buffers;
 
 import java.nio.ByteBuffer;
 
-public class DestinationPacketReader implements Reader<DestinationPacket> {
+public class DestinationComponentReader implements Reader<DestinationPacket> {
     private enum State {
         DONE, WAITING_SRC, WAITING_DST, ERROR
     }
     private State state = State.WAITING_SRC;
-    private final IDReader idSrcReader = new IDReader();
-    private final IDReader idDstReader = new IDReader();
+    private final IDComponentReader idSrcReader = new IDComponentReader();
+    private final IDComponentReader idDstReader = new IDComponentReader();
     private DestinationPacket value;
 
     @Override

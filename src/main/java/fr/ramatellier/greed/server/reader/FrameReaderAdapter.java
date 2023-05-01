@@ -5,7 +5,8 @@ import fr.ramatellier.greed.server.packet.component.*;
 import fr.ramatellier.greed.server.reader.primitive.ByteReader;
 import fr.ramatellier.greed.server.reader.primitive.IntReader;
 import fr.ramatellier.greed.server.reader.primitive.LongReader;
-import fr.ramatellier.greed.server.reader.sub.*;
+import fr.ramatellier.greed.server.reader.component.*;
+import fr.ramatellier.greed.server.reader.component.IDComponentList;
 import fr.ramatellier.greed.server.util.OpCodes;
 
 import java.lang.reflect.InvocationTargetException;
@@ -20,7 +21,7 @@ import java.util.Map;
  * This class is used to read any kind of {@link Frame} from a ByteBuffer.
  * It uses the {@link OpCodes} to know which Packet to create.
  */
-public class PacketReaderAdapter {
+public class FrameReaderAdapter {
     private record PacketComponents(Class<? extends Frame> packet, Class<?>[] components){}
     private static final Map<OpCodes, PacketComponents> opCodeToConstructors = new HashMap<>();
     private final Map<Class<?>, Reader<?>> packetToReader = initPacketReader();
@@ -34,13 +35,13 @@ public class PacketReaderAdapter {
     private Map<Class<?>, Reader<?>> initPacketReader(){
         var packetToReader = new HashMap<Class<?>, Reader<?>>();
         packetToReader.put(StringComponent.class, new StringReader());
-        packetToReader.put(IDComponent.class, new IDReader());
-        packetToReader.put(IpAddressComponent.class, new IPReader());
-        packetToReader.put(CheckerComponent.class, new CheckerPacketReader());
-        packetToReader.put(RangePacket.class, new RangePacketReader());
-        packetToReader.put(DestinationPacket.class, new DestinationPacketReader());
-        packetToReader.put(ResponseComponent.class, new ResponsePacketReader());
-        packetToReader.put(IDListComponent.class, new IDListReader());
+        packetToReader.put(IDComponent.class, new IDComponentReader());
+        packetToReader.put(IpAddressComponent.class, new IpAddressComponentReader());
+        packetToReader.put(CheckerComponent.class, new CheckerComponentReader());
+        packetToReader.put(RangePacket.class, new RangeComponentReader());
+        packetToReader.put(DestinationPacket.class, new DestinationComponentReader());
+        packetToReader.put(ResponseComponent.class, new ResponseComponentReader());
+        packetToReader.put(fr.ramatellier.greed.server.packet.component.IDListComponent.class, new IDComponentList());
         packetToReader.put(Long.class, new LongReader());
         packetToReader.put(Integer.class, new IntReader());
         packetToReader.put(Byte.class, new ByteReader());

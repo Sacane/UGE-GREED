@@ -1,4 +1,4 @@
-package fr.ramatellier.greed.server.reader.sub;
+package fr.ramatellier.greed.server.reader.component;
 
 import fr.ramatellier.greed.server.packet.component.IpAddressComponent;
 import fr.ramatellier.greed.server.reader.Reader;
@@ -9,7 +9,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 
-public class IPReader implements Reader<IpAddressComponent> {
+public class IpAddressComponentReader implements Reader<IpAddressComponent> {
     private enum State {
         DONE, WAITING_SIZE, WAITING_ADDRESS, ERROR
     }

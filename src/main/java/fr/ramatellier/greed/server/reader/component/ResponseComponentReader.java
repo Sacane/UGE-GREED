@@ -1,4 +1,4 @@
-package fr.ramatellier.greed.server.reader.sub;
+package fr.ramatellier.greed.server.reader.component;
 
 import fr.ramatellier.greed.server.packet.component.ResponseComponent;
 import fr.ramatellier.greed.server.reader.Reader;
@@ -8,7 +8,7 @@ import fr.ramatellier.greed.server.util.Buffers;
 
 import java.nio.ByteBuffer;
 
-public class ResponsePacketReader implements Reader<ResponseComponent> {
+public class ResponseComponentReader implements Reader<ResponseComponent> {
     enum State {
         DONE, WAITING_VALUE, WAITING_RESPONSE_CODE, WAITING_RESPONSE, ERROR
     }

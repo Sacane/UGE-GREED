@@ -8,11 +8,11 @@ import fr.ramatellier.greed.server.util.FrameKind;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
 
-public class PacketReader implements FullPacketReader {
+public class FrameReader implements FullPacketReader {
     private enum State {
         DONE, WAITING_LOCATION, WAITING_CODE, WAITING_PACKET, ERROR
     }
-    private final PacketReaderAdapter fullReaderFactory = new PacketReaderAdapter();
+    private final FrameReaderAdapter fullReaderFactory = new FrameReaderAdapter();
     private State state = State.WAITING_LOCATION;
     private final ByteReader locationReader = new ByteReader();
     private final ByteReader codeReader = new ByteReader();

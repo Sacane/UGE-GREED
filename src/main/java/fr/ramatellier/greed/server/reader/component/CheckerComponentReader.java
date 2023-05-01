@@ -1,43 +1,40 @@
-package fr.ramatellier.greed.server.reader.sub;
+package fr.ramatellier.greed.server.reader.component;
 
-import fr.ramatellier.greed.server.packet.component.RangePacket;
+import fr.ramatellier.greed.server.packet.component.CheckerComponent;
 import fr.ramatellier.greed.server.reader.Reader;
-import fr.ramatellier.greed.server.reader.primitive.LongReader;
 import fr.ramatellier.greed.server.util.Buffers;
 
 import java.nio.ByteBuffer;
 
-public class RangePacketReader implements Reader<RangePacket> {
+public class CheckerComponentReader implements Reader<CheckerComponent> {
     private enum State {
-        DONE, WAITING_START, WAITING_END, ERROR
+        DONE, WAITING_URL, WAITING_CLASSNAME, ERROR
     }
-    private State state = State.WAITING_START;
-    private final LongReader startReader = new LongReader();
-    private final LongReader endReader = new LongReader();
-    private RangePacket value;
+    private State state = State.WAITING_URL;
+    private final StringReader urlReader = new StringReader();
+    private final StringReader classNameReader = new StringReader();
+    private CheckerComponent value;
 
     @Override
     public ProcessStatus process(ByteBuffer buffer) {
         if (state == State.DONE || state == State.ERROR) {
             throw new IllegalStateException();
         }
-
-        if(state == State.WAITING_START) {
-            Buffers.runOnProcess(buffer, startReader,
-                    __ -> state = State.WAITING_END,
+        if(state == State.WAITING_URL) {
+            Buffers.runOnProcess(buffer, urlReader,
+                    __ -> state = State.WAITING_CLASSNAME,
                     () -> {},
                     () -> state = State.ERROR);
         }
-        if(state == State.WAITING_END) {
-            Buffers.runOnProcess(buffer, endReader,
+        if(state == State.WAITING_CLASSNAME) {
+            Buffers.runOnProcess(buffer, classNameReader,
                     result -> {
                         state = State.DONE;
-                        value = new RangePacket(startReader.get(), result);
+                        value = new CheckerComponent(urlReader.get(), result);
                     },
                     () -> {},
                     () -> state = State.ERROR);
         }
-
         if (state != State.DONE) {
             return ProcessStatus.REFILL;
         }
@@ -46,18 +43,17 @@ public class RangePacketReader implements Reader<RangePacket> {
     }
 
     @Override
-    public RangePacket get() {
+    public CheckerComponent get() {
         if (state != State.DONE) {
             throw new IllegalStateException();
         }
-
         return value;
     }
 
     @Override
     public void reset() {
-        state = State.WAITING_START;
-        startReader.reset();
-        endReader.reset();
+        state = State.WAITING_URL;
+        urlReader.reset();
+        classNameReader.reset();
     }
 }

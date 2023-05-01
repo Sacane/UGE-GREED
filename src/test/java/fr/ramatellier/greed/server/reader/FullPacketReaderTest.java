@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class FullPacketReaderTest {
-    private final PacketReaderAdapter readerFactory = new PacketReaderAdapter();
+    private final FrameReaderAdapter readerFactory = new FrameReaderAdapter();
     @Test
     public void simpleReadPacketTest() throws InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
         var okPacket = new ConnectOKPacket(new IDComponent((new InetSocketAddress(7777))), new IDListComponent(List.of(new IDComponent(new InetSocketAddress(7778)), new IDComponent(new InetSocketAddress(7779)))));
