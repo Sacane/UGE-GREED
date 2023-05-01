@@ -1,6 +1,6 @@
 package fr.ramatellier.greed.server.reader.component;
 
-import fr.ramatellier.greed.server.packet.component.IpAddressComponent;
+import fr.ramatellier.greed.server.model.component.IpAddressComponent;
 import fr.ramatellier.greed.server.reader.Reader;
 import fr.ramatellier.greed.server.reader.primitive.ByteReader;
 import fr.ramatellier.greed.server.util.Buffers;
@@ -30,7 +30,6 @@ public class IpAddressComponentReader implements Reader<IpAddressComponent> {
                         state = State.WAITING_ADDRESS;
                         addressBuffer = ByteBuffer.allocate(result == 4 ? 4 : 16);
                     },
-                    () -> {},
                     () -> state = State.ERROR);
 //            var status = sizeReader.process(buffer);
 //

@@ -1,4 +1,4 @@
-package fr.ramatellier.greed.server.packet.frame;
+package fr.ramatellier.greed.server.model.frame;
 
 import fr.ramatellier.greed.server.util.OpCodes;
 import fr.ramatellier.greed.server.visitor.PacketVisitor;

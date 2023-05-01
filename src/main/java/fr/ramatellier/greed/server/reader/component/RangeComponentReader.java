@@ -1,20 +1,20 @@
 package fr.ramatellier.greed.server.reader.component;
 
-import fr.ramatellier.greed.server.packet.component.RangePacket;
+import fr.ramatellier.greed.server.model.component.RangeComponent;
 import fr.ramatellier.greed.server.reader.Reader;
 import fr.ramatellier.greed.server.reader.primitive.LongReader;
 import fr.ramatellier.greed.server.util.Buffers;
 
 import java.nio.ByteBuffer;
 
-public class RangeComponentReader implements Reader<RangePacket> {
+public class RangeComponentReader implements Reader<RangeComponent> {
     private enum State {
         DONE, WAITING_START, WAITING_END, ERROR
     }
     private State state = State.WAITING_START;
     private final LongReader startReader = new LongReader();
     private final LongReader endReader = new LongReader();
-    private RangePacket value;
+    private RangeComponent value;
 
     @Override
     public ProcessStatus process(ByteBuffer buffer) {
@@ -25,14 +25,13 @@ public class RangeComponentReader implements Reader<RangePacket> {
         if(state == State.WAITING_START) {
             Buffers.runOnProcess(buffer, startReader,
                     __ -> state = State.WAITING_END,
-                    () -> {},
                     () -> state = State.ERROR);
         }
         if(state == State.WAITING_END) {
             Buffers.runOnProcess(buffer, endReader,
                     result -> {
                         state = State.DONE;
-                        value = new RangePacket(startReader.get(), result);
+                        value = new RangeComponent(startReader.get(), result);
                     },
                     () -> {},
                     () -> state = State.ERROR);
@@ -46,7 +45,7 @@ public class RangeComponentReader implements Reader<RangePacket> {
     }
 
     @Override
-    public RangePacket get() {
+    public RangeComponent get() {
         if (state != State.DONE) {
             throw new IllegalStateException();
         }

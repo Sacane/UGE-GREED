@@ -1,12 +1,11 @@
 package fr.ramatellier.greed.server.reader;
 
-import fr.ramatellier.greed.server.packet.frame.*;
-import fr.ramatellier.greed.server.packet.component.*;
+import fr.ramatellier.greed.server.model.component.*;
+import fr.ramatellier.greed.server.model.frame.*;
+import fr.ramatellier.greed.server.reader.component.*;
 import fr.ramatellier.greed.server.reader.primitive.ByteReader;
 import fr.ramatellier.greed.server.reader.primitive.IntReader;
 import fr.ramatellier.greed.server.reader.primitive.LongReader;
-import fr.ramatellier.greed.server.reader.component.*;
-import fr.ramatellier.greed.server.reader.component.IDComponentList;
 import fr.ramatellier.greed.server.util.OpCodes;
 
 import java.lang.reflect.InvocationTargetException;
@@ -38,11 +37,12 @@ public class FrameReaderAdapter {
         packetToReader.put(IDComponent.class, new IDComponentReader());
         packetToReader.put(IpAddressComponent.class, new IpAddressComponentReader());
         packetToReader.put(CheckerComponent.class, new CheckerComponentReader());
-        packetToReader.put(RangePacket.class, new RangeComponentReader());
+        packetToReader.put(RangeComponent.class, new RangeComponentReader());
         packetToReader.put(DestinationPacket.class, new DestinationComponentReader());
         packetToReader.put(ResponseComponent.class, new ResponseComponentReader());
-        packetToReader.put(fr.ramatellier.greed.server.packet.component.IDListComponent.class, new IDComponentList());
+        packetToReader.put(IDListComponent.class, new IDComponentList());
         packetToReader.put(Long.class, new LongReader());
+        packetToReader.put(long.class, new LongReader());
         packetToReader.put(Integer.class, new IntReader());
         packetToReader.put(Byte.class, new ByteReader());
         return packetToReader;
@@ -61,20 +61,20 @@ public class FrameReaderAdapter {
 
     private static Class<? extends Frame> packetFromOpCode(OpCodes opcode){
         return switch(opcode){
-            case ADD_NODE -> AddNodePacket.class;
-            case CONNECT -> ConnectPacket.class;
-            case OK -> ConnectOKPacket.class;
-            case KO -> ConnectKOPacket.class;
-            case LOGOUT_DENIED -> LogoutDeniedPacket.class;
-            case LOGOUT_GRANTED -> LogoutGrantedPacket.class;
-            case DISCONNECTED -> DisconnectedPacket.class;
-            case WORK -> WorkRequestPacket.class;
-            case WORK_ASSIGNMENT -> WorkAssignmentPacket.class;
-            case WORK_RESPONSE -> WorkResponsePacket.class;
-            case WORK_REQUEST_RESPONSE -> WorkRequestResponsePacket.class;
-            case PLEASE_RECONNECT -> PleaseReconnectPacket.class;
-            case RECONNECT -> ReconnectPacket.class;
-            case LOGOUT_REQUEST -> LogoutRequestPacket.class;
+            case ADD_NODE -> AddNodeFrame.class;
+            case CONNECT -> ConnectFrame.class;
+            case OK -> ConnectOKFrame.class;
+            case KO -> ConnectKOFrame.class;
+            case LOGOUT_DENIED -> LogoutDeniedFrame.class;
+            case LOGOUT_GRANTED -> LogoutGrantedFrame.class;
+            case DISCONNECTED -> DisconnectedFrame.class;
+            case WORK -> WorkRequestFrame.class;
+            case WORK_ASSIGNMENT -> WorkAssignmentFrame.class;
+            case WORK_RESPONSE -> WorkResponseFrame.class;
+            case WORK_REQUEST_RESPONSE -> WorkRequestResponseFrame.class;
+            case PLEASE_RECONNECT -> PleaseReconnectFrame.class;
+            case RECONNECT -> ReconnectFrame.class;
+            case LOGOUT_REQUEST -> LogoutRequestFrame.class;
         };
     }
 

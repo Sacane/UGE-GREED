@@ -1,6 +1,6 @@
 package fr.ramatellier.greed.server.reader.component;
 
-import fr.ramatellier.greed.server.packet.component.IDComponent;
+import fr.ramatellier.greed.server.model.component.IDComponent;
 import fr.ramatellier.greed.server.reader.Reader;
 import fr.ramatellier.greed.server.reader.primitive.IntReader;
 import fr.ramatellier.greed.server.util.Buffers;
@@ -26,7 +26,6 @@ public class IDComponentReader implements Reader<IDComponent> {
         if(state == State.WAITING_IP) {
             Buffers.runOnProcess(buffer, ipReader,
                     __ -> state = State.WAITING_PORT,
-                    () -> {},
                     () -> state = State.ERROR);
         }
         if(state == State.WAITING_PORT) {

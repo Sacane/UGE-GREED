@@ -1,6 +1,6 @@
 package fr.ramatellier.greed.server.reader.component;
 
-import fr.ramatellier.greed.server.packet.component.DestinationPacket;
+import fr.ramatellier.greed.server.model.component.DestinationPacket;
 import fr.ramatellier.greed.server.reader.Reader;
 import fr.ramatellier.greed.server.util.Buffers;
 
@@ -35,7 +35,6 @@ public class DestinationComponentReader implements Reader<DestinationPacket> {
                         state = State.DONE;
                         value = new DestinationPacket(idSrcReader.get().getSocket(), idDstReader.get().getSocket());
                     },
-                    () -> {},
                     () -> state = State.ERROR);
             if(state == State.ERROR) {
                 return ProcessStatus.ERROR;

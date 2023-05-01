@@ -1,12 +1,12 @@
 package fr.ramatellier.greed.server;
 
 import fr.ramatellier.greed.server.compute.*;
-import fr.ramatellier.greed.server.packet.frame.*;
-import fr.ramatellier.greed.server.packet.component.*;
+import fr.ramatellier.greed.server.model.component.*;
+import fr.ramatellier.greed.server.model.frame.*;
 import fr.ramatellier.greed.server.util.ComputeCommandParser;
+import fr.ramatellier.greed.server.util.FrameKind;
 import fr.ramatellier.greed.server.util.LogoutInformation;
 import fr.ramatellier.greed.server.util.RouteTable;
-import fr.ramatellier.greed.server.util.FrameKind;
 import fr.ramatellier.greed.server.util.file.ResultFormatHandler;
 import fr.ramatellier.greed.server.util.http.NonBlockingHTTPJarProvider;
 import fr.uge.ugegreed.Checker;
@@ -326,7 +326,7 @@ public class Server {
                         checker = checkerResult.get();
                     }
                     for(var i = info.start(); i < info.end(); i++) {
-                        addTask(new TaskComputation(new WorkAssignmentPacket(null, null, id.id(), null), checker, entity.id(), i));
+                        addTask(new TaskComputation(new WorkAssignmentFrame(null, null, id.id(), null), checker, entity.id(), i));
                     }
                 });
                 httpClient.launch();
@@ -337,11 +337,11 @@ public class Server {
         }
         else {
             computationRoomHandler.prepare(entity, routeTable.size());
-            routeTable.performOnAllAddress(address -> transfer(address.address(), new WorkRequestPacket(
+            routeTable.performOnAllAddress(address -> transfer(address.address(), new WorkRequestFrame(
                     new IDComponent(this.address), new IDComponent(address.address()),
                     id.id(),
                     new CheckerComponent(info.url(), info.className()),
-                    new RangePacket(info.start(), info.end()),
+                    new RangeComponent(info.start(), info.end()),
                     info.end() - info.start()
             )));
         }
@@ -365,7 +365,7 @@ public class Server {
         parentSocketChannel.connect(parentSocketAddress);
         parentKey = parentSocketChannel.register(selector, SelectionKey.OP_CONNECT);
         var context = new ClientApplicationContext(this, parentKey);
-        context.queuePacket(new ReconnectPacket(new IDComponent(address), new IDListComponent(ancestors.stream().map(IDComponent::new).collect(Collectors.toList()))));
+        context.queuePacket(new ReconnectFrame(new IDComponent(address), new IDListComponent(ancestors.stream().map(IDComponent::new).collect(Collectors.toList()))));
         parentKey.interestOps(SelectionKey.OP_CONNECT);
         parentKey.attach(context);
         deleteAddress(oldParentAddress);
@@ -383,7 +383,7 @@ public class Server {
         parentSocketChannel.connect(parentSocketAddress);
         parentKey = parentSocketChannel.register(selector, SelectionKey.OP_CONNECT);
         var context = new ClientApplicationContext(this, parentKey);
-        context.queuePacket(new ConnectPacket(new IDComponent(address)));
+        context.queuePacket(new ConnectFrame(new IDComponent(address)));
         parentKey.interestOps(SelectionKey.OP_CONNECT);
         parentKey.attach(context);
         initConnection();
@@ -506,7 +506,7 @@ public class Server {
     }
 
     public void sendLogout() {
-        routeTable.sendTo(parentSocketAddress, new LogoutRequestPacket(new IDComponent(address),
+        routeTable.sendTo(parentSocketAddress, new LogoutRequestFrame(new IDComponent(address),
                 new IDListComponent(routeTable.neighbors().stream().filter(n -> !n.equals(parentSocketAddress)).map(IDComponent::new).toList())
         ));
     }
@@ -540,7 +540,7 @@ public class Server {
                     var response = computation.takeResponse();
 
                     if(response.packet().src() != null) {
-                        transfer(response.packet().src().getSocket(), new WorkResponsePacket(
+                        transfer(response.packet().src().getSocket(), new WorkResponseFrame(
                                 response.packet().dst(),
                                 response.packet().src(),
                                 response.packet().requestId(),

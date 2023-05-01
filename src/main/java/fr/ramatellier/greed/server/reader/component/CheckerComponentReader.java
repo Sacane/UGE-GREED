@@ -1,6 +1,6 @@
 package fr.ramatellier.greed.server.reader.component;
 
-import fr.ramatellier.greed.server.packet.component.CheckerComponent;
+import fr.ramatellier.greed.server.model.component.CheckerComponent;
 import fr.ramatellier.greed.server.reader.Reader;
 import fr.ramatellier.greed.server.util.Buffers;
 
@@ -23,7 +23,6 @@ public class CheckerComponentReader implements Reader<CheckerComponent> {
         if(state == State.WAITING_URL) {
             Buffers.runOnProcess(buffer, urlReader,
                     __ -> state = State.WAITING_CLASSNAME,
-                    () -> {},
                     () -> state = State.ERROR);
         }
         if(state == State.WAITING_CLASSNAME) {
@@ -32,7 +31,6 @@ public class CheckerComponentReader implements Reader<CheckerComponent> {
                         state = State.DONE;
                         value = new CheckerComponent(urlReader.get(), result);
                     },
-                    () -> {},
                     () -> state = State.ERROR);
         }
         if (state != State.DONE) {

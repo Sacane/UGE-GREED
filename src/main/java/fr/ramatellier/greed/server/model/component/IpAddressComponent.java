@@ -1,4 +1,4 @@
-package fr.ramatellier.greed.server.packet.component;
+package fr.ramatellier.greed.server.model.component;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;

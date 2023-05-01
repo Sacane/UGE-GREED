@@ -1,6 +1,7 @@
 package fr.ramatellier.greed.server.reader.component;
 
-import fr.ramatellier.greed.server.packet.component.IDComponent;
+import fr.ramatellier.greed.server.model.component.IDComponent;
+import fr.ramatellier.greed.server.model.component.IDListComponent;
 import fr.ramatellier.greed.server.reader.Reader;
 import fr.ramatellier.greed.server.reader.primitive.IntReader;
 import fr.ramatellier.greed.server.util.Buffers;
@@ -9,7 +10,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-public class IDComponentList implements Reader<fr.ramatellier.greed.server.packet.component.IDListComponent> {
+public class IDComponentList implements Reader<IDListComponent> {
     private enum State {
         DONE, WAITING_SIZE, WAITING_ID, ERROR
     }
@@ -23,7 +24,7 @@ public class IDComponentList implements Reader<fr.ramatellier.greed.server.packe
             throw new IllegalStateException();
         }
         if(state == State.WAITING_SIZE) {
-            Buffers.runOnProcess(buffer, sizeReader, __ -> state = State.WAITING_ID, () -> {}, () -> state = State.ERROR);
+            Buffers.runOnProcess(buffer, sizeReader, __ -> state = State.WAITING_ID, () -> state = State.ERROR);
         }
         if(state == State.WAITING_ID) {
             for(int i = 0; i < sizeReader.get(); i++) {
@@ -47,11 +48,11 @@ public class IDComponentList implements Reader<fr.ramatellier.greed.server.packe
     }
 
     @Override
-    public fr.ramatellier.greed.server.packet.component.IDListComponent get() {
+    public IDListComponent get() {
         if(state != State.DONE) {
             throw new IllegalStateException();
         }
-        return new fr.ramatellier.greed.server.packet.component.IDListComponent(List.copyOf(packetList));
+        return new IDListComponent(List.copyOf(packetList));
     }
 
     @Override

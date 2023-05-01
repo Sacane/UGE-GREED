@@ -1,6 +1,6 @@
 package fr.ramatellier.greed.server.reader.component;
 
-import fr.ramatellier.greed.server.packet.component.ResponseComponent;
+import fr.ramatellier.greed.server.model.component.ResponseComponent;
 import fr.ramatellier.greed.server.reader.Reader;
 import fr.ramatellier.greed.server.reader.primitive.ByteReader;
 import fr.ramatellier.greed.server.reader.primitive.LongReader;
@@ -29,7 +29,6 @@ public class ResponseComponentReader implements Reader<ResponseComponent> {
                     buffer,
                     valueReader,
                     __ -> state = State.WAITING_RESPONSE_CODE,
-                    () -> {},
                     () -> state = State.ERROR
             );
         }

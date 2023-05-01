@@ -1,8 +1,8 @@
-package fr.ramatellier.greed.server.packet.component;
+package fr.ramatellier.greed.server.model.component;
 
 import java.nio.ByteBuffer;
 
-public record RangePacket(long start, long end) implements GreedComponent {
+public record RangeComponent(long start, long end) implements GreedComponent {
 
     @Override
     public void putInBuffer(ByteBuffer buffer) {

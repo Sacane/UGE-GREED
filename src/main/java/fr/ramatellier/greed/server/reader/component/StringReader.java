@@ -36,7 +36,6 @@ public class StringReader implements Reader<String> {
                             state = State.WAITING_STRING;
                         }
                     },
-                    () -> {},
                     () -> state = State.ERROR
             );
             if(state == State.ERROR) {

@@ -1,8 +1,8 @@
-package fr.ramatellier.greed.server.packet.frame;
+package fr.ramatellier.greed.server.model.frame;
 
 import fr.ramatellier.greed.server.util.OpCodes;
 
-public record LogoutDeniedPacket() implements LocalFrame {
+public record LogoutDeniedFrame() implements LocalFrame {
     @Override
     public OpCodes opCode() {
         return OpCodes.LOGOUT_DENIED;

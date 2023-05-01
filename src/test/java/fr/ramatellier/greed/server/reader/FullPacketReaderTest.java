@@ -1,9 +1,9 @@
 package fr.ramatellier.greed.server.reader;
 
-import fr.ramatellier.greed.server.packet.frame.ConnectKOPacket;
-import fr.ramatellier.greed.server.packet.frame.ConnectOKPacket;
-import fr.ramatellier.greed.server.packet.component.IDComponent;
-import fr.ramatellier.greed.server.packet.component.IDListComponent;
+import fr.ramatellier.greed.server.model.frame.ConnectKOFrame;
+import fr.ramatellier.greed.server.model.frame.ConnectOKFrame;
+import fr.ramatellier.greed.server.model.component.IDComponent;
+import fr.ramatellier.greed.server.model.component.IDListComponent;
 import fr.ramatellier.greed.server.util.OpCodes;
 import fr.ramatellier.greed.server.writer.FrameWriterAdapter;
 import org.junit.jupiter.api.Test;
@@ -20,7 +20,7 @@ public class FullPacketReaderTest {
     private final FrameReaderAdapter readerFactory = new FrameReaderAdapter();
     @Test
     public void simpleReadPacketTest() throws InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
-        var okPacket = new ConnectOKPacket(new IDComponent((new InetSocketAddress(7777))), new IDListComponent(List.of(new IDComponent(new InetSocketAddress(7778)), new IDComponent(new InetSocketAddress(7779)))));
+        var okPacket = new ConnectOKFrame(new IDComponent((new InetSocketAddress(7777))), new IDListComponent(List.of(new IDComponent(new InetSocketAddress(7778)), new IDComponent(new InetSocketAddress(7779)))));
         var size = FrameWriterAdapter.size(okPacket);
         System.out.println("size : " + size);
         var buffer = ByteBuffer.allocate(size);
@@ -34,13 +34,13 @@ public class FullPacketReaderTest {
 
     @Test
     public void simpleReadPacketTest2() throws InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
-        var okPacket = new ConnectKOPacket();
+        var okPacket = new ConnectKOFrame();
         var buffer = ByteBuffer.allocate(FrameWriterAdapter.size(okPacket));
         FrameWriterAdapter.put(okPacket, buffer);
         var status = readerFactory.process(buffer, OpCodes.KO);
         assertEquals(Reader.ProcessStatus.DONE, status);
         var packet = readerFactory.get();
-        assertEquals(new ConnectKOPacket(), packet);
+        assertEquals(new ConnectKOFrame(), packet);
         assertThrows(IllegalStateException.class,() -> readerFactory.process(buffer, OpCodes.KO));
         readerFactory.reset();
         assertThrows(IllegalStateException.class, readerFactory::get);

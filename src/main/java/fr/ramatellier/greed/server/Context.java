@@ -1,10 +1,10 @@
 package fr.ramatellier.greed.server;
 
-import fr.ramatellier.greed.server.packet.frame.BroadcastFrame;
-import fr.ramatellier.greed.server.packet.frame.Frame;
-import fr.ramatellier.greed.server.packet.frame.LocalFrame;
-import fr.ramatellier.greed.server.packet.frame.TransferFrame;
-import fr.ramatellier.greed.server.packet.component.IDComponent;
+import fr.ramatellier.greed.server.model.frame.BroadcastFrame;
+import fr.ramatellier.greed.server.model.frame.Frame;
+import fr.ramatellier.greed.server.model.frame.LocalFrame;
+import fr.ramatellier.greed.server.model.frame.TransferFrame;
+import fr.ramatellier.greed.server.model.component.IDComponent;
 import fr.ramatellier.greed.server.reader.FrameReader;
 import fr.ramatellier.greed.server.visitor.ReceivePacketVisitor;
 import fr.ramatellier.greed.server.writer.FrameWriterAdapter;

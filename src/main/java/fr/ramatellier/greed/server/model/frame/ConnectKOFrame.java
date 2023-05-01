@@ -1,9 +1,9 @@
-package fr.ramatellier.greed.server.packet.frame;
+package fr.ramatellier.greed.server.model.frame;
 
 import fr.ramatellier.greed.server.util.OpCodes;
 
 
-public record ConnectKOPacket() implements LocalFrame {
+public record ConnectKOFrame() implements LocalFrame {
     @Override
     public OpCodes opCode() {
         return OpCodes.KO;

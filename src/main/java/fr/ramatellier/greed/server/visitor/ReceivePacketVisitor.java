@@ -3,11 +3,11 @@ package fr.ramatellier.greed.server.visitor;
 import fr.ramatellier.greed.server.Context;
 import fr.ramatellier.greed.server.compute.*;
 import fr.ramatellier.greed.server.Server;
-import fr.ramatellier.greed.server.packet.frame.*;
-import fr.ramatellier.greed.server.packet.component.IDComponent;
-import fr.ramatellier.greed.server.packet.component.IDListComponent;
-import fr.ramatellier.greed.server.packet.component.RangePacket;
-import fr.ramatellier.greed.server.packet.component.ResponseComponent;
+import fr.ramatellier.greed.server.model.component.IDComponent;
+import fr.ramatellier.greed.server.model.component.IDListComponent;
+import fr.ramatellier.greed.server.model.component.RangeComponent;
+import fr.ramatellier.greed.server.model.component.ResponseComponent;
+import fr.ramatellier.greed.server.model.frame.*;
 import fr.ramatellier.greed.server.util.http.NonBlockingHTTPJarProvider;
 import fr.uge.ugegreed.Checker;
 import fr.uge.ugegreed.Client;
@@ -36,28 +36,28 @@ public class ReceivePacketVisitor implements PacketVisitor {
     }
 
     @Override
-    public void visit(ConnectPacket packet) {
+    public void visit(ConnectFrame packet) {
         logger.info("Connection demand received from " + packet.idPacket().getSocket() + " " + packet.idPacket().getPort());
         if(server.isRunning()) {
             logger.info("Connection accepted");
             var list = new IDListComponent(server.registeredAddresses().stream().map(IDComponent::new).toList());
             System.out.println("List of neighbors: " + list);
-            var response = new ConnectOKPacket(new IDComponent(server.getAddress()),
+            var response = new ConnectOKFrame(new IDComponent(server.getAddress()),
                     list);
             context.queuePacket(response);
             InetSocketAddress socket = packet.idPacket().getSocket();
             server.addRoot(socket, socket, context);
-            var addNodePacket = new AddNodePacket(new IDComponent(server.getAddress()), new IDComponent(socket));
+            var addNodePacket = new AddNodeFrame(new IDComponent(server.getAddress()), new IDComponent(socket));
             server.broadcast(addNodePacket, socket);
         }
         else {
             logger.info("Connection refused");
-            context.queuePacket(new ConnectKOPacket());
+            context.queuePacket(new ConnectKOFrame());
         }
     }
 
     @Override
-    public void visit(ConnectOKPacket packet) {
+    public void visit(ConnectOKFrame packet) {
         logger.info("Connection accepted from " + packet.idMother().getSocket() + " on port " + packet.idMother().getPort());
         var addressMother = packet.idMother();
         server.updateParentAddress(addressMother.getSocket());
@@ -69,26 +69,26 @@ public class ReceivePacketVisitor implements PacketVisitor {
     }
 
     @Override
-    public void visit(ConnectKOPacket packet) {
+    public void visit(ConnectKOFrame packet) {
         System.out.println("Connection refused, target server is shutting down...");
         server.shutdown();
     }
 
     @Override
-    public void visit(AddNodePacket packet) {
+    public void visit(AddNodeFrame packet) {
         logger.info("AddNodePacket received from " + packet.src().getSocket());
         server.addRoot(packet.daughter().getSocket(), packet.src().getSocket(), context);
         logger.info("update root table and send broadcast to neighbours");
     }
 
     @Override
-    public void visit(WorkRequestPacket packet) {
+    public void visit(WorkRequestFrame packet) {
         if(server.isRunning()) {
             var deltaComputingPossibility = Server.MAXIMUM_COMPUTATION - server.currentOnWorkingComputationsValue();
             if(deltaComputingPossibility > 0) { //He is accepting the computation
                 server.addRoom(new ComputationEntity(new ComputationIdentifier(packet.requestId(), packet.src().getSocket()),
                         new ComputeInfo(packet.checker().url(), packet.checker().className(), packet.range().start(), packet.range().end())));
-                server.transfer(packet.src().getSocket(), new WorkRequestResponsePacket(
+                server.transfer(packet.src().getSocket(), new WorkRequestResponseFrame(
                         packet.src(),
                         packet.dst(),
                         packet.requestId(),
@@ -97,7 +97,7 @@ public class ReceivePacketVisitor implements PacketVisitor {
             }
         }
         else {
-            server.transfer(packet.src().getSocket(), new WorkRequestResponsePacket(
+            server.transfer(packet.src().getSocket(), new WorkRequestResponseFrame(
                     packet.src(),
                     packet.dst(),
                     packet.requestId(),
@@ -112,7 +112,7 @@ public class ReceivePacketVisitor implements PacketVisitor {
      * @param packet the packet to visit
      */
     @Override
-    public void visit(WorkAssignmentPacket packet) {
+    public void visit(WorkAssignmentFrame packet) {
         System.out.println("Start computation...");
         var idContext = new ComputationIdentifier(packet.requestId(), packet.src().getSocket());
         server.updateRoom(idContext, packet.range().start(), packet.range().end());
@@ -150,8 +150,8 @@ public class ReceivePacketVisitor implements PacketVisitor {
         }
     }
 
-    private void sendResponseWithOPCode(WorkAssignmentPacket origin, long index, String result, byte opcode) {
-        server.transfer(origin.src().getSocket(), new WorkResponsePacket(
+    private void sendResponseWithOPCode(WorkAssignmentFrame origin, long index, String result, byte opcode) {
+        server.transfer(origin.src().getSocket(), new WorkResponseFrame(
                 origin.dst(),
                 origin.src(),
                 origin.requestId(),
@@ -160,7 +160,7 @@ public class ReceivePacketVisitor implements PacketVisitor {
     }
 
     @Override
-    public void visit(WorkResponsePacket packet) {
+    public void visit(WorkResponseFrame packet) {
         var responsePacket = packet.responsePacket();
 
         switch(responsePacket.getResponseCode()) {
@@ -180,11 +180,11 @@ public class ReceivePacketVisitor implements PacketVisitor {
     }
 
     @Override
-    public void visit(LogoutRequestPacket packet) {
+    public void visit(LogoutRequestFrame packet) {
         if(server.isRunning()) {
-            context.queuePacket(new LogoutGrantedPacket());
+            context.queuePacket(new LogoutGrantedFrame());
             if(packet.daughters().sizeList() == 0) {
-                server.broadcast(new DisconnectedPacket(new IDComponent(server.getAddress()), packet.id()), server.getAddress());
+                server.broadcast(new DisconnectedFrame(new IDComponent(server.getAddress()), packet.id()), server.getAddress());
                 server.deleteAddress(packet.id().getSocket());
             }
             else {
@@ -192,27 +192,27 @@ public class ReceivePacketVisitor implements PacketVisitor {
             }
         }
         else {
-            context.queuePacket(new LogoutDeniedPacket());
+            context.queuePacket(new LogoutDeniedFrame());
         }
     }
 
     @Override
-    public void visit(LogoutDeniedPacket packet) {
+    public void visit(LogoutDeniedFrame packet) {
         System.out.println("LOGOUT DENIED");
     }
 
     @Override
-    public void visit(LogoutGrantedPacket packet) {
+    public void visit(LogoutGrantedFrame packet) {
         System.out.println("LOGOUT GRANTED");
         var daughtersContext = server.daughtersContext();
 
         for(var daughterContext: daughtersContext) {
-            daughterContext.queuePacket(new PleaseReconnectPacket(new IDComponent(server.getParentSocketAddress())));
+            daughterContext.queuePacket(new PleaseReconnectFrame(new IDComponent(server.getParentSocketAddress())));
         }
     }
 
     @Override
-    public void visit(PleaseReconnectPacket packet) {
+    public void visit(PleaseReconnectFrame packet) {
         try {
             server.connectToNewParent(packet.id());
         } catch (IOException e) {
@@ -221,7 +221,7 @@ public class ReceivePacketVisitor implements PacketVisitor {
     }
 
     @Override
-    public void visit(ReconnectPacket packet) {
+    public void visit(ReconnectFrame packet) {
         server.receiveReconnect(packet.id().getSocket());
         server.addRoot(packet.id().getSocket(), packet.id().getSocket(), context);
 
@@ -230,7 +230,7 @@ public class ReceivePacketVisitor implements PacketVisitor {
         }
 
         if(server.allConnected()) {
-            server.broadcast(new DisconnectedPacket(new IDComponent(server.getAddress()), new IDComponent(server.getAddressLogout())), server.getAddress());
+            server.broadcast(new DisconnectedFrame(new IDComponent(server.getAddress()), new IDComponent(server.getAddressLogout())), server.getAddress());
             server.deleteAddress(server.getAddressLogout());
 
             if(server.isShutdown()) {
@@ -240,7 +240,7 @@ public class ReceivePacketVisitor implements PacketVisitor {
     }
 
     @Override
-    public void visit(DisconnectedPacket packet) {
+    public void visit(DisconnectedFrame packet) {
         if(server.getAddress().equals(packet.id().getSocket())) {
             server.shutdown();
         }
@@ -254,7 +254,7 @@ public class ReceivePacketVisitor implements PacketVisitor {
     }
 
     @Override
-    public void visit(WorkRequestResponsePacket packet) {
+    public void visit(WorkRequestResponseFrame packet) {
         if(packet.nb_uc() == 0){
             return;
         }
@@ -272,11 +272,11 @@ public class ReceivePacketVisitor implements PacketVisitor {
             );
             var socketRangeList = process.shareAndGet(entity.info().start());
             for(var socketRange: socketRangeList){
-                var workAssignmentPacket = new WorkAssignmentPacket(
+                var workAssignmentPacket = new WorkAssignmentFrame(
                         new IDComponent(server.getAddress()),
                         new IDComponent(socketRange.socketAddress()),
                         packet.requestID(),
-                        new RangePacket(socketRange.range().start(), socketRange.range().end())
+                        new RangeComponent(socketRange.range().start(), socketRange.range().end())
                 );
                 server.transfer(socketRange.socketAddress(), workAssignmentPacket);
             }

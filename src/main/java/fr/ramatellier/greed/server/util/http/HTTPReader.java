@@ -27,7 +27,7 @@ public class HTTPReader implements Reader<byte[]> {
                 }catch (HTTPException e){
                     state = State.ERROR;
                 }
-            }, () -> state = State.REFILL, () -> state = State.ERROR);
+            }, () -> state = State.ERROR);
             if(state == State.REFILL){
                 return ProcessStatus.REFILL;
             }

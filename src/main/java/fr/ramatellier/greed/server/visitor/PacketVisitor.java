@@ -1,39 +1,39 @@
 package fr.ramatellier.greed.server.visitor;
 
-import fr.ramatellier.greed.server.packet.frame.*;
+import fr.ramatellier.greed.server.model.frame.*;
 
 public interface PacketVisitor {
-    void visit(ConnectPacket packet);
-    void visit(ConnectOKPacket packet);
-    void visit(ConnectKOPacket packet);
-    void visit(AddNodePacket packet);
-    void visit(WorkRequestPacket packet);
-    void visit(WorkAssignmentPacket packet);
-    void visit(WorkResponsePacket packet);
-    void visit(WorkRequestResponsePacket packet);
-    void visit(LogoutRequestPacket packet);
-    void visit(LogoutDeniedPacket packet);
-    void visit(LogoutGrantedPacket packet);
-    void visit(PleaseReconnectPacket packet);
-    void visit(ReconnectPacket packet);
-    void visit(DisconnectedPacket packet);
+    void visit(ConnectFrame packet);
+    void visit(ConnectOKFrame packet);
+    void visit(ConnectKOFrame packet);
+    void visit(AddNodeFrame packet);
+    void visit(WorkRequestFrame packet);
+    void visit(WorkAssignmentFrame packet);
+    void visit(WorkResponseFrame packet);
+    void visit(WorkRequestResponseFrame packet);
+    void visit(LogoutRequestFrame packet);
+    void visit(LogoutDeniedFrame packet);
+    void visit(LogoutGrantedFrame packet);
+    void visit(PleaseReconnectFrame packet);
+    void visit(ReconnectFrame packet);
+    void visit(DisconnectedFrame packet);
 
     default void visit(Frame packet) {
         switch(packet) {
-            case ConnectPacket p -> visit(p);
-            case ConnectOKPacket p -> visit(p);
-            case ConnectKOPacket p -> visit(p);
-            case AddNodePacket p -> visit(p);
-            case WorkRequestPacket p -> visit(p);
-            case WorkAssignmentPacket p -> visit(p);
-            case WorkResponsePacket p -> visit(p);
-            case WorkRequestResponsePacket p -> visit(p);
-            case LogoutRequestPacket p -> visit(p);
-            case LogoutDeniedPacket p -> visit(p);
-            case LogoutGrantedPacket p -> visit(p);
-            case PleaseReconnectPacket p -> visit(p);
-            case ReconnectPacket p -> visit(p);
-            case DisconnectedPacket p -> visit(p);
+            case ConnectFrame p -> visit(p);
+            case ConnectOKFrame p -> visit(p);
+            case ConnectKOFrame p -> visit(p);
+            case AddNodeFrame p -> visit(p);
+            case WorkRequestFrame p -> visit(p);
+            case WorkAssignmentFrame p -> visit(p);
+            case WorkResponseFrame p -> visit(p);
+            case WorkRequestResponseFrame p -> visit(p);
+            case LogoutRequestFrame p -> visit(p);
+            case LogoutDeniedFrame p -> visit(p);
+            case LogoutGrantedFrame p -> visit(p);
+            case PleaseReconnectFrame p -> visit(p);
+            case ReconnectFrame p -> visit(p);
+            case DisconnectedFrame p -> visit(p);
         }
     }
 }

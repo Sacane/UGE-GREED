@@ -1,4 +1,4 @@
-package fr.ramatellier.greed.server.packet.component;
+package fr.ramatellier.greed.server.model.component;
 
 import java.nio.ByteBuffer;
 import java.util.List;
