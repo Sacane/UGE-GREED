@@ -1,6 +1,6 @@
 package fr.ramatellier.greed.server.writer;
 
-import fr.ramatellier.greed.server.packet.Packet;
+import fr.ramatellier.greed.server.packet.GreedComponent;
 import fr.ramatellier.greed.server.packet.full.FullPacket;
 
 import java.lang.reflect.InvocationTargetException;
@@ -20,8 +20,8 @@ public class FrameWriterAdapter {
                 size += Integer.BYTES;
             } else if(type == long.class){
                 size += Long.BYTES;
-            } else if(Packet.class.isAssignableFrom(type)){
-                Packet packet = (Packet) component.getAccessor().invoke(recordPacket);
+            } else if(GreedComponent.class.isAssignableFrom(type)){
+                GreedComponent packet = (GreedComponent) component.getAccessor().invoke(recordPacket);
                 size += packet.size();
             }
         }
@@ -44,8 +44,8 @@ public class FrameWriterAdapter {
             } else if(type == long.class || type == Long.class){
                 long l = (long) component.getAccessor().invoke(frame);
                 buffer.putLong(l);
-            } else if(Packet.class.isAssignableFrom(type)) {
-                Packet packet = (Packet) component.getAccessor().invoke(frame);
+            } else if(GreedComponent.class.isAssignableFrom(type)) {
+                GreedComponent packet = (GreedComponent) component.getAccessor().invoke(frame);
                 packet.putInBuffer(buffer);
             }
         }

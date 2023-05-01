@@ -1,12 +1,12 @@
 package fr.ramatellier.greed.server.packet.sub;
 
-import fr.ramatellier.greed.server.packet.Packet;
+import fr.ramatellier.greed.server.packet.GreedComponent;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
-public record StringPacket(String value) implements Packet, Part {
+public record StringPacket(String value) implements GreedComponent {
     private static final Charset UTF8 = StandardCharsets.UTF_8;
 
     @Override

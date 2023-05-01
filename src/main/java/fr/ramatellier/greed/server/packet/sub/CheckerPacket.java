@@ -1,11 +1,11 @@
 package fr.ramatellier.greed.server.packet.sub;
 
-import fr.ramatellier.greed.server.packet.Packet;
+import fr.ramatellier.greed.server.packet.GreedComponent;
 
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
-public record CheckerPacket(String url, String className) implements Packet, Part {
+public record CheckerPacket(String url, String className) implements GreedComponent {
     public CheckerPacket {
         Objects.requireNonNull(url);
         Objects.requireNonNull(className);

@@ -7,7 +7,7 @@ import fr.ramatellier.greed.server.util.TramKind;
 
 import java.nio.ByteBuffer;
 
-public sealed interface FullPacket extends Packet permits BroadcastPacket, LocalPacket, TransferPacket {
+public sealed interface FullPacket extends GreedComponent permits BroadcastPacket, LocalPacket, TransferPacket {
     default void accept(PacketVisitor visitor){
         visitor.visit(this);
     }

@@ -1,11 +1,11 @@
 package fr.ramatellier.greed.server.packet.sub;
 
-import fr.ramatellier.greed.server.packet.Packet;
+import fr.ramatellier.greed.server.packet.GreedComponent;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
-public final class DestinationPacket implements Packet, Part {
+public final class DestinationPacket implements GreedComponent {
     private final IDPacket idSrc;
     private final IDPacket idDst;
 

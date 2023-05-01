@@ -1,10 +1,10 @@
 package fr.ramatellier.greed.server.packet.sub;
 
-import fr.ramatellier.greed.server.packet.Packet;
+import fr.ramatellier.greed.server.packet.GreedComponent;
 
 import java.nio.ByteBuffer;
 
-public final class ResponsePacket implements Packet, Part {
+public final class ResponsePacket implements GreedComponent {
     private final byte responseCode;
     private final StringPacket response;
     private final long value;
