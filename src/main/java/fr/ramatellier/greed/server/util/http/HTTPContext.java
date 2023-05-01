@@ -101,7 +101,6 @@ public final class HTTPContext {
     }
 
     private void processOut() {
-        System.out.println(request.getBytes().length);
         bufferOut.put(request.getBytes());
         isRequestSent = true;
     }

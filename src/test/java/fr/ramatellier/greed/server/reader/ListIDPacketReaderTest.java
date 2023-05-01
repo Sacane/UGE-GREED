@@ -1,7 +1,7 @@
 package fr.ramatellier.greed.server.reader;
 
-import fr.ramatellier.greed.server.model.component.IDComponent;
-import fr.ramatellier.greed.server.model.component.IDListComponent;
+import fr.ramatellier.greed.server.frame.component.IDComponent;
+import fr.ramatellier.greed.server.frame.component.IDListComponent;
 import fr.ramatellier.greed.server.reader.component.IDComponentList;
 import org.junit.jupiter.api.Test;
 

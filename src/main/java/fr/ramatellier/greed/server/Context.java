@@ -1,13 +1,13 @@
 package fr.ramatellier.greed.server;
 
-import fr.ramatellier.greed.server.model.frame.BroadcastFrame;
-import fr.ramatellier.greed.server.model.frame.Frame;
-import fr.ramatellier.greed.server.model.frame.LocalFrame;
-import fr.ramatellier.greed.server.model.frame.TransferFrame;
-import fr.ramatellier.greed.server.model.component.IDComponent;
+import fr.ramatellier.greed.server.frame.model.BroadcastFrame;
+import fr.ramatellier.greed.server.frame.model.Frame;
+import fr.ramatellier.greed.server.frame.model.LocalFrame;
+import fr.ramatellier.greed.server.frame.model.TransferFrame;
+import fr.ramatellier.greed.server.frame.component.IDComponent;
 import fr.ramatellier.greed.server.reader.FrameReader;
 import fr.ramatellier.greed.server.visitor.ReceivePacketVisitor;
-import fr.ramatellier.greed.server.writer.FrameWriterAdapter;
+import fr.ramatellier.greed.server.frame.Frames;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -81,10 +81,9 @@ public abstract class Context {
         while(!queue.isEmpty()) {
             var packet = queue.peek();
             try {
-                if (FrameWriterAdapter.size(packet) <= bufferOut.remaining()) {
+                if (Frames.size(packet) <= bufferOut.remaining()) {
                     queue.poll();
-//                    packet.putInBuffer(bufferOut);
-                    FrameWriterAdapter.put(packet, bufferOut);
+                    Frames.put(packet, bufferOut);
                 } else {
                     break;
                 }

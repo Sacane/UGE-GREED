@@ -1,10 +1,10 @@
 package fr.ramatellier.greed.server;
 
 import fr.ramatellier.greed.server.compute.*;
-import fr.ramatellier.greed.server.model.component.*;
-import fr.ramatellier.greed.server.model.frame.*;
+import fr.ramatellier.greed.server.frame.component.*;
+import fr.ramatellier.greed.server.frame.model.*;
 import fr.ramatellier.greed.server.util.ComputeCommandParser;
-import fr.ramatellier.greed.server.util.FrameKind;
+import fr.ramatellier.greed.server.frame.FrameKind;
 import fr.ramatellier.greed.server.util.LogoutInformation;
 import fr.ramatellier.greed.server.util.RouteTable;
 import fr.ramatellier.greed.server.util.file.ResultFormatHandler;

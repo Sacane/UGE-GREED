@@ -1,6 +1,6 @@
 package fr.ramatellier.greed.server.visitor;
 
-import fr.ramatellier.greed.server.model.frame.*;
+import fr.ramatellier.greed.server.frame.model.*;
 
 public interface PacketVisitor {
     void visit(ConnectFrame packet);

@@ -1,9 +1,9 @@
 package fr.ramatellier.greed.server.reader;
 
-import fr.ramatellier.greed.server.model.frame.Frame;
+import fr.ramatellier.greed.server.frame.model.Frame;
 import fr.ramatellier.greed.server.reader.primitive.ByteReader;
 import fr.ramatellier.greed.server.util.OpCodes;
-import fr.ramatellier.greed.server.util.FrameKind;
+import fr.ramatellier.greed.server.frame.FrameKind;
 
 import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;

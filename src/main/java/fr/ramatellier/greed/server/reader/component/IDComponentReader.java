@@ -1,6 +1,6 @@
 package fr.ramatellier.greed.server.reader.component;
 
-import fr.ramatellier.greed.server.model.component.IDComponent;
+import fr.ramatellier.greed.server.frame.component.IDComponent;
 import fr.ramatellier.greed.server.reader.Reader;
 import fr.ramatellier.greed.server.reader.primitive.IntReader;
 import fr.ramatellier.greed.server.util.Buffers;

@@ -1,6 +1,6 @@
 package fr.ramatellier.greed.server.reader.component;
 
-import fr.ramatellier.greed.server.model.component.DestinationPacket;
+import fr.ramatellier.greed.server.frame.component.DestinationPacket;
 import fr.ramatellier.greed.server.reader.Reader;
 import fr.ramatellier.greed.server.util.Buffers;
 

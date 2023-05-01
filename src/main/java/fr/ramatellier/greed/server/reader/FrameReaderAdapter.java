@@ -1,7 +1,7 @@
 package fr.ramatellier.greed.server.reader;
 
-import fr.ramatellier.greed.server.model.component.*;
-import fr.ramatellier.greed.server.model.frame.*;
+import fr.ramatellier.greed.server.frame.component.*;
+import fr.ramatellier.greed.server.frame.model.*;
 import fr.ramatellier.greed.server.reader.component.*;
 import fr.ramatellier.greed.server.reader.primitive.ByteReader;
 import fr.ramatellier.greed.server.reader.primitive.IntReader;

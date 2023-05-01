@@ -1,6 +1,6 @@
 package fr.ramatellier.greed.server.reader.component;
 
-import fr.ramatellier.greed.server.model.component.RangeComponent;
+import fr.ramatellier.greed.server.frame.component.RangeComponent;
 import fr.ramatellier.greed.server.reader.Reader;
 import fr.ramatellier.greed.server.reader.primitive.LongReader;
 import fr.ramatellier.greed.server.util.Buffers;
