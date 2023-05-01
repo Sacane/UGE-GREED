@@ -16,12 +16,17 @@ public final class ThreadComputation {
                     try {
                         var computation = task.take();
 
-                        try {
-                            var response = computation.checker().check(computation.value());
+                        if(computation.checker() == null) {
+                            responses.put(new ResponseTaskComputation(computation.packet(), computation.id(), computation.value(), "Value: " + computation.value() + " -> " + "Cannot get the checker\n", (byte) 0x03));
+                        }
+                        else {
+                            try {
+                                var response = computation.checker().check(computation.value());
 
-                            responses.put(new ResponseTaskComputation(computation.packet(), computation.id(), computation.value(), response, (byte) 0x00));
-                        } catch(Exception e) {
-                            responses.put(new ResponseTaskComputation(computation.packet(), computation.id(), computation.value(), "null", (byte) 0x01));
+                                responses.put(new ResponseTaskComputation(computation.packet(), computation.id(), computation.value(), "Value: " + computation.value() + " -> " + response + "\n", (byte) 0x00));
+                            } catch(Exception e) {
+                                responses.put(new ResponseTaskComputation(computation.packet(), computation.id(), computation.value(), "Value: " + computation.value() + " -> " + "Exception raised\n", (byte) 0x01));
+                            }
                         }
                     } catch (InterruptedException e) {
                         // Ignore exception

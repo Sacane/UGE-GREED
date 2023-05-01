@@ -25,9 +25,7 @@ public final class ResponsePacket implements Packet, Part {
     public void putInBuffer(ByteBuffer buffer) {
         buffer.putLong(value);
         buffer.put(responseCode);
-        if(responseCode == 0){
-            response.putInBuffer(buffer);
-        }
+        response.putInBuffer(buffer);
     }
 
     @Override
