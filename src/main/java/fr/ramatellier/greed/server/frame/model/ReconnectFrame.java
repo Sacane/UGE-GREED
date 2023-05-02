@@ -6,9 +6,4 @@ import fr.ramatellier.greed.server.util.OpCodes;
 
 public record ReconnectFrame(IDComponent id, IDListComponent ancestors) implements LocalFrame {
 
-    @Override
-    public OpCodes opCode() {
-        return OpCodes.RECONNECT;
-    }
-
 }

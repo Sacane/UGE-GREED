@@ -18,11 +18,4 @@ public sealed interface Frame permits BroadcastFrame, LocalFrame, TransferFrame 
      * @return the kind of the packet
      */
     FrameKind kind();
-
-    /**
-     * The {@link OpCodes} of the packet
-     * @return the opcode of the packet
-     */
-    OpCodes opCode();
-
 }

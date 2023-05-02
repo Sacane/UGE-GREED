@@ -50,32 +50,13 @@ public class FrameReaderAdapter {
 
     static{
         for(var opcode: OpCodes.values()) {
-            var record = packetFromOpCode(opcode);
+            var record = opcode.frameClass;
             if (record == null || !record.isRecord())
                 throw new IllegalArgumentException("OpCode " + opcode + " is not a record");
             var fields = record.getRecordComponents();
             var components = Arrays.stream(fields).map(RecordComponent::getType).toArray(Class<?>[]::new);
             opCodeToConstructors.put(opcode, new PacketComponents(record, components));
         }
-    }
-
-    private static Class<? extends Frame> packetFromOpCode(OpCodes opcode){
-        return switch(opcode){
-            case ADD_NODE -> AddNodeFrame.class;
-            case CONNECT -> ConnectFrame.class;
-            case OK -> ConnectOKFrame.class;
-            case KO -> ConnectKOFrame.class;
-            case LOGOUT_DENIED -> LogoutDeniedFrame.class;
-            case LOGOUT_GRANTED -> LogoutGrantedFrame.class;
-            case DISCONNECTED -> DisconnectedFrame.class;
-            case WORK -> WorkRequestFrame.class;
-            case WORK_ASSIGNMENT -> WorkAssignmentFrame.class;
-            case WORK_RESPONSE -> WorkResponseFrame.class;
-            case WORK_REQUEST_RESPONSE -> WorkRequestResponseFrame.class;
-            case PLEASE_RECONNECT -> PleaseReconnectFrame.class;
-            case RECONNECT -> ReconnectFrame.class;
-            case LOGOUT_REQUEST -> LogoutRequestFrame.class;
-        };
     }
 
     public Reader.ProcessStatus process(ByteBuffer buffer, OpCodes opcode) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
