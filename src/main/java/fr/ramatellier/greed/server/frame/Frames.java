@@ -2,7 +2,7 @@ package fr.ramatellier.greed.server.frame;
 
 import fr.ramatellier.greed.server.frame.component.GreedComponent;
 import fr.ramatellier.greed.server.frame.model.Frame;
-import fr.ramatellier.greed.server.util.OpCodes;
+import fr.ramatellier.greed.server.util.OpCode;
 
 import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
@@ -27,7 +27,7 @@ public final class Frames {
     }
 
     public static <T extends Frame> void put(T frame, ByteBuffer buffer) throws InvocationTargetException, IllegalAccessException {
-        var opCode = OpCodes.fromFrame(frame);
+        var opCode = OpCode.fromFrame(frame);
         if(opCode == null) throw new IllegalArgumentException("Unknown frame " + frame);
         buffer.put(frame.kind().BYTES).put(opCode.BYTES);
         parseOnEachComponentOf(frame, buffer::put, buffer::putInt, buffer::putLong, packet -> packet.putInBuffer(buffer));

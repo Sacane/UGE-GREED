@@ -6,7 +6,7 @@ import fr.ramatellier.greed.server.reader.component.*;
 import fr.ramatellier.greed.server.reader.primitive.ByteReader;
 import fr.ramatellier.greed.server.reader.primitive.IntReader;
 import fr.ramatellier.greed.server.reader.primitive.LongReader;
-import fr.ramatellier.greed.server.util.OpCodes;
+import fr.ramatellier.greed.server.util.OpCode;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.RecordComponent;
@@ -18,11 +18,11 @@ import java.util.Map;
 
 /**
  * This class is used to read any kind of {@link Frame} from a ByteBuffer.
- * It uses the {@link OpCodes} to know which Packet to create.
+ * It uses the {@link OpCode} to know which Packet to create.
  */
 public class FrameReaderAdapter {
     private record PacketComponents(Class<? extends Frame> packet, Class<?>[] components){}
-    private static final Map<OpCodes, PacketComponents> opCodeToConstructors = new HashMap<>();
+    private static final Map<OpCode, PacketComponents> opCodeToConstructors = new HashMap<>();
     private final Map<Class<?>, Reader<?>> packetToReader = initPacketReader();
     private Frame value;
     private int currentPosition;
@@ -49,7 +49,7 @@ public class FrameReaderAdapter {
     }
 
     static{
-        for(var opcode: OpCodes.values()) {
+        for(var opcode: OpCode.values()) {
             var record = opcode.frameClass;
             if (record == null || !record.isRecord())
                 throw new IllegalArgumentException("OpCode " + opcode + " is not a record");
@@ -59,7 +59,7 @@ public class FrameReaderAdapter {
         }
     }
 
-    public Reader.ProcessStatus process(ByteBuffer buffer, OpCodes opcode) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+    public Reader.ProcessStatus process(ByteBuffer buffer, OpCode opcode) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
         if(state == State.DONE)
             throw new IllegalStateException("Reader already done without reset");
         if(state == State.ERROR)

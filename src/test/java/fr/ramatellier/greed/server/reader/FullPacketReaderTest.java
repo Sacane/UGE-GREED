@@ -4,7 +4,7 @@ import fr.ramatellier.greed.server.frame.model.ConnectKOFrame;
 import fr.ramatellier.greed.server.frame.model.ConnectOKFrame;
 import fr.ramatellier.greed.server.frame.component.IDComponent;
 import fr.ramatellier.greed.server.frame.component.IDListComponent;
-import fr.ramatellier.greed.server.util.OpCodes;
+import fr.ramatellier.greed.server.util.OpCode;
 import fr.ramatellier.greed.server.frame.Frames;
 import org.junit.jupiter.api.Test;
 
@@ -25,7 +25,7 @@ public class FullPacketReaderTest {
         System.out.println("size : " + size);
         var buffer = ByteBuffer.allocate(size);
         Frames.put(okPacket, buffer);
-        var status = readerFactory.process(buffer, OpCodes.OK);
+        var status = readerFactory.process(buffer, OpCode.OK);
         assertEquals(7777, okPacket.getPort());
         assertEquals(2, okPacket.neighbours().idPacketList().size());
         assertEquals(7778, okPacket.neighbours().idPacketList().get(0).getPort());
@@ -37,11 +37,11 @@ public class FullPacketReaderTest {
         var okPacket = new ConnectKOFrame();
         var buffer = ByteBuffer.allocate(Frames.size(okPacket));
         Frames.put(okPacket, buffer);
-        var status = readerFactory.process(buffer, OpCodes.KO);
+        var status = readerFactory.process(buffer, OpCode.KO);
         assertEquals(Reader.ProcessStatus.DONE, status);
         var packet = readerFactory.get();
         assertEquals(new ConnectKOFrame(), packet);
-        assertThrows(IllegalStateException.class,() -> readerFactory.process(buffer, OpCodes.KO));
+        assertThrows(IllegalStateException.class,() -> readerFactory.process(buffer, OpCode.KO));
         readerFactory.reset();
         assertThrows(IllegalStateException.class, readerFactory::get);
 

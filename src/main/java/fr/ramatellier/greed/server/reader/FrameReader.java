@@ -3,7 +3,7 @@ package fr.ramatellier.greed.server.reader;
 import fr.ramatellier.greed.server.frame.model.Frame;
 import fr.ramatellier.greed.server.reader.primitive.ByteReader;
 import fr.ramatellier.greed.server.util.Buffers;
-import fr.ramatellier.greed.server.util.OpCodes;
+import fr.ramatellier.greed.server.util.OpCode;
 import fr.ramatellier.greed.server.frame.FrameKind;
 
 import java.lang.reflect.InvocationTargetException;
@@ -38,7 +38,7 @@ public class FrameReader implements FullPacketReader {
         if(state == State.WAITING_PACKET) {
             var tramKind = FrameKind.toTramKind(locationReader.get());
             if (tramKind == null) return ProcessStatus.ERROR;
-            var opcode = OpCodes.fromByte(codeReader.get());
+            var opcode = OpCode.fromByte(codeReader.get());
             if (opcode == null) return ProcessStatus.ERROR;
             try {
                 var status = fullReaderFactory.process(buffer, opcode);

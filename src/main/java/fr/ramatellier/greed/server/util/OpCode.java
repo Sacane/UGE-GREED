@@ -4,7 +4,7 @@ import fr.ramatellier.greed.server.frame.model.*;
 
 import java.util.function.Predicate;
 
-public enum OpCodes {
+public enum OpCode {
     CONNECT((byte)0x01, ConnectFrame.class),
     KO((byte)0x02, ConnectKOFrame.class),
     OK((byte)0x03, ConnectOKFrame.class),
@@ -23,20 +23,20 @@ public enum OpCodes {
     public final byte BYTES;
     public final Class<? extends Frame> frameClass;
 
-    OpCodes(byte bytes, Class<? extends Frame> frameClass) {
+    OpCode(byte bytes, Class<? extends Frame> frameClass) {
         this.BYTES = bytes;
         this.frameClass = frameClass;
     }
 
-    public static OpCodes fromByte(byte value){
+    public static OpCode fromByte(byte value){
         return retrieveIf(opCode -> opCode.BYTES == value);
     }
-    public static OpCodes fromFrame(Frame frame){
+    public static OpCode fromFrame(Frame frame){
         return retrieveIf(opCode -> opCode.frameClass.equals(frame.getClass()));
     }
 
-    private static OpCodes retrieveIf(Predicate<OpCodes> predicate){
-        for (OpCodes opCode : values()) {
+    private static OpCode retrieveIf(Predicate<OpCode> predicate){
+        for (OpCode opCode : values()) {
             if (predicate.test(opCode)) {
                 return opCode;
             }
