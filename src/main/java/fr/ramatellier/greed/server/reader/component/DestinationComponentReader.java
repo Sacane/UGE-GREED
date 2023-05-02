@@ -23,7 +23,6 @@ public class DestinationComponentReader implements Reader<DestinationPacket> {
         if(state == State.WAITING_SRC) {
             Buffers.runOnProcess(buffer, idSrcReader,
                     __ -> state = State.WAITING_DST,
-                    () -> {},
                     () -> state = State.ERROR);
             if(state == State.ERROR) {
                 return ProcessStatus.ERROR;

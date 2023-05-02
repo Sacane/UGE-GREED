@@ -37,7 +37,6 @@ public class ResponseComponentReader implements Reader<ResponseComponent> {
                     buffer,
                     codeReader,
                     __ -> state = State.WAITING_RESPONSE,
-                    () -> {},
                     () -> state = State.ERROR
             );
         }
@@ -49,7 +48,6 @@ public class ResponseComponentReader implements Reader<ResponseComponent> {
                         state = State.DONE;
                         value = new ResponseComponent(valueReader.get(), response, codeReader.get());
                     },
-                    () -> {},
                     () -> state = State.ERROR
             );
         }

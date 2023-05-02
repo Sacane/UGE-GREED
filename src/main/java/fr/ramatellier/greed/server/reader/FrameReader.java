@@ -2,6 +2,7 @@ package fr.ramatellier.greed.server.reader;
 
 import fr.ramatellier.greed.server.frame.model.Frame;
 import fr.ramatellier.greed.server.reader.primitive.ByteReader;
+import fr.ramatellier.greed.server.util.Buffers;
 import fr.ramatellier.greed.server.util.OpCodes;
 import fr.ramatellier.greed.server.frame.FrameKind;
 
@@ -21,24 +22,18 @@ public class FrameReader implements FullPacketReader {
 
     @Override
     public ProcessStatus process(ByteBuffer buffer) {
-        System.out.println("PacketReader state : " + state);
         if (state == State.DONE || state == State.ERROR) {
             throw new IllegalStateException();
         }
 
         if(state == State.WAITING_LOCATION) {
-            var status = locationReader.process(buffer);
-
-            if(status == ProcessStatus.DONE) {
-                state = State.WAITING_CODE;
-            }
+            Buffers.runOnProcess(buffer,
+                    locationReader,
+                    __ -> state = State.WAITING_CODE,
+                    () -> state = State.ERROR);
         }
         if(state == State.WAITING_CODE) {
-            var status = codeReader.process(buffer);
-
-            if(status == ProcessStatus.DONE) {
-                state = State.WAITING_PACKET;
-            }
+            Buffers.runOnProcess(buffer, codeReader, __ -> state = State.WAITING_PACKET, () -> state = State.ERROR);
         }
         if(state == State.WAITING_PACKET) {
             var tramKind = FrameKind.toTramKind(locationReader.get());
@@ -52,15 +47,12 @@ public class FrameReader implements FullPacketReader {
                     value = fullReaderFactory.get();
                 }
             } catch (NoSuchMethodException | IllegalAccessException | InstantiationException | InvocationTargetException e) {
-                System.err.println("Error while creating reader for opcode " + opcode + " : " + e.getMessage());
                 return ProcessStatus.ERROR;
             }
         }
-
         if (state != State.DONE) {
             return ProcessStatus.REFILL;
         }
-
         return ProcessStatus.DONE;
     }
 

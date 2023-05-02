@@ -47,7 +47,6 @@ public class StringReader implements Reader<String> {
 
             if(!stringBuffer.hasRemaining()) {
                 state = State.DONE;
-
                 stringBuffer.flip();
                 value = UTF8.decode(stringBuffer).toString();
             }

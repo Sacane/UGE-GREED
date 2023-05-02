@@ -33,7 +33,6 @@ public class RangeComponentReader implements Reader<RangeComponent> {
                         state = State.DONE;
                         value = new RangeComponent(startReader.get(), result);
                     },
-                    () -> {},
                     () -> state = State.ERROR);
         }
 

@@ -31,13 +31,6 @@ public class IpAddressComponentReader implements Reader<IpAddressComponent> {
                         addressBuffer = ByteBuffer.allocate(result == 4 ? 4 : 16);
                     },
                     () -> state = State.ERROR);
-//            var status = sizeReader.process(buffer);
-//
-//            if(status == ProcessStatus.DONE) {
-//                state = State.WAITING_ADDRESS;
-//
-//                addressBuffer = ByteBuffer.allocate(sizeReader.get() == 4 ? 4 : 16);
-//            }
         }
         if(state == State.WAITING_ADDRESS) {
             Buffers.fillBuffer(buffer, addressBuffer);

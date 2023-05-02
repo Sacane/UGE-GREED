@@ -34,7 +34,6 @@ public class IDComponentReader implements Reader<IDComponent> {
                         state = State.DONE;
                         value = new IDComponent(new InetSocketAddress(ipReader.get().getAddress(), result));
                     },
-                    () -> {},
                     () -> state = State.ERROR);
         }
         if (state != State.DONE) {
