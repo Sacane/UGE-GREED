@@ -25,12 +25,12 @@ import java.util.stream.LongStream;
  * Visitor for packets received by the server.
  * The context linked to this visitor is the context allowing to communicate with the sender.
  */
-public class ReceivePacketVisitor implements PacketVisitor {
+public class ReceiveFrameVisitor implements FrameVisitor {
     private final Server server;
     private final Context context;
-    private static final Logger logger = Logger.getLogger(ReceivePacketVisitor.class.getName());
+    private static final Logger logger = Logger.getLogger(ReceiveFrameVisitor.class.getName());
 
-    public ReceivePacketVisitor(Server server, Context context) {
+    public ReceiveFrameVisitor(Server server, Context context) {
         this.server = Objects.requireNonNull(server);
         this.context = Objects.requireNonNull(context);
     }
