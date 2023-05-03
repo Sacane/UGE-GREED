@@ -17,7 +17,7 @@ public class StringReader implements Reader<StringComponent> {
     private static final Charset UTF8 = StandardCharsets.UTF_8;
     private final IntReader intReader = new IntReader();
     private ByteBuffer stringBuffer;
-    private String value;
+    private StringComponent value;
 
     @Override
     public ProcessStatus process(ByteBuffer buffer) {
@@ -49,7 +49,7 @@ public class StringReader implements Reader<StringComponent> {
             if(!stringBuffer.hasRemaining()) {
                 state = State.DONE;
                 stringBuffer.flip();
-                value = UTF8.decode(stringBuffer).toString();
+                value = new StringComponent(UTF8.decode(stringBuffer).toString());
             }
         }
 
@@ -66,7 +66,7 @@ public class StringReader implements Reader<StringComponent> {
             throw new IllegalStateException();
         }
 
-        return new StringComponent(value);
+        return value;
     }
 
     @Override

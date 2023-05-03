@@ -9,7 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
-public class Readers {
+public final class Readers {
     private static final ClassValue<Function<? super Frame, PacketComponents>> CACHE = new ClassValue<>() {
         @Override
         protected Function<? super Frame, PacketComponents> computeValue(Class<?> type) {

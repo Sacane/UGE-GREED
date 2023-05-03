@@ -1,22 +1,15 @@
 package fr.ramatellier.greed.server.util.http;
 
+import fr.ramatellier.greed.server.Context;
 import fr.ramatellier.greed.server.reader.Reader;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
-import java.nio.channels.SocketChannel;
 import java.util.Objects;
 import java.util.logging.Logger;
 
-public final class HTTPContext {
-    private static final int BUFFER_SIZE = 8192;
-    private final ByteBuffer bufferIn = ByteBuffer.allocate(BUFFER_SIZE);
-    private final ByteBuffer bufferOut = ByteBuffer.allocate(BUFFER_SIZE);
-    private boolean closed = false;
-    private final SelectionKey key;
-    private final SocketChannel sc;
+public final class HTTPContext extends Context {
     private final NonBlockingHTTPJarProvider client;
     private final String request;
     private boolean isRequestSent;
@@ -24,11 +17,9 @@ public final class HTTPContext {
     private static final Logger LOGGER = Logger.getLogger(HTTPContext.class.getName());
 
     HTTPContext(NonBlockingHTTPJarProvider client, SelectionKey key, String request) {
-        Objects.requireNonNull(key);
+        super(null, key);
         this.client = Objects.requireNonNull(client);
-        this.key = key;
-        this.sc = (SocketChannel) key.channel();
-        this.request = request;
+        this.request = Objects.requireNonNull(request);
     }
 
     private void silentlyClose() {
@@ -38,23 +29,6 @@ public final class HTTPContext {
             // ignore exception
         }
     }
-    public void updateInterestOps() {
-        var op = 0;
-
-        if (bufferOut.position() > 0) {
-            op |= SelectionKey.OP_WRITE;
-        }
-        if (!closed && bufferIn.hasRemaining()) {
-            op |= SelectionKey.OP_READ;
-        }
-        if (op == 0) {
-            silentlyClose();
-
-            return;
-        }
-
-        key.interestOps(op);
-    }
 
     public void doConnect() throws IOException {
         if(!sc.finishConnect()){
@@ -63,7 +37,8 @@ public final class HTTPContext {
         key.interestOps(SelectionKey.OP_WRITE);
     }
 
-    private void processIn() {
+    @Override
+    protected void processIn() {
         while(true){
             var response = reader.process(bufferIn);
             if(response == Reader.ProcessStatus.DONE){
@@ -89,6 +64,7 @@ public final class HTTPContext {
         }
     }
 
+    @Override
     public void doWrite() throws IOException {
         if(isRequestSent){
             return;
@@ -100,17 +76,10 @@ public final class HTTPContext {
         updateInterestOps();
     }
 
-    private void processOut() {
+    @Override
+    protected void processOut() {
         bufferOut.put(request.getBytes());
         isRequestSent = true;
     }
 
-    public void doRead() throws IOException {
-        var readValue = sc.read(bufferIn);
-        if (readValue == -1) {
-            closed = true;
-        }
-        processIn();
-        updateInterestOps();
-    }
 }

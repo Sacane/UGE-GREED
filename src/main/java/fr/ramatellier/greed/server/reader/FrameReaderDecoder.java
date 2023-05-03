@@ -1,6 +1,9 @@
 package fr.ramatellier.greed.server.reader;
 
 import fr.ramatellier.greed.server.frame.component.*;
+import fr.ramatellier.greed.server.frame.component.primitive.ByteComponent;
+import fr.ramatellier.greed.server.frame.component.primitive.IntComponent;
+import fr.ramatellier.greed.server.frame.component.primitive.LongComponent;
 import fr.ramatellier.greed.server.frame.model.*;
 import fr.ramatellier.greed.server.reader.component.*;
 import fr.ramatellier.greed.server.reader.primitive.ByteReader;
@@ -43,6 +46,9 @@ public class FrameReaderDecoder {
         packetToReader.put(DestinationPacket.class, new DestinationComponentReader());
         packetToReader.put(ResponseComponent.class, new ResponseComponentReader());
         packetToReader.put(IDListComponent.class, new IDComponentListReader());
+        packetToReader.put(LongComponent.class, new LongComponentReader());
+        packetToReader.put(IntComponent.class, new IntComponentReader());
+        packetToReader.put(ByteComponent.class, new ByteComponentReader());
         packetToReader.put(long.class, new LongReader());
         packetToReader.put(Integer.class, new IntReader());
         packetToReader.put(Byte.class, new ByteReader());

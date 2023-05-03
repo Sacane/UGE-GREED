@@ -15,27 +15,32 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayDeque;
+import java.util.Objects;
 
 public abstract class Context {
     private static final int BUFFER_SIZE = 32_768;
     protected final SelectionKey key;
     protected final SocketChannel sc;
     private final ReceiveFrameVisitor visitor;
-    private final ByteBuffer bufferIn = ByteBuffer.allocate(BUFFER_SIZE);
-    private final ByteBuffer bufferOut = ByteBuffer.allocate(BUFFER_SIZE);
+    protected final ByteBuffer bufferIn = ByteBuffer.allocate(BUFFER_SIZE);
+    protected final ByteBuffer bufferOut = ByteBuffer.allocate(BUFFER_SIZE);
     private final FrameReader packetReader = new FrameReader();
     private final ArrayDeque<Frame> queue = new ArrayDeque<>();
     private boolean closed = false;
     private final Server server;
 
     public Context(Server server, SelectionKey key) {
-        this.key = key;
+        this.key = Objects.requireNonNull(key);
+        if(server != null) {
+            this.visitor = new ReceiveFrameVisitor(server, this);
+        } else {
+            this.visitor = null;
+        }
         this.sc = (SocketChannel) key.channel();
-        this.visitor = new ReceiveFrameVisitor(server, this);
         this.server = server;
     }
 
-    private void processIn() {
+    protected void processIn() {
         for (;;) {
             var state = packetReader.process(bufferIn);
             switch (state) {
@@ -77,7 +82,7 @@ public abstract class Context {
         updateInterestOps();
     }
 
-    private void processOut() {
+    protected void processOut() {
         while(!queue.isEmpty()) {
             var packet = queue.peek();
             if (Frames.size(packet) <= bufferOut.remaining()) {
