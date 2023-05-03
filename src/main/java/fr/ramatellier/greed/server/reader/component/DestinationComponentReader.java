@@ -1,6 +1,7 @@
 package fr.ramatellier.greed.server.reader.component;
 
 import fr.ramatellier.greed.server.frame.component.DestinationPacket;
+import fr.ramatellier.greed.server.frame.component.StringComponent;
 import fr.ramatellier.greed.server.reader.Reader;
 import fr.ramatellier.greed.server.util.Buffers;
 
@@ -32,7 +33,7 @@ public class DestinationComponentReader implements Reader<DestinationPacket> {
             Buffers.runOnProcess(buffer, idDstReader,
                     result -> {
                         state = State.DONE;
-                        value = new DestinationPacket(idSrcReader.get().getSocket(), idDstReader.get().getSocket());
+                        value = new DestinationPacket(new StringComponent(idSrcReader.get().getSocket().getHostName()), new StringComponent(idDstReader.get().getSocket().getHostName()));
                     },
                     () -> state = State.ERROR);
             if(state == State.ERROR) {

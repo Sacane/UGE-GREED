@@ -4,6 +4,6 @@ import fr.ramatellier.greed.server.frame.component.primitive.LongComponent;
 
 public class LongComponentReader extends PrimitiveComponentReader<LongComponent> {
     public LongComponentReader() {
-        super(Long.BYTES, buffer -> new LongComponent(buffer.getLong()));
+        super(Long.BYTES, buffer -> LongComponent.of(buffer.getLong()));
     }
 }

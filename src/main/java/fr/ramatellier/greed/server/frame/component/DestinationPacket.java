@@ -3,25 +3,9 @@ package fr.ramatellier.greed.server.frame.component;
 import fr.ramatellier.greed.server.reader.Reader;
 import fr.ramatellier.greed.server.reader.component.DestinationComponentReader;
 
-import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
-public final class DestinationPacket implements GreedComponent {
-    private final IDComponent idSrc;
-    private final IDComponent idDst;
-
-    public DestinationPacket(InetSocketAddress srcAddress, InetSocketAddress dstAddress) {
-        idSrc = new IDComponent(srcAddress);
-        idDst = new IDComponent(dstAddress);
-    }
-
-    public IDComponent getIdSrc() {
-        return idSrc;
-    }
-
-    public IDComponent getIdDst() {
-        return idDst;
-    }
+public record DestinationPacket(StringComponent idSrc, StringComponent idDst) implements GreedComponent {
 
     @Override
     public void putInBuffer(ByteBuffer buffer) {

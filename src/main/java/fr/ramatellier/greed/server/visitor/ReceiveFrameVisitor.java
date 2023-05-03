@@ -7,6 +7,7 @@ import fr.ramatellier.greed.server.frame.component.IDComponent;
 import fr.ramatellier.greed.server.frame.component.IDListComponent;
 import fr.ramatellier.greed.server.frame.component.RangeComponent;
 import fr.ramatellier.greed.server.frame.component.ResponseComponent;
+import fr.ramatellier.greed.server.frame.component.primitive.LongComponent;
 import fr.ramatellier.greed.server.frame.model.*;
 import fr.ramatellier.greed.server.util.http.NonBlockingHTTPJarProvider;
 import fr.uge.ugegreed.Checker;
@@ -86,13 +87,13 @@ public class ReceiveFrameVisitor implements FrameVisitor {
         if(server.isRunning()) {
             var deltaComputingPossibility = Server.MAXIMUM_COMPUTATION - server.currentOnWorkingComputationsValue();
             if(deltaComputingPossibility > 0) { //He is accepting the computation
-                server.addRoom(new ComputationEntity(new ComputationIdentifier(packet.requestId(), packet.src().getSocket()),
+                server.addRoom(new ComputationEntity(new ComputationIdentifier(packet.requestId().get(), packet.src().getSocket()),
                         new ComputeInfo(packet.checker().url(), packet.checker().className(), packet.range().start(), packet.range().end())));
                 server.transfer(packet.src().getSocket(), new WorkRequestResponseFrame(
                         packet.src(),
                         packet.dst(),
                         packet.requestId(),
-                        deltaComputingPossibility
+                        LongComponent.of(deltaComputingPossibility)
                 ));
             }
         }
@@ -101,7 +102,7 @@ public class ReceiveFrameVisitor implements FrameVisitor {
                     packet.src(),
                     packet.dst(),
                     packet.requestId(),
-                    0L
+                    LongComponent.of(0L)
             ));
         }
     }
@@ -114,7 +115,7 @@ public class ReceiveFrameVisitor implements FrameVisitor {
     @Override
     public void visit(WorkAssignmentFrame packet) {
         System.out.println("Start computation...");
-        var idContext = new ComputationIdentifier(packet.requestId(), packet.src().getSocket());
+        var idContext = new ComputationIdentifier(packet.requestId().get(), packet.src().getSocket());
         server.updateRoom(idContext, packet.range().start(), packet.range().end());
         var entityResponse = server.findComputationById(idContext);
         if(entityResponse.isEmpty()) {
@@ -127,17 +128,7 @@ public class ReceiveFrameVisitor implements FrameVisitor {
         try {
             var httpClient = NonBlockingHTTPJarProvider.fromURL(new URL(entity.info().url()));
             httpClient.onDone(body -> {
-                var path = Path.of(httpClient.getFilePath());
-                System.out.println(path);
-                var checkerResult = Client.checkerFromDisk(path, entity.info().className());
-                Checker checker;
-                if(checkerResult.isEmpty()) {
-                    logger.severe("CANNOT GET THE CHECKER");
-                    checker = null;
-                }
-                else {
-                    checker = checkerResult.get();
-                }
+                Checker checker = Server.retrieveChecker(httpClient, entity.info().className());
                 for(var i = targetRange.start(); i < targetRange.end(); i++) {
                     server.addTask(new TaskComputation(packet, checker, entity.id(), i));
                 }
@@ -171,7 +162,7 @@ public class ReceiveFrameVisitor implements FrameVisitor {
             default -> logger.severe("UNKNOWN RESPONSE CODE");
         }
 
-        var id = new ComputationIdentifier(packet.requestID(), server.getAddress());
+        var id = new ComputationIdentifier(packet.requestID().get(), server.getAddress());
         try {
             server.treatComputationResult(id, packet.result());
         } catch (IOException e) {
@@ -255,16 +246,16 @@ public class ReceiveFrameVisitor implements FrameVisitor {
 
     @Override
     public void visit(WorkRequestResponseFrame packet) {
-        if(packet.nb_uc() == 0){
+        if(packet.nb_uc().get() == 0){
             return;
         }
-        var computeId = new ComputationIdentifier(packet.requestID(), server.getAddress());
+        var computeId = new ComputationIdentifier(packet.requestID().get(), server.getAddress());
         var entity = server.retrieveWaitingComputation(computeId);
         if(entity == null){
             return;
         }
         server.incrementWaitingWorker(computeId);
-        server.storeComputation(computeId, new SocketUcIdentifier(packet.src().getSocket(), packet.nb_uc()));
+        server.storeComputation(computeId, new SocketUcIdentifier(packet.src().getSocket(), packet.nb_uc().get()));
         if(server.isRoomReady(computeId)){
             var process = new SharingProcessExecutor(
                     server.availableSocketsUc(computeId),

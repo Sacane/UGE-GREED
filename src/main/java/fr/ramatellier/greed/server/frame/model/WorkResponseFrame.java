@@ -2,13 +2,14 @@ package fr.ramatellier.greed.server.frame.model;
 
 import fr.ramatellier.greed.server.frame.component.IDComponent;
 import fr.ramatellier.greed.server.frame.component.ResponseComponent;
+import fr.ramatellier.greed.server.frame.component.primitive.LongComponent;
 
 import java.util.Objects;
 
 public record WorkResponseFrame(
     IDComponent src,
     IDComponent dst,
-    long requestID,
+    LongComponent requestID,
     ResponseComponent responsePacket
 ) implements TransferFrame {
     public WorkResponseFrame {

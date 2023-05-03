@@ -2,6 +2,7 @@ package fr.ramatellier.greed.server;
 
 import fr.ramatellier.greed.server.compute.*;
 import fr.ramatellier.greed.server.frame.component.*;
+import fr.ramatellier.greed.server.frame.component.primitive.LongComponent;
 import fr.ramatellier.greed.server.frame.model.*;
 import fr.ramatellier.greed.server.util.ComputeCommandParser;
 import fr.ramatellier.greed.server.frame.FrameKind;
@@ -314,19 +315,9 @@ public class Server {
                 computationRoomHandler.prepare(entity, routeTable.size());
                 var httpClient = NonBlockingHTTPJarProvider.fromURL(new URL(entity.info().url()));
                 httpClient.onDone(body -> {
-                    var path = Path.of(httpClient.getFilePath());
-                    System.out.println(path);
-                    var checkerResult = Client.checkerFromDisk(path, entity.info().className());
-                    Checker checker;
-                    if(checkerResult.isEmpty()) {
-                        logger.severe("CANNOT GET THE CHECKER");
-                        checker = null;
-                    }
-                    else {
-                        checker = checkerResult.get();
-                    }
+                    Checker checker = retrieveChecker(httpClient, entity.info().className());
                     for(var i = info.start(); i < info.end(); i++) {
-                        addTask(new TaskComputation(new WorkAssignmentFrame(null, null, id.id(), null), checker, entity.id(), i));
+                        addTask(new TaskComputation(new WorkAssignmentFrame(null, null, LongComponent.of(id.id()), null), checker, entity.id(), i));
                     }
                 });
                 httpClient.launch();
@@ -339,12 +330,22 @@ public class Server {
             computationRoomHandler.prepare(entity, routeTable.size());
             routeTable.performOnAllAddress(address -> transfer(address.address(), new WorkRequestFrame(
                     new IDComponent(this.address), new IDComponent(address.address()),
-                    id.id(),
+                    LongComponent.of(id.id()),
                     new CheckerComponent(info.url(), info.className()),
                     new RangeComponent(info.start(), info.end()),
-                    info.end() - info.start()
+                    LongComponent.of(info.end() - info.start())
             )));
         }
+    }
+    public static Checker retrieveChecker(NonBlockingHTTPJarProvider provider, String className){
+        var path = Path.of(provider.getFilePath());
+        System.out.println(path);
+        var checkerResult = Client.checkerFromDisk(path, className);
+        if(checkerResult.isEmpty()) {
+            logger.severe("CANNOT GET THE CHECKER");
+            return null;
+        }
+        return checkerResult.get();
     }
 
     public void treatComputationResult(ComputationIdentifier id, String result) throws IOException {
@@ -550,7 +551,7 @@ public class Server {
                         incrementComputation(response.id());
                     }
                     else {
-                        var id = new ComputationIdentifier(response.packet().requestId(), getAddress());
+                        var id = new ComputationIdentifier(response.packet().requestId().get(), getAddress());
 
                         treatComputationResult(id, response.response());
                     }

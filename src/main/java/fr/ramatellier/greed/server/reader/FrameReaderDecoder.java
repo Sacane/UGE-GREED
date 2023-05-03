@@ -49,10 +49,6 @@ public class FrameReaderDecoder {
         packetToReader.put(LongComponent.class, new LongComponentReader());
         packetToReader.put(IntComponent.class, new IntComponentReader());
         packetToReader.put(ByteComponent.class, new ByteComponentReader());
-        packetToReader.put(long.class, new LongReader());
-        packetToReader.put(Integer.class, new IntReader());
-        packetToReader.put(Byte.class, new ByteReader());
-
         return packetToReader;
     }
 
