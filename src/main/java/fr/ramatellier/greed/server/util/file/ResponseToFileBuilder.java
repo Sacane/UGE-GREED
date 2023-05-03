@@ -20,16 +20,30 @@ public final class ResponseToFileBuilder {
         this.fileName = Objects.requireNonNull(fileName);
     }
 
+    /**
+     * Append a string to the StringBuilder.
+     * @param str the string to append
+     * @return the updated builder
+     */
     public ResponseToFileBuilder append(String str) {
         builder.append(str);
         return this;
     }
 
+    /**
+     * Build a file from the StringBuilder content.
+     * @throws IOException if an error occurs while writing the file
+     */
     public void build() throws IOException {
+        if(builder.length() == 0){
+            logger.warning("Builder is empty, nothing to write");
+            return;
+        }
         var file = new File(fileName);
         try(var writer = new FileWriter(file)){
             writer.write(builder.toString());
+        }finally {
+            logger.info("Result has been created into -> " + file.getAbsolutePath());
         }
-        logger.info("Result has been created into -> " + file.getAbsolutePath());
     }
 }

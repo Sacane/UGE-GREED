@@ -1,29 +1,27 @@
-package fr.ramatellier.greed.server.reader.primitive;
+package fr.ramatellier.greed.server.reader.component;
 
+import fr.ramatellier.greed.server.frame.component.GreedComponent;
 import fr.ramatellier.greed.server.reader.Reader;
+import fr.ramatellier.greed.server.reader.primitive.PrimitiveReader;
 import fr.ramatellier.greed.server.util.Buffers;
 
 import java.nio.ByteBuffer;
+import java.util.Objects;
 import java.util.function.Function;
 
-/**
- * Perform reader of a primitive Value, passing its number of bytes in constructor.
- * @param <T>
- */
-public abstract class PrimitiveReader<T> implements Reader<T> {
+public class PrimitiveComponentReader<T extends GreedComponent> implements Reader<T> {
     private enum State {
         DONE, WAITING, ERROR
     }
     private State state = State.WAITING;
-    private final ByteBuffer internalBuffer; // write-mode
+    private final ByteBuffer internalBuffer;
+    private final Function<ByteBuffer, T> componentFactory;
     private T value;
-    private final Function<ByteBuffer, T> converter;
-
-    public PrimitiveReader(int nbByte, Function<ByteBuffer, T> converter) {
+    public PrimitiveComponentReader(int nbByte, Function<ByteBuffer, T> componentFactory) {
+        Objects.requireNonNull(componentFactory);
+        this.componentFactory = componentFactory;
         this.internalBuffer = ByteBuffer.allocate(nbByte);
-        this.converter = converter;
     }
-
     @Override
     public ProcessStatus process(ByteBuffer buffer) {
         if (state == State.DONE || state == State.ERROR) {
@@ -35,11 +33,9 @@ public abstract class PrimitiveReader<T> implements Reader<T> {
         if (internalBuffer.hasRemaining()) {
             return Reader.ProcessStatus.REFILL;
         }
-
         state = State.DONE;
         internalBuffer.flip();
-        value = converter.apply(internalBuffer);
-
+        value = componentFactory.apply(internalBuffer);
         return Reader.ProcessStatus.DONE;
     }
 
