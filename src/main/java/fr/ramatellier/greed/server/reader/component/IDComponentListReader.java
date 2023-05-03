@@ -10,7 +10,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-public class IDComponentList implements Reader<IDListComponent> {
+public class IDComponentListReader implements Reader<IDListComponent> {
     private enum State {
         DONE, WAITING_SIZE, WAITING_ID, ERROR
     }

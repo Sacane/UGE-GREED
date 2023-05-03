@@ -1,5 +1,8 @@
 package fr.ramatellier.greed.server.frame.component;
 
+import fr.ramatellier.greed.server.reader.Reader;
+import fr.ramatellier.greed.server.reader.component.StringReader;
+
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -15,5 +18,10 @@ public record StringComponent(String value) implements GreedComponent {
     @Override
     public int size() {
         return Integer.BYTES + value.length();
+    }
+
+    @Override
+    public Reader<? extends GreedComponent> reader() {
+        return new StringReader();
     }
 }

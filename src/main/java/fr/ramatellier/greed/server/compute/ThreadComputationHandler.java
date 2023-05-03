@@ -2,11 +2,11 @@ package fr.ramatellier.greed.server.compute;
 
 import java.util.concurrent.LinkedBlockingQueue;
 
-public final class ThreadComputation {
+public final class ThreadComputationHandler {
     private final LinkedBlockingQueue<TaskComputation> task;
     private final LinkedBlockingQueue<ResponseTaskComputation> responses;
 
-    public ThreadComputation(int nbThread) {
+    public ThreadComputationHandler(int nbThread) {
         task = new LinkedBlockingQueue<>();
         responses = new LinkedBlockingQueue<>();
 

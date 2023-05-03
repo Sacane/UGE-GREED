@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class FullPacketReaderTest {
-    private final FrameReaderAdapter readerFactory = new FrameReaderAdapter();
+    private final FrameReaderDecoder readerFactory = new FrameReaderDecoder();
     @Test
     public void simpleReadPacketTest() throws InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
         var okPacket = new ConnectOKFrame(new IDComponent((new InetSocketAddress(7777))), new IDListComponent(List.of(new IDComponent(new InetSocketAddress(7778)), new IDComponent(new InetSocketAddress(7779)))));
@@ -25,7 +25,7 @@ public class FullPacketReaderTest {
         System.out.println("size : " + size);
         var buffer = ByteBuffer.allocate(size);
         Frames.put(okPacket, buffer);
-        var status = readerFactory.process(buffer, OpCode.OK);
+        readerFactory.process(buffer, OpCode.OK);
         assertEquals(7777, okPacket.getPort());
         assertEquals(2, okPacket.neighbours().idPacketList().size());
         assertEquals(7778, okPacket.neighbours().idPacketList().get(0).getPort());
@@ -46,17 +46,4 @@ public class FullPacketReaderTest {
         assertThrows(IllegalStateException.class, readerFactory::get);
 
     }
-
-//    public void simpleReadPacketTest3() throws InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
-//        var buffer = ByteBuffer.allocate(okPacket.size());
-//        okPacket.put(buffer);
-//        var status = reader.process(buffer, OpCodes.KO);
-//        assertEquals(Reader.ProcessStatus.DONE, status);
-//        var packet = reader.get();
-//        assertEquals(new ConnectKOPacket(), packet);
-//        assertThrows(IllegalStateException.class,() -> reader.process(buffer, OpCodes.KO));
-//        reader.reset();
-//        assertThrows(IllegalStateException.class, reader::get);
-//
-//    }
 }

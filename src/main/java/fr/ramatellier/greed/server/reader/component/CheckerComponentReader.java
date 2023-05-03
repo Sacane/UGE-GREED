@@ -29,14 +29,13 @@ public class CheckerComponentReader implements Reader<CheckerComponent> {
             Buffers.runOnProcess(buffer, classNameReader,
                     result -> {
                         state = State.DONE;
-                        value = new CheckerComponent(urlReader.get(), result);
+                        value = new CheckerComponent(urlReader.get().value(), result.value());
                     },
                     () -> state = State.ERROR);
         }
         if (state != State.DONE) {
             return ProcessStatus.REFILL;
         }
-
         return Reader.ProcessStatus.DONE;
     }
 

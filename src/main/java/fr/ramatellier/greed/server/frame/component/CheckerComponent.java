@@ -1,5 +1,8 @@
 package fr.ramatellier.greed.server.frame.component;
 
+import fr.ramatellier.greed.server.reader.Reader;
+import fr.ramatellier.greed.server.reader.component.CheckerComponentReader;
+
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
@@ -20,5 +23,10 @@ public record CheckerComponent(String url, String className) implements GreedCom
     @Override
     public int size() {
         return Integer.BYTES * 2 + url.length() + className.length();
+    }
+
+    @Override
+    public Reader<? extends GreedComponent> reader() {
+        return new CheckerComponentReader();
     }
 }

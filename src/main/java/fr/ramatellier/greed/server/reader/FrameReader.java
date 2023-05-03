@@ -9,11 +9,11 @@ import fr.ramatellier.greed.server.frame.FrameKind;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
 
-public class FrameReader implements FullPacketReader {
+public class FrameReader implements Reader<Frame> {
     private enum State {
         DONE, WAITING_LOCATION, WAITING_CODE, WAITING_PACKET, ERROR
     }
-    private final FrameReaderAdapter fullReaderFactory = new FrameReaderAdapter();
+    private final FrameReaderDecoder frameDecoder = new FrameReaderDecoder();
     private State state = State.WAITING_LOCATION;
     private final ByteReader locationReader = new ByteReader();
     private final ByteReader codeReader = new ByteReader();
@@ -33,7 +33,10 @@ public class FrameReader implements FullPacketReader {
                     () -> state = State.ERROR);
         }
         if(state == State.WAITING_CODE) {
-            Buffers.runOnProcess(buffer, codeReader, __ -> state = State.WAITING_PACKET, () -> state = State.ERROR);
+            Buffers.runOnProcess(buffer,
+                    codeReader,
+                    __ -> state = State.WAITING_PACKET,
+                    () -> state = State.ERROR);
         }
         if(state == State.WAITING_PACKET) {
             var tramKind = FrameKind.toTramKind(locationReader.get());
@@ -41,10 +44,10 @@ public class FrameReader implements FullPacketReader {
             var opcode = OpCode.fromByte(codeReader.get());
             if (opcode == null) return ProcessStatus.ERROR;
             try {
-                var status = fullReaderFactory.process(buffer, opcode);
+                var status = frameDecoder.process(buffer, opcode);
                 if(status == ProcessStatus.DONE) {
                     state = State.DONE;
-                    value = fullReaderFactory.get();
+                    value = frameDecoder.get();
                 }
             } catch (NoSuchMethodException | IllegalAccessException | InstantiationException | InvocationTargetException e) {
                 return ProcessStatus.ERROR;
@@ -69,6 +72,6 @@ public class FrameReader implements FullPacketReader {
         state = State.WAITING_LOCATION;
         locationReader.reset();
         codeReader.reset();
-        fullReaderFactory.reset();
+        frameDecoder.reset();
     }
 }

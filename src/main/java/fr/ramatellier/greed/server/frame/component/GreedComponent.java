@@ -1,5 +1,7 @@
 package fr.ramatellier.greed.server.frame.component;
 
+import fr.ramatellier.greed.server.reader.Reader;
+
 import java.nio.ByteBuffer;
 
 /**
@@ -9,4 +11,5 @@ import java.nio.ByteBuffer;
 public interface GreedComponent {
     void putInBuffer(ByteBuffer buffer);
     int size();
+    Reader<? extends GreedComponent> reader();
 }

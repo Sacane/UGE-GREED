@@ -1,5 +1,8 @@
 package fr.ramatellier.greed.server.frame.component;
 
+import fr.ramatellier.greed.server.reader.Reader;
+import fr.ramatellier.greed.server.reader.component.ResponseComponentReader;
+
 import java.nio.ByteBuffer;
 
 public final class ResponseComponent implements GreedComponent {
@@ -29,6 +32,11 @@ public final class ResponseComponent implements GreedComponent {
     @Override
     public int size() {
         return Long.BYTES + Byte.BYTES + response.size();
+    }
+
+    @Override
+    public Reader<? extends GreedComponent> reader() {
+        return new ResponseComponentReader();
     }
 
     public byte getResponseCode() {

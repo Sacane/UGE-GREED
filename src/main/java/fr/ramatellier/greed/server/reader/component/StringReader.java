@@ -1,5 +1,6 @@
 package fr.ramatellier.greed.server.reader.component;
 
+import fr.ramatellier.greed.server.frame.component.StringComponent;
 import fr.ramatellier.greed.server.reader.Reader;
 import fr.ramatellier.greed.server.reader.primitive.IntReader;
 import fr.ramatellier.greed.server.util.Buffers;
@@ -8,7 +9,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
-public class StringReader implements Reader<String> {
+public class StringReader implements Reader<StringComponent> {
     private enum State {
         DONE, WAITING_INT, WAITING_STRING, ERROR
     }
@@ -60,12 +61,12 @@ public class StringReader implements Reader<String> {
     }
 
     @Override
-    public String get() {
+    public StringComponent get() {
         if (state != State.DONE) {
             throw new IllegalStateException();
         }
 
-        return value;
+        return new StringComponent(value);
     }
 
     @Override

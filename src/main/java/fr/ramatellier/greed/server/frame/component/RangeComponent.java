@@ -1,5 +1,8 @@
 package fr.ramatellier.greed.server.frame.component;
 
+import fr.ramatellier.greed.server.reader.Reader;
+import fr.ramatellier.greed.server.reader.component.RangeComponentReader;
+
 import java.nio.ByteBuffer;
 
 public record RangeComponent(long start, long end) implements GreedComponent {
@@ -13,5 +16,10 @@ public record RangeComponent(long start, long end) implements GreedComponent {
     @Override
     public int size() {
         return Long.BYTES * 2;
+    }
+
+    @Override
+    public Reader<? extends GreedComponent> reader() {
+        return new RangeComponentReader();
     }
 }

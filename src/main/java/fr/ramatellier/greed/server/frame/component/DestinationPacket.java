@@ -1,5 +1,8 @@
 package fr.ramatellier.greed.server.frame.component;
 
+import fr.ramatellier.greed.server.reader.Reader;
+import fr.ramatellier.greed.server.reader.component.DestinationComponentReader;
+
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
@@ -29,5 +32,10 @@ public final class DestinationPacket implements GreedComponent {
     @Override
     public int size() {
         return idSrc.size() + idDst.size();
+    }
+
+    @Override
+    public Reader<? extends GreedComponent> reader() {
+        return new DestinationComponentReader();
     }
 }

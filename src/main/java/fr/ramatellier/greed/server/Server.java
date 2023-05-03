@@ -47,7 +47,7 @@ public class Server {
     private SocketChannel parentSocketChannel;
     private InetSocketAddress parentSocketAddress;
     private SelectionKey parentKey;
-    private final ThreadComputation computation = new ThreadComputation(100);
+    private final ThreadComputationHandler computation = new ThreadComputationHandler(100);
     private final LinkedBlockingQueue<SendInformation> packets = new LinkedBlockingQueue<>();
     // Others
     private enum ServerState {

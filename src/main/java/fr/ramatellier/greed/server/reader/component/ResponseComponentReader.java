@@ -46,7 +46,7 @@ public class ResponseComponentReader implements Reader<ResponseComponent> {
                     responseReader,
                     response -> {
                         state = State.DONE;
-                        value = new ResponseComponent(valueReader.get(), response, codeReader.get());
+                        value = new ResponseComponent(valueReader.get(), response.value(), codeReader.get());
                     },
                     () -> state = State.ERROR
             );

@@ -15,15 +15,17 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * This class is used to read any kind of {@link Frame} from a ByteBuffer.
+ * Thread-safe class used to decode any kind of {@link Frame} from a ByteBuffer.
  * It uses the {@link OpCode} to know which Packet to create.
  */
-public class FrameReaderAdapter {
+public class FrameReaderDecoder {
     private record PacketComponents(Class<? extends Frame> packet, Class<?>[] components){}
     private static final Map<OpCode, PacketComponents> opCodeToConstructors = new HashMap<>();
-    private final Map<Class<?>, Reader<?>> packetToReader = initPacketReader();
+    private static final Map<Class<?>, Reader<?>> packetToReader = initPacketReader();
+    private final ReentrantLock lock = new ReentrantLock();
     private Frame value;
     private int currentPosition;
     private final ArrayList<Object> currentValues = new ArrayList<>();
@@ -31,7 +33,7 @@ public class FrameReaderAdapter {
         DONE, WAITING_PAYLOAD, ERROR
     }
     private State state = State.WAITING_PAYLOAD;
-    private Map<Class<?>, Reader<?>> initPacketReader(){
+    private static Map<Class<?>, Reader<?>> initPacketReader(){
         var packetToReader = new HashMap<Class<?>, Reader<?>>();
         packetToReader.put(StringComponent.class, new StringReader());
         packetToReader.put(IDComponent.class, new IDComponentReader());
@@ -40,11 +42,11 @@ public class FrameReaderAdapter {
         packetToReader.put(RangeComponent.class, new RangeComponentReader());
         packetToReader.put(DestinationPacket.class, new DestinationComponentReader());
         packetToReader.put(ResponseComponent.class, new ResponseComponentReader());
-        packetToReader.put(IDListComponent.class, new IDComponentList());
-        packetToReader.put(Long.class, new LongReader());
+        packetToReader.put(IDListComponent.class, new IDComponentListReader());
         packetToReader.put(long.class, new LongReader());
         packetToReader.put(Integer.class, new IntReader());
         packetToReader.put(Byte.class, new ByteReader());
+
         return packetToReader;
     }
 
@@ -60,45 +62,60 @@ public class FrameReaderAdapter {
     }
 
     public Reader.ProcessStatus process(ByteBuffer buffer, OpCode opcode) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
-        if(state == State.DONE)
-            throw new IllegalStateException("Reader already done without reset");
-        if(state == State.ERROR)
-            throw new IllegalStateException("Reader already in error state");
-        var packet = opCodeToConstructors.get(opcode);
-        for(var i = currentPosition; i < packet.components.length; i++){
-            var component = packet.components[i];
-            var reader = packetToReader.get(component);
-            var status = reader.process(buffer);
-            if(status == Reader.ProcessStatus.DONE){
-                currentValues.add(reader.get());
-                reader.reset();
-                currentPosition = 0;
-            } else if (status == Reader.ProcessStatus.REFILL) {
-                currentPosition = i;
-                return Reader.ProcessStatus.REFILL;
-            } else if(status == Reader.ProcessStatus.ERROR){
-                state = State.ERROR;
-                return Reader.ProcessStatus.ERROR;
+        lock.lock();
+        try {
+            if (state == State.DONE)
+                throw new IllegalStateException("Reader already done without reset");
+            if (state == State.ERROR)
+                throw new IllegalStateException("Reader already in error state");
+            var packet = opCodeToConstructors.get(opcode);
+            for (var i = currentPosition; i < packet.components.length; i++) {
+                var component = packet.components[i];
+                var reader = packetToReader.get(component);
+                var status = reader.process(buffer);
+                if (status == Reader.ProcessStatus.DONE) {
+                    currentValues.add(reader.get());
+                    reader.reset();
+                    currentPosition = 0;
+                } else if (status == Reader.ProcessStatus.REFILL) {
+                    currentPosition = i;
+                    return Reader.ProcessStatus.REFILL;
+                } else if (status == Reader.ProcessStatus.ERROR) {
+                    state = State.ERROR;
+                    return Reader.ProcessStatus.ERROR;
+                }
             }
+            state = State.DONE;
+            value = packet.packet.getDeclaredConstructor(packet.components).newInstance(currentValues.toArray());
+            return Reader.ProcessStatus.DONE;
+        }finally {
+            lock.unlock();
         }
-        state = State.DONE;
-        value = packet.packet.getDeclaredConstructor(packet.components).newInstance(currentValues.toArray());
-        return Reader.ProcessStatus.DONE;
     }
 
     public Frame get() {
-        if(state != State.DONE)
-            throw new IllegalStateException("Reader not done");
-        return value;
+        lock.lock();
+        try {
+            if (state != State.DONE)
+                throw new IllegalStateException("Reader not done");
+            return value;
+        }finally {
+            lock.unlock();
+        }
     }
 
     public void reset(){
-        for(var reader: packetToReader.values()){
-            reader.reset();
+        lock.lock();
+        try {
+            for (var reader : packetToReader.values()) {
+                reader.reset();
+            }
+            state = State.WAITING_PAYLOAD;
+            currentPosition = 0;
+            currentValues.clear();
+        }finally {
+            lock.unlock();
         }
-        state = State.WAITING_PAYLOAD;
-        currentPosition = 0;
-        currentValues.clear();
     }
 
 }

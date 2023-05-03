@@ -80,16 +80,10 @@ public abstract class Context {
     private void processOut() {
         while(!queue.isEmpty()) {
             var packet = queue.peek();
-            try {
-                if (Frames.size(packet) <= bufferOut.remaining()) {
-                    queue.poll();
-                    Frames.put(packet, bufferOut);
-                } else {
-                    break;
-                }
-            } catch (InvocationTargetException | IllegalAccessException e) {
-                System.out.println("Error while writing packet");
-                silentlyClose();
+            if (Frames.size(packet) <= bufferOut.remaining()) {
+                queue.poll();
+                Frames.put(packet, bufferOut);
+            } else {
                 break;
             }
         }
