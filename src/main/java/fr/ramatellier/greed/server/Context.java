@@ -1,39 +1,46 @@
 package fr.ramatellier.greed.server;
 
-import fr.ramatellier.greed.server.packet.full.BroadcastPacket;
-import fr.ramatellier.greed.server.packet.full.FullPacket;
-import fr.ramatellier.greed.server.packet.full.LocalPacket;
-import fr.ramatellier.greed.server.packet.full.TransferPacket;
-import fr.ramatellier.greed.server.packet.sub.IDPacket;
-import fr.ramatellier.greed.server.reader.PacketReader;
-import fr.ramatellier.greed.server.visitor.ReceivePacketVisitor;
+import fr.ramatellier.greed.server.frame.model.BroadcastFrame;
+import fr.ramatellier.greed.server.frame.model.Frame;
+import fr.ramatellier.greed.server.frame.model.LocalFrame;
+import fr.ramatellier.greed.server.frame.model.TransferFrame;
+import fr.ramatellier.greed.server.frame.component.IDComponent;
+import fr.ramatellier.greed.server.reader.FrameReader;
+import fr.ramatellier.greed.server.visitor.ReceiveFrameVisitor;
+import fr.ramatellier.greed.server.frame.Frames;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayDeque;
+import java.util.Objects;
 
 public abstract class Context {
     private static final int BUFFER_SIZE = 32_768;
     protected final SelectionKey key;
     protected final SocketChannel sc;
-    private final ReceivePacketVisitor visitor;
-    private final ByteBuffer bufferIn = ByteBuffer.allocate(BUFFER_SIZE);
-    private final ByteBuffer bufferOut = ByteBuffer.allocate(BUFFER_SIZE);
-    private final PacketReader packetReader = new PacketReader();
-    private final ArrayDeque<FullPacket> queue = new ArrayDeque<>();
+    private final ReceiveFrameVisitor visitor;
+    protected final ByteBuffer bufferIn = ByteBuffer.allocate(BUFFER_SIZE);
+    protected final ByteBuffer bufferOut = ByteBuffer.allocate(BUFFER_SIZE);
+    private final FrameReader packetReader = new FrameReader();
+    private final ArrayDeque<Frame> queue = new ArrayDeque<>();
     private boolean closed = false;
     private final Server server;
 
     public Context(Server server, SelectionKey key) {
-        this.key = key;
+        this.key = Objects.requireNonNull(key);
+        if(server != null) {
+            this.visitor = new ReceiveFrameVisitor(server, this);
+        } else {
+            this.visitor = null;
+        }
         this.sc = (SocketChannel) key.channel();
-        this.visitor = new ReceivePacketVisitor(server, this);
         this.server = server;
     }
 
-    private void processIn() {
+    protected void processIn() {
         for (;;) {
             var state = packetReader.process(bufferIn);
             switch (state) {
@@ -50,40 +57,38 @@ public abstract class Context {
         }
     }
 
-    private void processPacket(FullPacket packet) {
+    private void processPacket(Frame packet) {
         switch(packet) {
-            case BroadcastPacket b -> {
+            case BroadcastFrame b -> {
                 b.accept(visitor);
                 var oldSrc = b.src().getSocket();
-                server.broadcast(b.withNewSource(new IDPacket(server.getAddress())), oldSrc);
+                server.broadcast(b.withNewSource(new IDComponent(server.getAddress())), oldSrc);
             }
-            case TransferPacket t -> {
+            case TransferFrame t -> {
                 if(t.dst().getSocket().equals(server.getAddress())){
                     t.accept(visitor);
                 } else {
                     server.transfer(t.dst().getSocket(), t);
                 }
             }
-            case LocalPacket l -> l.accept(visitor);
+            case LocalFrame l -> l.accept(visitor);
         }
     }
 
-    public void queuePacket(FullPacket packet) {
+    public void queuePacket(Frame packet) {
         queue.offer(packet);
 
         processOut();
         updateInterestOps();
     }
 
-    private void processOut() {
+    protected void processOut() {
         while(!queue.isEmpty()) {
             var packet = queue.peek();
-
-            if(packet.size() <= bufferOut.remaining()) {
+            if (Frames.size(packet) <= bufferOut.remaining()) {
                 queue.poll();
-                packet.putInBuffer(bufferOut);
-            }
-            else {
+                Frames.put(packet, bufferOut);
+            } else {
                 break;
             }
         }

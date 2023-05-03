@@ -33,17 +33,6 @@ public final class Buffers {
         }
     }
 
-//    public static <E extends Packet> void fillList(ArrayList<E> list, int size, Reader<E> reader, ByteBuffer buffer) {
-//        while(buffer.limit() > 0 && list.size() != size) {
-//            var status = reader.process(buffer);
-//
-//            if(status == Reader.ProcessStatus.DONE) {
-//                list.add(reader.get());
-//                reader.reset();
-//            }
-//        }
-//    }
-
     /**
      * Run the reader process and call the corresponding function.
      * @param buffer the buffer to process
@@ -58,5 +47,9 @@ public final class Buffers {
             case REFILL -> onRefill.run();
             case ERROR -> onError.run();
         }
+    }
+
+    public static <T> void runOnProcess(ByteBuffer buffer, Reader<T> reader, Consumer<T> onDone, Runnable onError){
+        runOnProcess(buffer, reader, onDone, () -> {}, onError);
     }
 }

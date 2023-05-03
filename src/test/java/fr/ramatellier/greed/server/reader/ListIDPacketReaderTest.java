@@ -1,8 +1,8 @@
 package fr.ramatellier.greed.server.reader;
 
-import fr.ramatellier.greed.server.packet.sub.IDPacket;
-import fr.ramatellier.greed.server.packet.sub.IDPacketList;
-import fr.ramatellier.greed.server.reader.sub.IDListReader;
+import fr.ramatellier.greed.server.frame.component.IDComponent;
+import fr.ramatellier.greed.server.frame.component.IDListComponent;
+import fr.ramatellier.greed.server.reader.component.IDComponentListReader;
 import org.junit.jupiter.api.Test;
 
 import java.net.InetSocketAddress;
@@ -16,8 +16,8 @@ public class ListIDPacketReaderTest {
     @Test
     public void simpleReadPacketTest(){
 //        var okPacket = new ConnectOKPacket(new IDPacket((new InetSocketAddress(7777))), new IDPacketList(List.of(new IDPacket(new InetSocketAddress(7778)), new IDPacket(new InetSocketAddress(7779)))));
-        var idPacketList = new IDPacketList(List.of(new IDPacket(new InetSocketAddress(7778)), new IDPacket(new InetSocketAddress(7779))));
-        var reader = new IDListReader();
+        var idPacketList = new IDListComponent(List.of(new IDComponent(new InetSocketAddress(7778)), new IDComponent(new InetSocketAddress(7779))));
+        var reader = new IDComponentListReader();
         var buffer = ByteBuffer.allocate(idPacketList.size());
         idPacketList.putInBuffer(buffer);
         var status = reader.process(buffer);

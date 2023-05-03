@@ -1,14 +1,16 @@
 package fr.ramatellier.greed.server;
 
 import fr.ramatellier.greed.server.compute.*;
-import fr.ramatellier.greed.server.packet.full.*;
-import fr.ramatellier.greed.server.packet.sub.*;
+import fr.ramatellier.greed.server.frame.component.*;
+import fr.ramatellier.greed.server.frame.component.primitive.LongComponent;
+import fr.ramatellier.greed.server.frame.model.*;
 import fr.ramatellier.greed.server.util.ComputeCommandParser;
+import fr.ramatellier.greed.server.frame.FrameKind;
 import fr.ramatellier.greed.server.util.LogoutInformation;
 import fr.ramatellier.greed.server.util.RouteTable;
-import fr.ramatellier.greed.server.util.TramKind;
 import fr.ramatellier.greed.server.util.file.ResultFormatHandler;
 import fr.ramatellier.greed.server.util.http.NonBlockingHTTPJarProvider;
+import fr.uge.ugegreed.Checker;
 import fr.uge.ugegreed.Client;
 
 import java.io.IOException;
@@ -46,7 +48,7 @@ public class Server {
     private SocketChannel parentSocketChannel;
     private InetSocketAddress parentSocketAddress;
     private SelectionKey parentKey;
-    private final ThreadComputation computation = new ThreadComputation(100);
+    private final ThreadComputationHandler computation = new ThreadComputationHandler(100);
     private final LinkedBlockingQueue<SendInformation> packets = new LinkedBlockingQueue<>();
     // Others
     private enum ServerState {
@@ -56,7 +58,7 @@ public class Server {
         INFO, STOP, SHUTDOWN, COMPUTE
     }
     private record CommandArgs(Command command, String[] args) {}
-    private record SendInformation(InetSocketAddress address, FullPacket packet) {}
+    private record SendInformation(InetSocketAddress address, Frame packet) {}
 
     private Server(int port) throws IOException {
         address = new InetSocketAddress(port);
@@ -161,6 +163,7 @@ public class Server {
      * COMPUTE C:/Users/johan/Documents/dev_project/SlowChecker.jar fr.uge.slow.SlowChecker 10 20
      * COMPUTE http://www-igm.univ-mlv.fr/~carayol/Factorizer.jar fr.uge.factors.Factorizer 10 20
      * COMPUTE http://www-igm.univ-mlv.fr/~carayol/SlowChecker.jar fr.uge.slow.SlowChecker 10 20
+     * COMPUTE http://www-igm.univ-mlv.fr/~carayol/Collatz.jar fr.uge.collatz.Collatz 0 2
      */
     private void consoleRun() {
         try {
@@ -312,16 +315,9 @@ public class Server {
                 computationRoomHandler.prepare(entity, routeTable.size());
                 var httpClient = NonBlockingHTTPJarProvider.fromURL(new URL(entity.info().url()));
                 httpClient.onDone(body -> {
-                    var path = Path.of(httpClient.getFilePath());
-                    System.out.println(path);
-                    var checkerResult = Client.checkerFromDisk(path, entity.info().className());
-                    if(checkerResult.isEmpty()) {
-                        logger.severe("CANNOT GET THE CHECKER");
-                        return;
-                    }
-                    var checker = checkerResult.get();
+                    Checker checker = retrieveChecker(httpClient, entity.info().className());
                     for(var i = info.start(); i < info.end(); i++) {
-                        addTask(new TaskComputation(new WorkAssignmentPacket(null, null, id.id(), null), checker, entity.id(), i));
+                        addTask(new TaskComputation(new WorkAssignmentFrame(null, null, LongComponent.of(id.id()), null), checker, entity.id(), i));
                     }
                 });
                 httpClient.launch();
@@ -332,14 +328,24 @@ public class Server {
         }
         else {
             computationRoomHandler.prepare(entity, routeTable.size());
-            routeTable.performOnAllAddress(address -> transfer(address.address(), new WorkRequestPacket(
-                    new IDPacket(this.address), new IDPacket(address.address()),
-                    id.id(),
-                    new CheckerPacket(info.url(), info.className()),
-                    new RangePacket(info.start(), info.end()),
-                    info.end() - info.start()
+            routeTable.performOnAllAddress(address -> transfer(address.address(), new WorkRequestFrame(
+                    new IDComponent(this.address), new IDComponent(address.address()),
+                    LongComponent.of(id.id()),
+                    new CheckerComponent(info.url(), info.className()),
+                    new RangeComponent(info.start(), info.end()),
+                    LongComponent.of(info.end() - info.start())
             )));
         }
+    }
+    public static Checker retrieveChecker(NonBlockingHTTPJarProvider provider, String className){
+        var path = Path.of(provider.getFilePath());
+        System.out.println(path);
+        var checkerResult = Client.checkerFromDisk(path, className);
+        if(checkerResult.isEmpty()) {
+            logger.severe("CANNOT GET THE CHECKER");
+            return null;
+        }
+        return checkerResult.get();
     }
 
     public void treatComputationResult(ComputationIdentifier id, String result) throws IOException {
@@ -350,7 +356,7 @@ public class Server {
         }
     }
 
-    public void connectToNewParent(IDPacket packet) throws IOException {
+    public void connectToNewParent(IDComponent packet) throws IOException {
         var oldParentAddress = parentSocketAddress;
         var ancestors = routeTable.ancestors(parentSocketAddress);
         parentSocketChannel = SocketChannel.open();
@@ -360,7 +366,7 @@ public class Server {
         parentSocketChannel.connect(parentSocketAddress);
         parentKey = parentSocketChannel.register(selector, SelectionKey.OP_CONNECT);
         var context = new ClientApplicationContext(this, parentKey);
-        context.queuePacket(new ReconnectPacket(new IDPacket(address), new IDPacketList(ancestors.stream().map(IDPacket::new).collect(Collectors.toList()))));
+        context.queuePacket(new ReconnectFrame(new IDComponent(address), new IDListComponent(ancestors.stream().map(IDComponent::new).collect(Collectors.toList()))));
         parentKey.interestOps(SelectionKey.OP_CONNECT);
         parentKey.attach(context);
         deleteAddress(oldParentAddress);
@@ -378,7 +384,7 @@ public class Server {
         parentSocketChannel.connect(parentSocketAddress);
         parentKey = parentSocketChannel.register(selector, SelectionKey.OP_CONNECT);
         var context = new ClientApplicationContext(this, parentKey);
-        context.queuePacket(new ConnectPacket(new IDPacket(address)));
+        context.queuePacket(new ConnectFrame(new IDComponent(address)));
         parentKey.interestOps(SelectionKey.OP_CONNECT);
         parentKey.attach(context);
         initConnection();
@@ -451,14 +457,13 @@ public class Server {
         logger.info("Accepting connection...");
         ServerSocketChannel ssc = (ServerSocketChannel) key.channel();
         SocketChannel sc = ssc.accept();
-
         if (sc == null) {
             return;
         }
-
         sc.configureBlocking(false);
         var socketKey = sc.register(selector, SelectionKey.OP_READ);
         socketKey.attach(new ServerApplicationContext(this, socketKey));
+        System.out.println("Connection accepted from " + sc.getRemoteAddress());
     }
 
     private void silentlyClose(SelectionKey key) {
@@ -475,7 +480,7 @@ public class Server {
      * @param packet the packet to broadcast
      * @param src the source of the packet (the packet won't be sent to this address)
      */
-    public void broadcast(FullPacket packet, InetSocketAddress src) {
+    public void broadcast(Frame packet, InetSocketAddress src) {
         Objects.requireNonNull(packet);
         Objects.requireNonNull(src);
         System.out.println("Broadcasting packet " + packet + " from " + src);
@@ -485,10 +490,10 @@ public class Server {
     /**
      * transfer the packet to the destination.
      * @param dst destination
-     * @param packet packet to transfer, the packet must implement the {@link TransferPacket} kind
+     * @param packet packet to transfer, the packet must implement the {@link TransferFrame} kind
      */
-    public void transfer(InetSocketAddress dst, TransferPacket packet) {
-        if(packet.kind() != TramKind.TRANSFER) {
+    public void transfer(InetSocketAddress dst, TransferFrame packet) {
+        if(packet.kind() != FrameKind.TRANSFER) {
             throw new AssertionError("Only transfer packet can be transferred");
         }
         if(dst.equals(address)) {
@@ -502,8 +507,8 @@ public class Server {
     }
 
     public void sendLogout() {
-        routeTable.sendTo(parentSocketAddress, new LogoutRequestPacket(new IDPacket(address),
-                new IDPacketList(routeTable.neighbors().stream().filter(n -> !n.equals(parentSocketAddress)).map(IDPacket::new).toList())
+        routeTable.sendTo(parentSocketAddress, new LogoutRequestFrame(new IDComponent(address),
+                new IDListComponent(routeTable.neighbors().stream().filter(n -> !n.equals(parentSocketAddress)).map(IDComponent::new).toList())
         ));
     }
 
@@ -536,17 +541,17 @@ public class Server {
                     var response = computation.takeResponse();
 
                     if(response.packet().src() != null) {
-                        transfer(response.packet().src().getSocket(), new WorkResponsePacket(
+                        transfer(response.packet().src().getSocket(), new WorkResponseFrame(
                                 response.packet().dst(),
                                 response.packet().src(),
                                 response.packet().requestId(),
-                                new ResponsePacket(response.value(), response.response(), response.code())
+                                new ResponseComponent(response.value(), response.response(), response.code())
                         ));
 
                         incrementComputation(response.id());
                     }
                     else {
-                        var id = new ComputationIdentifier(response.packet().requestId(), getAddress());
+                        var id = new ComputationIdentifier(response.packet().requestId().get(), getAddress());
 
                         treatComputationResult(id, response.response());
                     }
