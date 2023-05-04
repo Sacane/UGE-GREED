@@ -6,6 +6,7 @@ import fr.ramatellier.greed.server.frame.model.LocalFrame;
 import fr.ramatellier.greed.server.frame.model.TransferFrame;
 import fr.ramatellier.greed.server.frame.component.IDComponent;
 import fr.ramatellier.greed.server.reader.FrameReader;
+import fr.ramatellier.greed.server.visitor.FrameVisitor;
 import fr.ramatellier.greed.server.visitor.ReceiveFrameVisitor;
 import fr.ramatellier.greed.server.frame.Frames;
 
@@ -21,7 +22,7 @@ public abstract class Context {
     private static final int BUFFER_SIZE = 32_768;
     protected final SelectionKey key;
     protected final SocketChannel sc;
-    private final ReceiveFrameVisitor visitor;
+    private FrameVisitor visitor;
     protected final ByteBuffer bufferIn = ByteBuffer.allocate(BUFFER_SIZE);
     protected final ByteBuffer bufferOut = ByteBuffer.allocate(BUFFER_SIZE);
     private final FrameReader packetReader = new FrameReader();
@@ -38,6 +39,11 @@ public abstract class Context {
         }
         this.sc = (SocketChannel) key.channel();
         this.server = server;
+    }
+
+    public void setVisitor(FrameVisitor visitor) {
+        Objects.requireNonNull(visitor);
+        this.visitor = visitor;
     }
 
     protected void processIn() {

@@ -1,5 +1,7 @@
 package fr.ramatellier.greed.server;
 
+import fr.ramatellier.greed.server.visitor.ReceiveFrameVisitor;
+
 import java.nio.channels.SelectionKey;
 import java.util.logging.Logger;
 
@@ -8,6 +10,7 @@ public class ServerApplicationContext extends Context {
 
     public ServerApplicationContext(Server server, SelectionKey key) {
         super(server, key);
+        setVisitor(new ReceiveFrameVisitor(server, this));
     }
 
 }
