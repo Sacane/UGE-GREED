@@ -1,17 +1,15 @@
 package fr.ramatellier.greed.server;
 
+import fr.ramatellier.greed.server.frame.Frames;
+import fr.ramatellier.greed.server.frame.component.IDComponent;
 import fr.ramatellier.greed.server.frame.model.BroadcastFrame;
 import fr.ramatellier.greed.server.frame.model.Frame;
 import fr.ramatellier.greed.server.frame.model.LocalFrame;
 import fr.ramatellier.greed.server.frame.model.TransferFrame;
-import fr.ramatellier.greed.server.frame.component.IDComponent;
 import fr.ramatellier.greed.server.reader.FrameReader;
 import fr.ramatellier.greed.server.visitor.FrameVisitor;
-import fr.ramatellier.greed.server.visitor.ReceiveFrameVisitor;
-import fr.ramatellier.greed.server.frame.Frames;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
@@ -28,15 +26,10 @@ public abstract class Context {
     private final FrameReader packetReader = new FrameReader();
     private final ArrayDeque<Frame> queue = new ArrayDeque<>();
     private boolean closed = false;
-    private final Server server;
+    protected final Server server;
 
     public Context(Server server, SelectionKey key) {
         this.key = Objects.requireNonNull(key);
-        if(server != null) {
-            this.visitor = new ReceiveFrameVisitor(server, this);
-        } else {
-            this.visitor = null;
-        }
         this.sc = (SocketChannel) key.channel();
         this.server = server;
     }
@@ -146,4 +139,6 @@ public abstract class Context {
         processOut();
         updateInterestOps();
     }
+
+
 }
