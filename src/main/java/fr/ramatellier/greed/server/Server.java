@@ -278,14 +278,20 @@ public class Server {
                     state = (state == ServerState.ON_GOING) ? ServerState.STOPPED : ServerState.ON_GOING;
                 }
                 case SHUTDOWN -> {
-                    if (isRoot) {
-                        logger.warning("You can't shutdown a root server manually");
-                        continue;
-                    }
                     logger.info("Command SHUTDOWN received");
-                    state = ServerState.SHUTDOWN;
-                    if((logoutInformation == null || logoutInformation.allConnected()) && !isComputing()) {
-                        sendLogout();
+                    if (isRoot) {
+                        if (routeTable.neighbors().size() == 0) {
+                            shutdown();
+                        }
+                        else {
+                            logger.warning("You can't shutdown a root server manually");
+                        }
+                    }
+                    else {
+                        state = ServerState.SHUTDOWN;
+                        if((logoutInformation == null || logoutInformation.allConnected()) && !isComputing()) {
+                            sendLogout();
+                        }
                     }
                 }
                 case COMPUTE -> {
@@ -522,6 +528,7 @@ public class Server {
             silentlyClose(serverKey);
             if(!isRoot) silentlyClose(parentKey);
             state = ServerState.STOPPED;
+            Thread.currentThread().interrupt();
         } catch (IOException ignored) {
         }
     }
