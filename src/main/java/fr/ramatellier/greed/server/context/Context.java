@@ -1,6 +1,6 @@
 package fr.ramatellier.greed.server.context;
 
-import fr.ramatellier.greed.server.Server;
+import fr.ramatellier.greed.server.Application;
 import fr.ramatellier.greed.server.compute.*;
 import fr.ramatellier.greed.server.frame.Frames;
 import fr.ramatellier.greed.server.frame.component.IDComponent;
@@ -36,10 +36,10 @@ public abstract class Context {
     private final FrameReader packetReader = new FrameReader();
     private final ArrayDeque<Frame> queue = new ArrayDeque<>();
     private boolean closed = false;
-    protected final Server server;
+    protected final Application server;
     private final Logger logger = Logger.getLogger(Context.class.getName());
 
-    public Context(Server server, SelectionKey key) {
+    public Context(Application server, SelectionKey key) {
         this.key = Objects.requireNonNull(key);
         this.sc = (SocketChannel) key.channel();
         this.server = server;
@@ -172,7 +172,7 @@ public abstract class Context {
 
     public void processWorking(WorkRequestFrame packet) {
         if(server.isRunning()) {
-            var deltaComputingPossibility = Server.MAXIMUM_COMPUTATION - server.currentOnWorkingComputationsValue();
+            var deltaComputingPossibility = Application.MAXIMUM_COMPUTATION - server.currentOnWorkingComputationsValue();
             if(deltaComputingPossibility > 0) { //He is accepting the computation
                 server.addRoom(new ComputationEntity(new ComputationIdentifier(packet.requestId().get(), packet.src().getSocket()),
                         new ComputeInfo(packet.checker().url(), packet.checker().className(), packet.range().start(), packet.range().end())));
@@ -209,7 +209,7 @@ public abstract class Context {
         try {
             var httpClient = NonBlockingHTTPJarProvider.fromURL(new URL(entity.info().url()));
             httpClient.onDone(body -> {
-                Checker checker = Server.retrieveChecker(httpClient, entity.info().className());
+                Checker checker = Application.retrieveChecker(httpClient, entity.info().className());
                 for(var i = targetRange.start(); i < targetRange.end(); i++) {
                     server.addTask(new TaskComputation(packet, checker, entity.id(), i));
                 }

@@ -1,6 +1,5 @@
 package fr.ramatellier.greed.server.visitor;
 
-import fr.ramatellier.greed.server.Server;
 import fr.ramatellier.greed.server.context.ClientApplicationContext;
 import fr.ramatellier.greed.server.context.Context;
 import fr.ramatellier.greed.server.frame.model.*;
@@ -33,8 +32,7 @@ public class ChildReceiveVisitor extends ReceiveFrameVisitor {
 
     @Override
     public void visit(ConnectOKFrame packet){
-        System.out.println("ConnectOKFrame");
-        context.associate(packet.idMother(), packet.neighbours());
+        context.link(packet.idMother(), packet.neighbours());
     }
 
 

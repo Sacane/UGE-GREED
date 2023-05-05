@@ -1,6 +1,6 @@
 package fr.ramatellier.greed.server.context;
 
-import fr.ramatellier.greed.server.Server;
+import fr.ramatellier.greed.server.Application;
 import fr.ramatellier.greed.server.frame.component.IDComponent;
 import fr.ramatellier.greed.server.frame.component.IDListComponent;
 import fr.ramatellier.greed.server.frame.model.PleaseReconnectFrame;
@@ -11,7 +11,7 @@ import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 
 public class ClientApplicationContext extends Context {
-    public ClientApplicationContext(Server server, SelectionKey key) {
+    public ClientApplicationContext(Application server, SelectionKey key) {
         super(server, key);
         setVisitor(new ChildReceiveVisitor(this));
     }
@@ -24,7 +24,7 @@ public class ClientApplicationContext extends Context {
         key.interestOps(SelectionKey.OP_WRITE);
     }
 
-    public void associate(IDComponent addressMother, IDListComponent neighbours) {
+    public void link(IDComponent addressMother, IDListComponent neighbours) {
         server.updateParentAddress(addressMother.getSocket());
         for(var neighbor: neighbours.idPacketList()) {
             System.out.println("Add neighbor " + neighbor.getSocket() + " to root table");

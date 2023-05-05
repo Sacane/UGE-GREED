@@ -1,6 +1,6 @@
 package fr.ramatellier.greed.server.context;
 
-import fr.ramatellier.greed.server.Server;
+import fr.ramatellier.greed.server.Application;
 import fr.ramatellier.greed.server.frame.component.IDComponent;
 import fr.ramatellier.greed.server.frame.component.IDListComponent;
 import fr.ramatellier.greed.server.frame.model.DisconnectedFrame;
@@ -15,7 +15,7 @@ import java.util.logging.Logger;
 public class ServerApplicationContext extends Context {
     private static final Logger logger = Logger.getLogger(ServerApplicationContext.class.getName());
 
-    public ServerApplicationContext(Server server, SelectionKey key) {
+    public ServerApplicationContext(Application server, SelectionKey key) {
         super(server, key);
         setVisitor(new ParentReceiveVisitor(this));
     }

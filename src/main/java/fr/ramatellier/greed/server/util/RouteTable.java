@@ -54,7 +54,7 @@ public class RouteTable {
 
     /**
      * Get all the registered address in the table.
-     * @return the set of neighbours
+     * @return the set of address
      */
     public Set<InetSocketAddress> registeredAddresses() {
         return table.keySet();
