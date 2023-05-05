@@ -2,8 +2,7 @@ package fr.ramatellier.greed.server.reader.component;
 
 import fr.ramatellier.greed.server.frame.component.GreedComponent;
 import fr.ramatellier.greed.server.reader.Reader;
-import fr.ramatellier.greed.server.reader.primitive.PrimitiveReader;
-import fr.ramatellier.greed.server.util.Buffers;
+import fr.ramatellier.greed.server.reader.Buffers;
 
 import java.nio.ByteBuffer;
 import java.util.Objects;

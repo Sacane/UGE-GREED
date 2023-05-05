@@ -4,7 +4,7 @@ import fr.ramatellier.greed.server.frame.model.ConnectKOFrame;
 import fr.ramatellier.greed.server.frame.model.ConnectOKFrame;
 import fr.ramatellier.greed.server.frame.component.IDComponent;
 import fr.ramatellier.greed.server.frame.component.IDListComponent;
-import fr.ramatellier.greed.server.util.OpCode;
+import fr.ramatellier.greed.server.frame.OpCode;
 import fr.ramatellier.greed.server.frame.Frames;
 import org.junit.jupiter.api.Test;
 

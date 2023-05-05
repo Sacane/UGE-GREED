@@ -1,4 +1,4 @@
-package fr.ramatellier.greed.server.util;
+package fr.ramatellier.greed.server.frame;
 
 import fr.ramatellier.greed.server.frame.model.*;
 
@@ -28,10 +28,10 @@ public enum OpCode {
         this.frameClass = frameClass;
     }
 
-    public static OpCode fromByte(byte value){
+    public static OpCode of(byte value){
         return retrieveIf(opCode -> opCode.BYTES == value);
     }
-    public static OpCode fromFrame(Frame frame){
+    public static OpCode of(Frame frame){
         return retrieveIf(opCode -> opCode.frameClass.equals(frame.getClass()));
     }
 

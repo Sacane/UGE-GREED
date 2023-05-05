@@ -1,6 +1,6 @@
 package fr.ramatellier.greed.server.frame.model;
 
-import fr.ramatellier.greed.server.util.OpCode;
+import fr.ramatellier.greed.server.frame.OpCode;
 import fr.ramatellier.greed.server.visitor.ReceiveFrameVisitor;
 import fr.ramatellier.greed.server.frame.FrameKind;
 

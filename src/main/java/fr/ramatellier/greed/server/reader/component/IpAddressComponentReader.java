@@ -3,7 +3,7 @@ package fr.ramatellier.greed.server.reader.component;
 import fr.ramatellier.greed.server.frame.component.IpAddressComponent;
 import fr.ramatellier.greed.server.reader.Reader;
 import fr.ramatellier.greed.server.reader.primitive.ByteReader;
-import fr.ramatellier.greed.server.util.Buffers;
+import fr.ramatellier.greed.server.reader.Buffers;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
