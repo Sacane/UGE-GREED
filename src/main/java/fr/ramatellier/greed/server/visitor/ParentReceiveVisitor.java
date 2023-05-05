@@ -1,9 +1,7 @@
 package fr.ramatellier.greed.server.visitor;
 
-import fr.ramatellier.greed.server.Context;
-import fr.ramatellier.greed.server.Server;
-import fr.ramatellier.greed.server.ServerApplicationContext;
-import fr.ramatellier.greed.server.frame.component.IDComponent;
+import fr.ramatellier.greed.server.context.Context;
+import fr.ramatellier.greed.server.context.ServerApplicationContext;
 import fr.ramatellier.greed.server.frame.model.*;
 
 import java.util.Objects;
@@ -13,19 +11,12 @@ import java.util.logging.Logger;
  * Visitor for packets received by the server.
  * The context linked to this visitor is the context allowing to communicate with the sender.
  */
-public class ParentToChildVisitor extends FrameVisitor {
-    private final Server server;
+public class ParentReceiveVisitor extends ReceiveFrameVisitor {
     private final ServerApplicationContext context;
-    private static final Logger logger = Logger.getLogger(ParentToChildVisitor.class.getName());
+    private static final Logger logger = Logger.getLogger(ParentReceiveVisitor.class.getName());
 
-    public ParentToChildVisitor(Server server, ServerApplicationContext context) {
-        this.server = Objects.requireNonNull(server);
+    public ParentReceiveVisitor(ServerApplicationContext context) {
         this.context = Objects.requireNonNull(context);
-    }
-
-    @Override
-    public Server server() {
-        return server;
     }
     @Override
     public Context context() {

@@ -1,6 +1,6 @@
 package fr.ramatellier.greed.server.util.http;
 
-import fr.ramatellier.greed.server.Context;
+import fr.ramatellier.greed.server.context.Context;
 import fr.ramatellier.greed.server.reader.Reader;
 
 import java.io.FileOutputStream;

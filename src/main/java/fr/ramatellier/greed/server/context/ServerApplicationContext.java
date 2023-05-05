@@ -1,11 +1,12 @@
-package fr.ramatellier.greed.server;
+package fr.ramatellier.greed.server.context;
 
+import fr.ramatellier.greed.server.Server;
 import fr.ramatellier.greed.server.frame.component.IDComponent;
 import fr.ramatellier.greed.server.frame.component.IDListComponent;
 import fr.ramatellier.greed.server.frame.model.DisconnectedFrame;
 import fr.ramatellier.greed.server.frame.model.LogoutDeniedFrame;
 import fr.ramatellier.greed.server.frame.model.LogoutGrantedFrame;
-import fr.ramatellier.greed.server.visitor.ParentToChildVisitor;
+import fr.ramatellier.greed.server.visitor.ParentReceiveVisitor;
 
 import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
@@ -16,7 +17,7 @@ public class ServerApplicationContext extends Context {
 
     public ServerApplicationContext(Server server, SelectionKey key) {
         super(server, key);
-        setVisitor(new ParentToChildVisitor(server, this));
+        setVisitor(new ParentReceiveVisitor(this));
     }
 
     public void confirmLogout(IDComponent id, IDListComponent daughters) {
