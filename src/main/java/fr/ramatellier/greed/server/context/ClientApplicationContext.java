@@ -28,9 +28,9 @@ public class ClientApplicationContext extends Context {
         server.updateParentAddress(addressMother.getSocket());
         for(var neighbor: neighbours.idPacketList()) {
             System.out.println("Add neighbor " + neighbor.getSocket() + " to root table");
-            server.addRoot(neighbor.getSocket(), addressMother.getSocket(), this);
+            server.updateRouteTable(neighbor.getSocket(), addressMother.getSocket(), this);
         }
-        server.addRoot(addressMother.getSocket(), addressMother.getSocket(), this);
+        server.updateRouteTable(addressMother.getSocket(), addressMother.getSocket(), this);
     }
 
     public void reconnectDaughters() {

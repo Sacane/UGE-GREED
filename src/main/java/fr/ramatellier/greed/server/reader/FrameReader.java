@@ -14,8 +14,8 @@ public class FrameReader implements Reader<Frame> {
     }
     private final FrameReaderDecoder frameDecoder = new FrameReaderDecoder();
     private State state = State.WAITING_LOCATION;
-    private final ByteReader locationReader = new ByteReader();
-    private final ByteReader codeReader = new ByteReader();
+    private final ByteReader tramKindReader = new ByteReader();
+    private final ByteReader opCodeReader = new ByteReader();
 
     private Frame value;
 
@@ -27,20 +27,20 @@ public class FrameReader implements Reader<Frame> {
 
         if(state == State.WAITING_LOCATION) {
             Buffers.runOnProcess(buffer,
-                    locationReader,
+                    tramKindReader,
                     __ -> state = State.WAITING_CODE,
                     () -> state = State.ERROR);
         }
         if(state == State.WAITING_CODE) {
             Buffers.runOnProcess(buffer,
-                    codeReader,
+                    opCodeReader,
                     __ -> state = State.WAITING_PACKET,
                     () -> state = State.ERROR);
         }
         if(state == State.WAITING_PACKET) {
-            var tramKind = FrameKind.toTramKind(locationReader.get());
+            var tramKind = FrameKind.of(tramKindReader.get());
             if (tramKind == null) return ProcessStatus.ERROR;
-            var opcode = OpCode.of(codeReader.get());
+            var opcode = OpCode.of(opCodeReader.get());
             if (opcode == null) return ProcessStatus.ERROR;
             try {
                 var status = frameDecoder.process(buffer, opcode);
@@ -69,8 +69,8 @@ public class FrameReader implements Reader<Frame> {
     @Override
     public void reset() {
         state = State.WAITING_LOCATION;
-        locationReader.reset();
-        codeReader.reset();
+        tramKindReader.reset();
+        opCodeReader.reset();
         frameDecoder.reset();
     }
 }

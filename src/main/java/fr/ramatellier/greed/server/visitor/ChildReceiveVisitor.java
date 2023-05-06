@@ -38,13 +38,11 @@ public class ChildReceiveVisitor extends ReceiveFrameVisitor {
 
     @Override
     public void visit(LogoutDeniedFrame packet) {
-        System.out.println(packet.getClass() + " " + context.getClass().getName());
-        System.out.println("LOGOUT DENIED");
+        logger.warning("LOGOUT DENIED");
     }
     @Override
     public void visit(LogoutGrantedFrame packet) {
-        System.out.println(packet.getClass() + " " + context.getClass().getName());
-        System.out.println("LOGOUT GRANTED");
+       logger.info("LOGOUT GRANTED");
         context.reconnectDaughters();
     }
 

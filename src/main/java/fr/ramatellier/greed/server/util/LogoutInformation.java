@@ -4,7 +4,7 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-
+//TODO Quentin
 public class LogoutInformation {
     private final InetSocketAddress address;
     private final List<InetSocketAddress> daughters;

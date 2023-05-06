@@ -5,7 +5,7 @@ import fr.ramatellier.greed.server.compute.ComputationIdentifier;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.concurrent.locks.ReentrantLock;
-
+//TODO Johan
 public final class ResultFormatHandler {
     private final ReentrantLock lock = new ReentrantLock();
     private final HashMap<ComputationIdentifier, ResponseToFileBuilder> computeToBuilder = new HashMap<>();
@@ -13,20 +13,11 @@ public final class ResultFormatHandler {
     public void append(ComputationIdentifier id, String result) {
         lock.lock();
         try {
-            // computeToBuilder.merge(id, new ResponseToFileBuilder(id.outputTitle()), (old, newOne) -> old.append(result));
-
-            if(computeToBuilder.containsKey(id)) {
-                var fileBuilder = computeToBuilder.get(id);
-
-                fileBuilder.append(result);
-                computeToBuilder.put(id, fileBuilder);
-            }
-            else {
-                var fileBuilder = new ResponseToFileBuilder(id.outputTitle());
-
-                fileBuilder.append(result);
-                computeToBuilder.put(id, fileBuilder);
-            }
+            var fileBuilder = (computeToBuilder.containsKey(id)) ?
+                    computeToBuilder.get(id) :
+                    new ResponseToFileBuilder(id.outputTitle());
+            fileBuilder.append(result);
+            computeToBuilder.put(id, fileBuilder);
         } finally {
             lock.unlock();
         }

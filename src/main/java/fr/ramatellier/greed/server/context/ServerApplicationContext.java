@@ -38,9 +38,9 @@ public class ServerApplicationContext extends Context {
 
     public void reconnectServer(InetSocketAddress socket, IDListComponent ancestors) {
         server.receiveReconnect(socket);
-        server.addRoot(socket, socket, this);
+        server.updateRouteTable(socket, socket, this);
         for(var id: ancestors.idPacketList()) {
-            server.addRoot(id.getSocket(), socket, this);
+            server.updateRouteTable(id.getSocket(), socket, this);
         }
         if(server.allConnected()) {
             server.broadcast(new DisconnectedFrame(new IDComponent(server.getAddress()), new IDComponent(server.getAddressLogout())), server.getAddress());

@@ -3,12 +3,10 @@ package fr.ramatellier.greed.server.compute;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public final class ThreadComputationHandler {
-    private final LinkedBlockingQueue<TaskComputation> task;
-    private final LinkedBlockingQueue<ResponseTaskComputation> responses;
+    private final LinkedBlockingQueue<TaskComputation> task = new LinkedBlockingQueue<>();
+    private final LinkedBlockingQueue<ResponseTaskComputation> responses = new LinkedBlockingQueue<>();
 
     public ThreadComputationHandler(int nbThread) {
-        task = new LinkedBlockingQueue<>();
-        responses = new LinkedBlockingQueue<>();
 
         for(var i = 0; i < nbThread; i++) {
             Thread.ofPlatform().daemon().start(() -> {

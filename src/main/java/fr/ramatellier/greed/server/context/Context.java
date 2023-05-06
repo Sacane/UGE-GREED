@@ -75,7 +75,7 @@ public abstract class Context {
             var response = new ConnectOKFrame(new IDComponent(server.getAddress()),
                     list);
             queuePacket(response);
-            server.addRoot(address, address, this);
+            server.updateRouteTable(address, address, this);
             var addNodePacket = new AddNodeFrame(new IDComponent(server.getAddress()), new IDComponent(address));
             server.broadcast(addNodePacket, address);
         }
@@ -261,10 +261,10 @@ public abstract class Context {
 
     public void handleResponse(ResponseComponent responseComponent, Long requestID, String result) {
         switch(responseComponent.getResponseCode()) {
-            case 0x00 -> System.out.println(responseComponent.getResponse().value());
-            case 0x01 -> System.out.println("An exception has occur while computing the value : " + responseComponent.getValue());
-            case 0x02 -> System.out.println("Time out while computing the value : " + responseComponent.getValue());
-            case 0x03 -> System.out.println("Cannot get the checker");
+            case 0x00 -> logger.info(responseComponent.getResponse().value());
+            case 0x01 -> logger.info("An exception has occur while computing the value : " + responseComponent.getValue());
+            case 0x02 -> logger.warning("Time out while computing the value : " + responseComponent.getValue());
+            case 0x03 -> logger.warning("Cannot get the checker");
             default -> logger.severe("UNKNOWN RESPONSE CODE");
         }
 
@@ -276,7 +276,7 @@ public abstract class Context {
         }
     }
 
-    public void updateRoot(InetSocketAddress src, InetSocketAddress dst, Context context) {
-        server.addRoot(src, dst, context);
+    public void updateRouteTable(InetSocketAddress src, InetSocketAddress dst, Context context) {
+        server.updateRouteTable(src, dst, context);
     }
 }

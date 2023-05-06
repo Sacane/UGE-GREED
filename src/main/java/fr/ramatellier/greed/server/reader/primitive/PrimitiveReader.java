@@ -23,7 +23,7 @@ public abstract class PrimitiveReader<T> implements Reader<T> {
         this.internalBuffer = ByteBuffer.allocate(nbByte);
         this.converter = converter;
     }
-
+    //TODO johan
     @Override
     public ProcessStatus process(ByteBuffer buffer) {
         if (state == State.DONE || state == State.ERROR) {

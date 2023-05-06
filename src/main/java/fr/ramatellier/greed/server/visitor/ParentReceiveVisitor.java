@@ -2,10 +2,10 @@ package fr.ramatellier.greed.server.visitor;
 
 import fr.ramatellier.greed.server.context.Context;
 import fr.ramatellier.greed.server.context.ServerApplicationContext;
-import fr.ramatellier.greed.server.frame.model.*;
+import fr.ramatellier.greed.server.frame.model.LogoutRequestFrame;
+import fr.ramatellier.greed.server.frame.model.ReconnectFrame;
 
 import java.util.Objects;
-import java.util.logging.Logger;
 
 /**
  * Visitor for packets received by the server.
@@ -13,8 +13,6 @@ import java.util.logging.Logger;
  */
 public class ParentReceiveVisitor extends ReceiveFrameVisitor {
     private final ServerApplicationContext context;
-    private static final Logger logger = Logger.getLogger(ParentReceiveVisitor.class.getName());
-
     public ParentReceiveVisitor(ServerApplicationContext context) {
         this.context = Objects.requireNonNull(context);
     }

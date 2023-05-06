@@ -8,6 +8,7 @@ import java.util.*;
 import java.util.function.Consumer;
 
 /**
+ * TODO Quentin
  * A Root table is a data structure that contains InetSocketAddress and their corresponding AddressContext.
  * A Key is an InetSocketAddress destination and the value is the InetSocketAddress of the closest neighbour to the destination and its context from this table.
  * This table can also perform action on the given neighbours registered in the table.

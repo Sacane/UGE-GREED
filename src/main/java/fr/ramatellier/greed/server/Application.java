@@ -29,6 +29,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+//TODO quentin
+
 public class Application {
     private static final Logger logger = Logger.getLogger(Application.class.getName());
     // Self server field
@@ -58,7 +60,7 @@ public class Application {
         ON_GOING, SHUTDOWN, STOPPED
     }
     private enum Command {
-        INFO, STOP, SHUTDOWN, COMPUTE
+        INFO, STOP, SHUTDOWN, START
     }
     private record CommandArgs(Command command, String[] args) {}
     private record SendInformation(InetSocketAddress address, Frame packet) {}
@@ -105,10 +107,6 @@ public class Application {
 
     public void incrementWaitingWorker(ComputationIdentifier id) {
         computationRoomHandler.increment(id);
-    }
-
-    public void incrementComputation(ComputationIdentifier id) {
-        computationRoomHandler.incrementComputation(id);
     }
 
     public void storeComputation(ComputationIdentifier id, SocketUcIdentifier ucId){
@@ -158,15 +156,16 @@ public class Application {
             return;
         }
         var args = Arrays.stream(line.split(" ")).skip(1).toArray(String[]::new);
-        sendCommand(new CommandArgs(Command.COMPUTE, args));
+        sendCommand(new CommandArgs(Command.START, args));
     }
 
     /**
+     * //TODO Enlever ce commentaire
      * Example for compute :
-     * COMPUTE C:/Users/johan/Documents/dev_project/SlowChecker.jar fr.uge.slow.SlowChecker 10 20
-     * COMPUTE http://www-igm.univ-mlv.fr/~carayol/Factorizer.jar fr.uge.factors.Factorizer 10 20
-     * COMPUTE http://www-igm.univ-mlv.fr/~carayol/SlowChecker.jar fr.uge.slow.SlowChecker 10 20
-     * COMPUTE http://www-igm.univ-mlv.fr/~carayol/Collatz.jar fr.uge.collatz.Collatz 0 2
+     * START C:/Users/johan/Documents/dev_project/SlowChecker.jar fr.uge.slow.SlowChecker 10 20
+     * START http://www-igm.univ-mlv.fr/~carayol/Factorizer.jar fr.uge.factors.Factorizer 10 20
+     * START http://www-igm.univ-mlv.fr/~carayol/SlowChecker.jar fr.uge.slow.SlowChecker 10 20
+     * START http://www-igm.univ-mlv.fr/~carayol/Collatz.jar fr.uge.collatz.Collatz 0 2
      */
     private void consoleRun() {
         try {
@@ -178,7 +177,7 @@ public class Application {
                         case "INFO" -> sendCommand(new CommandArgs(Command.INFO, null));
                         case "STOP" -> sendCommand(new CommandArgs(Command.STOP, null));
                         case "SHUTDOWN" -> sendCommand(new CommandArgs(Command.SHUTDOWN, null));
-                        case "COMPUTE", "START" -> sendComputeCommand(line);
+                        case "START" -> sendComputeCommand(line);
                         default -> System.out.println("Unknown command");
                     }
                 }
@@ -202,6 +201,7 @@ public class Application {
     }
 
     public InetSocketAddress getParentSocketAddress() {
+        if(isRoot) throw new IllegalStateException("Root server has no parent");
         return parentSocketAddress;
     }
 
@@ -217,7 +217,7 @@ public class Application {
         return !computationRoomHandler.isComputing();
     }
 
-    public void addRoot(InetSocketAddress src, InetSocketAddress dst, Context context) {
+    public void updateRouteTable(InetSocketAddress src, InetSocketAddress dst, Context context) {
         if(!src.equals(address)) {
             logger.info("Root table has been updated");
             routeTable.putOrUpdate(src, dst, context);
@@ -232,10 +232,12 @@ public class Application {
     }
 
     public Optional<ComputationEntity> findComputationById(ComputationIdentifier id) {
+        Objects.requireNonNull(id);
         return computationRoomHandler.findById(id);
     }
 
     private void printInfo() {
+        System.out.println("====================APPLICATION INFO==================================");
         var root = isRoot ? "ROOT" : "CONNECTED";
         System.out.print("This server is a " + root + " server ");
         if(!isRoot){
@@ -245,6 +247,7 @@ public class Application {
         System.out.println("Neighbours : ");
         routeTable.onNeighboursDo(null, info -> System.out.println("- " + info.address()));
         System.out.println("Route table content: \n" + routeTable);
+        System.out.println("=======================================================================");
     }
 
     void processCommand() {
@@ -276,8 +279,8 @@ public class Application {
                         }
                     }
                 }
-                case COMPUTE -> {
-                    logger.info("Start computing...");
+                case START -> {
+                    logger.info("Command START received");
                     parseAndCompute(command.args());
                 }
             }
@@ -406,7 +409,6 @@ public class Application {
     private void processPacket() {
         while(!packets.isEmpty()) {
             var packet = packets.poll();
-
             routeTable.sendTo(packet.address(), packet.packet());
         }
     }
@@ -550,7 +552,7 @@ public class Application {
                                 response.packet().requestId(),
                                 new ResponseComponent(response.value(), response.response(), response.code())
                         ));
-                        incrementComputation(response.id());
+                        computationRoomHandler.incrementComputation(response.id());
                     }
                     else {
                         var id = new ComputationIdentifier(response.packet().requestId().get(), getAddress());
@@ -564,6 +566,7 @@ public class Application {
                     return;
                 } catch (IOException e) {
                     // Ignore exception
+                    shutdown();
                 }
             }
         });

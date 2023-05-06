@@ -20,11 +20,12 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * Thread-safe class used to decode any kind of {@link Frame} from a ByteBuffer.
  * It uses the {@link OpCode} to know which Packet to create.
+ * TODO Johan
  */
 public class FrameReaderDecoder {
     private record PacketComponents(Class<? extends Frame> packet, Class<?>[] components){}
     private static final Map<OpCode, PacketComponents> opCodeToConstructors = new HashMap<>();
-    private static final Map<Class<?>, Reader<?>> packetToReader = initPacketReader();
+    private static final Map<Class<? extends GreedComponent>, Reader<? extends GreedComponent>> packetToReader = initPacketReader();
     private final ReentrantLock lock = new ReentrantLock();
     private Frame value;
     private int currentPosition;
@@ -33,8 +34,8 @@ public class FrameReaderDecoder {
         DONE, WAITING_PAYLOAD, ERROR
     }
     private State state = State.WAITING_PAYLOAD;
-    private static Map<Class<?>, Reader<?>> initPacketReader(){
-        var packetToReader = new HashMap<Class<?>, Reader<?>>();
+    private static Map<Class<? extends GreedComponent>, Reader<? extends GreedComponent>> initPacketReader(){
+        var packetToReader = new HashMap<Class<? extends GreedComponent>, Reader<? extends GreedComponent>>();
         packetToReader.put(StringComponent.class, new StringReader());
         packetToReader.put(IDComponent.class, new IDComponentReader());
         packetToReader.put(IpAddressComponent.class, new IpAddressComponentReader());

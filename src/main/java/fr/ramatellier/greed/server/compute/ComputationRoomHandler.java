@@ -44,7 +44,9 @@ public final class ComputationRoomHandler {
     }
 
     public void updateRange(ComputationIdentifier id, long start, long end) {
-        computations.stream().filter(computation -> computation.id().equals(id)).forEach(computation -> computation.setRange(start, end));
+        computations.stream()
+                .filter(computation -> computation.id().equals(id))
+                .forEach(computation -> computation.setRange(start, end));
     }
 
 
