@@ -29,8 +29,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-//TODO quentin
-
 public class Application {
     private static final Logger logger = Logger.getLogger(Application.class.getName());
     // Self server field
@@ -87,12 +85,23 @@ public class Application {
         sendResponseThread();
     }
 
+    /**
+     * This method add a room to the computation handler
+     *
+     * @param computationEntity The computation we want to create
+     */
     public void addRoom(ComputationEntity computationEntity) {
         Objects.requireNonNull(computationEntity);
         computationRoomHandler.add(computationEntity);
     }
 
+    /**
+     * This method add a task for the thread computation
+     *
+     * @param taskComputation The task we want to be done
+     */
     public void addTask(TaskComputation taskComputation) {
+        Objects.requireNonNull(taskComputation);
         try {
             computation.putTask(taskComputation);
         } catch (InterruptedException e) {
@@ -100,47 +109,108 @@ public class Application {
         }
     }
 
+    /**
+     * This method gets a computation
+     *
+     * @param idContext The id of the computation we want to get
+     * @return The computation with the given id
+     */
     public ComputationEntity retrieveWaitingComputation(ComputationIdentifier idContext) {
+        Objects.requireNonNull(idContext);
         var response = computationRoomHandler.findById(idContext);
         return response.orElse(null);
     }
 
+    /**
+     * This method increment the number of computation done for an id
+     *
+     * @param id The id of the computation we want to increment
+     */
     public void incrementWaitingWorker(ComputationIdentifier id) {
         computationRoomHandler.increment(id);
     }
 
-    public void storeComputation(ComputationIdentifier id, SocketUcIdentifier ucId){
+    /**
+     * This method store a socket identifier for a computation identifier
+     *
+     * @param id The computation identifier where we want to store
+     * @param ucId The socket identifier that we want to be associate with id
+     */
+    public void storeComputation(ComputationIdentifier id, SocketUcIdentifier ucId) {
         socketCandidate.store(id, ucId);
     }
 
+    /**
+     * This method if a room is ready
+     *
+     * @param id The id of the computation that we want to check
+     * @return true if the room is ready else false
+     */
     public boolean isRoomReady(ComputationIdentifier id){
         return computationRoomHandler.isReady(id);
     }
 
+    /**
+     * This method will get the socket identifier associate with an id
+     *
+     * @param id The id of the computation
+     * @return The list of socket identifier that are associated with this id
+     */
     public List<SocketUcIdentifier> availableSocketsUc(ComputationIdentifier id){
         return socketCandidate.availableSockets(id);
     }
 
+    /**
+     * This method update the parent address
+     *
+     * @param address The new InetSocketAddress of the parent
+     */
     public void updateParentAddress(InetSocketAddress address) {
         parentSocketAddress = address;
     }
 
+    /**
+     * This method delete an address from the route table
+     *
+     * @param address The InetSocketAddress we want to delete
+     */
     public void deleteAddress(InetSocketAddress address) {
         routeTable.delete(address);
     }
 
+    /**
+     * This method update the logout information
+     *
+     * @param address The InetSocketAddress that want to logout
+     * @param daughters The list of the daughters
+     */
     public void newLogoutRequest(InetSocketAddress address, List<InetSocketAddress> daughters) {
         logoutInformation = new LogoutInformation(address, daughters);
     }
 
+    /**
+     * This method is used when you receive a reconnect request
+     *
+     * @param address The InetSocketAddress that want to reconnect
+     */
     public void receiveReconnect(InetSocketAddress address) {
         logoutInformation.add(address);
     }
 
+    /**
+     * This method check if all the daughters are connected
+     *
+     * @return true if all the daughters are connected else false
+     */
     public boolean allConnected() {
         return logoutInformation.allConnected();
     }
 
+    /**
+     * This method get the address of the server that wants to shut down
+     *
+     * @return The InetSocketAddress of the server that want to shut down
+     */
     public InetSocketAddress getAddressLogout() {
         return logoutInformation.getAddress();
     }
@@ -189,26 +259,48 @@ public class Application {
         }
     }
 
+    /**
+     * This method get the actual number of computation we are working on
+     *
+     * @return The number of computation we are working on
+     */
     public long currentOnWorkingComputationsValue() {
         return currentOnWorkingComputations.get();
     }
 
     /**
+     * This method get the server address
+     *
      * @return the inetSocketAddress of the server.
      */
     public InetSocketAddress getAddress() {
         return address;
     }
 
+    /**
+     * This method get the parent address
+     *
+     * @return The InetSocketAddress of the parent
+     */
     public InetSocketAddress getParentSocketAddress() {
         if(isRoot) throw new IllegalStateException("Root server has no parent");
         return parentSocketAddress;
     }
 
+    /**
+     * This method check if the server is running
+     *
+     * @return true if the server is running else false
+     */
     public boolean isRunning() {
         return state == ServerState.ON_GOING;
     }
 
+    /**
+     * This method check if the server is shut down
+     *
+     * @return true if the server is shut down else false
+     */
     public boolean isShutdown() {
         return state == ServerState.SHUTDOWN;
     }
@@ -217,6 +309,13 @@ public class Application {
         return !computationRoomHandler.isComputing();
     }
 
+    /**
+     * This method update the route table of the server
+     *
+     * @param src The InetSocketAddress of the src
+     * @param dst The InetSocketAddress of the dst
+     * @param context The context associate with the dst
+     */
     public void updateRouteTable(InetSocketAddress src, InetSocketAddress dst, Context context) {
         if(!src.equals(address)) {
             logger.info("Root table has been updated");
@@ -225,12 +324,20 @@ public class Application {
     }
 
     /**
-     * returns the set of registered addresses in the rootTable.
+     * This method get all the addresses
+     *
+     * @return The set of registered addresses in the route table
      */
     public Set<InetSocketAddress> registeredAddresses() {
         return routeTable.registeredAddresses();
     }
 
+    /**
+     * This method will get a computation with his id
+     *
+     * @param id The id of the computation
+     * @return The computation as an Optional
+     */
     public Optional<ComputationEntity> findComputationById(ComputationIdentifier id) {
         Objects.requireNonNull(id);
         return computationRoomHandler.findById(id);
@@ -250,7 +357,7 @@ public class Application {
         System.out.println("=======================================================================");
     }
 
-    void processCommand() {
+    private void processCommand() {
         for(;;) {
             var command = commandQueue.poll();
             if (command == null) {
@@ -287,9 +394,26 @@ public class Application {
         }
     }
 
+    /**
+     * This method create an Application as a ROOT
+     *
+     * @param port The port when we host
+     * @return The new Application
+     * @throws IOException If we can't create the Application
+     */
     public static Application root(int port) throws IOException {
         return new Application(port);
     }
+
+    /**
+     * This method create an Application as a CONNECTED
+     *
+     * @param selfPort The port when we host
+     * @param remoteIp The ip we will connect to
+     * @param remotePort The port we will connect to
+     * @return The new Application
+     * @throws IOException If we can't create the Application
+     */
     public static Application child(int selfPort, String remoteIp, int remotePort) throws IOException {
         return new Application(selfPort, remoteIp, remotePort);
     }
@@ -335,6 +459,14 @@ public class Application {
             )));
         }
     }
+
+    /**
+     * This method get a checker
+     *
+     * @param provider The jar we use to get the checker
+     * @param className The class name where the checker is
+     * @return The Checker if it exists else null
+     */
     public static Checker retrieveChecker(NonBlockingHTTPJarProvider provider, String className){
         var path = Path.of(provider.getFilePath());
         System.out.println(path);
@@ -346,6 +478,13 @@ public class Application {
         return checkerResult.get();
     }
 
+    /**
+     * This method will treat a result of a computation
+     *
+     * @param id The id of the computation
+     * @param result The result that we get from the Checker
+     * @throws IOException If the build of the file failed
+     */
     public void treatComputationResult(ComputationIdentifier id, String result) throws IOException {
         computationRoomHandler.incrementUc(id);
         resultFormatHandler.append(id, result);
@@ -354,6 +493,12 @@ public class Application {
         }
     }
 
+    /**
+     * This method connect the application to a new application
+     *
+     * @param packet The packet that get the information for the connection
+     * @throws IOException If the connection failed
+     */
     public void connectToNewParent(IDComponent packet) throws IOException {
         var oldParentAddress = parentSocketAddress;
         var ancestors = routeTable.ancestors(parentSocketAddress);
@@ -388,6 +533,11 @@ public class Application {
         initConnection();
     }
 
+    /**
+     * This method launch an application in ROOT or CONNECTED
+     *
+     * @throws IOException If the launch have failed
+     */
     public void launch() throws IOException {
         if(isRoot){
             start();
@@ -482,6 +632,7 @@ public class Application {
 
     /**
      * Broadcast a packet to all neighbours except the source.
+     *
      * @param packet the packet to broadcast
      * @param src the source of the packet (the packet won't be sent to this address)
      */
@@ -494,6 +645,7 @@ public class Application {
 
     /**
      * transfer the packet to the destination.
+     *
      * @param dst destination
      * @param packet packet to transfer, the packet must implement the {@link TransferFrame} kind
      */
@@ -511,12 +663,14 @@ public class Application {
         }
     }
 
+    /**
+     * This method send a logout request to the parent
+     */
     public void sendLogout() {
         routeTable.sendTo(parentSocketAddress, new LogoutRequestFrame(new IDComponent(address),
                 new IDListComponent(routeTable.neighbors().stream().filter(n -> !n.equals(parentSocketAddress)).map(IDComponent::new).toList())
         ));
     }
-
 
     /**
      * Shutdown the current server and close all connections.
@@ -532,10 +686,22 @@ public class Application {
         }
     }
 
+    /**
+     * This method get all the context of the daughters
+     *
+     * @return The list of the context of the daughters
+     */
     public List<Context> daughtersContext() {
         return routeTable.daughtersContext(parentSocketAddress);
     }
 
+    /**
+     * This method update a room computation
+     *
+     * @param id The id of the computation
+     * @param start The new start of the interval
+     * @param end The new end of the interval
+     */
     public void updateRoom(ComputationIdentifier id, long start, long end) {
         computationRoomHandler.updateRange(id, start, end);
     }
