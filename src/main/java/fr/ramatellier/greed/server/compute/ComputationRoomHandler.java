@@ -8,12 +8,11 @@ import java.util.Optional;
  * This is a thread-safe class that has two main purpose:
  * - keep track of all computation that are currently running
  * - prepare computation that are not yet ready to be computed
- * //TODO Later on, we shall separate the two purpose into two different class
+ * TODO Johan
  */
 public final class ComputationRoomHandler {
     private final Object lock = new Object();
     private final HashMap<ComputationIdentifier, CounterIntend> prepareWaitingRoom = new HashMap<>();
-    //TODO move this list into server
     private final ArrayList<ComputationEntity> computations = new ArrayList<>();
 
     public boolean isComputing() {
@@ -44,9 +43,11 @@ public final class ComputationRoomHandler {
     }
 
     public void updateRange(ComputationIdentifier id, long start, long end) {
-        computations.stream()
-                .filter(computation -> computation.id().equals(id))
-                .forEach(computation -> computation.setRange(start, end));
+        synchronized (lock) {
+            computations.stream()
+                    .filter(computation -> computation.id().equals(id))
+                    .forEach(computation -> computation.setRange(start, end));
+        }
     }
 
 
