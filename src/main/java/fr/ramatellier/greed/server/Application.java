@@ -260,9 +260,14 @@ public class Application {
                     state = (state == ServerState.ON_GOING) ? ServerState.STOPPED : ServerState.ON_GOING;
                 }
                 case SHUTDOWN -> {
+                    logger.info("Command SHUTDOWN received");
                     if (isRoot) {
-                        logger.warning("You can't shutdown a root server manually");
-                        continue;
+                        if (routeTable.neighbors().size() == 0) {
+                            shutdown();
+                        }
+                        else {
+                            logger.warning("You can't shutdown a root server manually");
+                        }
                     }
                     logger.info("Command SHUTDOWN received");
                     state = ServerState.SHUTDOWN;
@@ -519,6 +524,7 @@ public class Application {
             silentlyClose(serverKey);
             if(!isRoot) silentlyClose(parentKey);
             state = ServerState.STOPPED;
+            Thread.currentThread().interrupt();
         } catch (IOException ignored) {
         }
     }
