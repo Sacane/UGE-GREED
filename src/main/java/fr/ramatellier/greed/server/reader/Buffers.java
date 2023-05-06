@@ -1,4 +1,4 @@
-package fr.ramatellier.greed.server.util;
+package fr.ramatellier.greed.server.reader;
 
 import fr.ramatellier.greed.server.reader.Reader;
 
@@ -6,7 +6,7 @@ import java.nio.ByteBuffer;
 import java.util.function.Consumer;
 
 /**
- * Singletons use to fill buffer and list
+ * Singletons use to fill buffer
  */
 public final class Buffers {
     private Buffers() {}

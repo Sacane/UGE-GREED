@@ -1,6 +1,6 @@
 package fr.ramatellier.greed.server.util;
 
-import fr.ramatellier.greed.server.Context;
+import fr.ramatellier.greed.server.context.Context;
 import fr.ramatellier.greed.server.frame.model.Frame;
 
 import java.net.InetSocketAddress;
@@ -54,7 +54,7 @@ public class RouteTable {
 
     /**
      * Get all the registered address in the table.
-     * @return the set of neighbours
+     * @return the set of address
      */
     public Set<InetSocketAddress> registeredAddresses() {
         return table.keySet();

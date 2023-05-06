@@ -2,7 +2,6 @@ package fr.ramatellier.greed.server.frame;
 
 import fr.ramatellier.greed.server.frame.component.GreedComponent;
 import fr.ramatellier.greed.server.frame.model.Frame;
-import fr.ramatellier.greed.server.util.OpCode;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -15,7 +14,7 @@ public final class Frames {
 
     @FunctionalInterface
     private interface GreedComponentConsumer {
-        void accept(Frame frame, Consumer<GreedComponent> greedConsumer);
+        void accept(Frame frame, Consumer<? super GreedComponent> greedConsumer);
     }
     private Frames(){}
     private final static ClassValue<GreedComponentConsumer> CACHE = new ClassValue<>() {
@@ -39,7 +38,7 @@ public final class Frames {
     }
 
     public static <T extends Frame> void put(T frame, ByteBuffer buffer) {
-        var opCode = OpCode.fromFrame(frame);
+        var opCode = OpCode.of(frame);
         buffer.put(frame.kind().BYTES).put(opCode.BYTES);
         CACHE.get(frame.getClass()).accept(frame, packet -> packet.putInBuffer(buffer));
     }

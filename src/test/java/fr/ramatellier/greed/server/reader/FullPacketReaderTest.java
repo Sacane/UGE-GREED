@@ -4,7 +4,7 @@ import fr.ramatellier.greed.server.frame.model.ConnectKOFrame;
 import fr.ramatellier.greed.server.frame.model.ConnectOKFrame;
 import fr.ramatellier.greed.server.frame.component.IDComponent;
 import fr.ramatellier.greed.server.frame.component.IDListComponent;
-import fr.ramatellier.greed.server.util.OpCode;
+import fr.ramatellier.greed.server.frame.OpCode;
 import fr.ramatellier.greed.server.frame.Frames;
 import org.junit.jupiter.api.Test;
 
@@ -26,7 +26,7 @@ public class FullPacketReaderTest {
         var buffer = ByteBuffer.allocate(size);
         Frames.put(okPacket, buffer);
         readerFactory.process(buffer, OpCode.OK);
-        assertEquals(7777, okPacket.getPort());
+        assertEquals(7777, okPacket.idMother().getPort());
         assertEquals(2, okPacket.neighbours().idPacketList().size());
         assertEquals(7778, okPacket.neighbours().idPacketList().get(0).getPort());
         assertEquals(7779, okPacket.neighbours().idPacketList().get(1).getPort());

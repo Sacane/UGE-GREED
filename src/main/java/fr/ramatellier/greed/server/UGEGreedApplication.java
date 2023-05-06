@@ -9,9 +9,9 @@ public class UGEGreedApplication {
             return;
         }
         if (args.length == 1) {
-            Server.launchRoot(Integer.parseInt(args[0]));
+            Application.root(Integer.parseInt(args[0])).launch();
         } else {
-            Server.launchConnected(Integer.parseInt(args[0]), args[1], Integer.parseInt(args[2]));
+            Application.child(Integer.parseInt(args[0]), args[1], Integer.parseInt(args[2])).launch();
         }
     }
 

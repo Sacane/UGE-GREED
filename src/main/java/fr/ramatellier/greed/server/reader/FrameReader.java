@@ -2,8 +2,7 @@ package fr.ramatellier.greed.server.reader;
 
 import fr.ramatellier.greed.server.frame.model.Frame;
 import fr.ramatellier.greed.server.reader.primitive.ByteReader;
-import fr.ramatellier.greed.server.util.Buffers;
-import fr.ramatellier.greed.server.util.OpCode;
+import fr.ramatellier.greed.server.frame.OpCode;
 import fr.ramatellier.greed.server.frame.FrameKind;
 
 import java.lang.reflect.InvocationTargetException;
@@ -41,7 +40,7 @@ public class FrameReader implements Reader<Frame> {
         if(state == State.WAITING_PACKET) {
             var tramKind = FrameKind.toTramKind(locationReader.get());
             if (tramKind == null) return ProcessStatus.ERROR;
-            var opcode = OpCode.fromByte(codeReader.get());
+            var opcode = OpCode.of(codeReader.get());
             if (opcode == null) return ProcessStatus.ERROR;
             try {
                 var status = frameDecoder.process(buffer, opcode);
