@@ -4,12 +4,9 @@ import fr.ramatellier.greed.server.frame.component.*;
 import fr.ramatellier.greed.server.frame.component.primitive.ByteComponent;
 import fr.ramatellier.greed.server.frame.component.primitive.IntComponent;
 import fr.ramatellier.greed.server.frame.component.primitive.LongComponent;
-import fr.ramatellier.greed.server.frame.model.*;
+import fr.ramatellier.greed.server.frame.model.Frame;
 import fr.ramatellier.greed.server.reader.component.*;
-import fr.ramatellier.greed.server.reader.primitive.ByteReader;
-import fr.ramatellier.greed.server.reader.primitive.IntReader;
-import fr.ramatellier.greed.server.reader.primitive.LongReader;
-import fr.ramatellier.greed.server.util.OpCode;
+import fr.ramatellier.greed.server.frame.OpCode;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.RecordComponent;
@@ -58,9 +55,15 @@ public class FrameReaderDecoder {
             if (record == null || !record.isRecord())
                 throw new IllegalArgumentException("OpCode " + opcode + " is not a record");
             var fields = record.getRecordComponents();
-            var components = Arrays.stream(fields).map(RecordComponent::getType).toArray(Class<?>[]::new);
+            var components = Arrays.stream(fields).map(FrameReaderDecoder::ensureAndGet).toArray(Class<?>[]::new);
             opCodeToConstructors.put(opcode, new PacketComponents(record, components));
         }
+    }
+    private static Class<?> ensureAndGet(RecordComponent component){
+        if(!GreedComponent.class.isAssignableFrom(component.getType())){
+            throw new IllegalArgumentException("Record component " + component + " is not a greed component");
+        }
+        return component.getType();
     }
 
     public Reader.ProcessStatus process(ByteBuffer buffer, OpCode opcode) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {

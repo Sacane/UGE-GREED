@@ -20,7 +20,7 @@ public class StringReaderTest {
         bb.putInt(bytes.remaining()).put(bytes);
         StringReader sr = new StringReader();
         assertEquals(Reader.ProcessStatus.DONE, sr.process(bb));
-        assertEquals(string, sr.get());
+        assertEquals(string, sr.get().value());
         assertEquals(0, bb.position());
         assertEquals(bb.capacity(), bb.limit());
     }
@@ -35,12 +35,12 @@ public class StringReaderTest {
         bb.putInt(bytes.remaining()).put(bytes).putInt(bytes2.remaining()).put(bytes2);
         StringReader sr = new StringReader();
         assertEquals(Reader.ProcessStatus.DONE, sr.process(bb));
-        assertEquals(string, sr.get());
+        assertEquals(string, sr.get().value());
         assertEquals(15, bb.position());
         assertEquals(bb.capacity(), bb.limit());
         sr.reset();
         assertEquals(Reader.ProcessStatus.DONE, sr.process(bb));
-        assertEquals(string2, sr.get());
+        assertEquals(string2, sr.get().value());
         assertEquals(0, bb.position());
         assertEquals(bb.capacity(), bb.limit());
     }
@@ -63,7 +63,7 @@ public class StringReaderTest {
                 assertEquals(Reader.ProcessStatus.DONE, sr.process(bbSmall));
             }
         }
-        assertEquals(string, sr.get());
+        assertEquals(string, sr.get().value());
     }
 
     @Test

@@ -1,6 +1,9 @@
 package fr.ramatellier.greed.server;
 
 import fr.ramatellier.greed.server.compute.*;
+import fr.ramatellier.greed.server.context.ClientApplicationContext;
+import fr.ramatellier.greed.server.context.Context;
+import fr.ramatellier.greed.server.context.ServerApplicationContext;
 import fr.ramatellier.greed.server.frame.component.*;
 import fr.ramatellier.greed.server.frame.component.primitive.LongComponent;
 import fr.ramatellier.greed.server.frame.model.*;
@@ -26,8 +29,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-public class Server {
-    private static final Logger logger = Logger.getLogger(Server.class.getName());
+public class Application {
+    private static final Logger logger = Logger.getLogger(Application.class.getName());
     // Self server field
     private final ServerSocketChannel serverSocketChannel;
     private SelectionKey serverKey;
@@ -60,7 +63,7 @@ public class Server {
     private record CommandArgs(Command command, String[] args) {}
     private record SendInformation(InetSocketAddress address, Frame packet) {}
 
-    private Server(int port) throws IOException {
+    private Application(int port) throws IOException {
         address = new InetSocketAddress(port);
         serverSocketChannel = ServerSocketChannel.open();
         serverSocketChannel.bind(address);
@@ -71,7 +74,7 @@ public class Server {
         sendResponseThread();
     }
 
-    private Server(int hostPort, String IP, int connectPort) throws IOException {
+    private Application(int hostPort, String IP, int connectPort) throws IOException {
         address = new InetSocketAddress(hostPort);
         serverSocketChannel = ServerSocketChannel.open();
         serverSocketChannel.bind(address);
@@ -210,8 +213,8 @@ public class Server {
         return state == ServerState.SHUTDOWN;
     }
 
-    public boolean isComputing() {
-        return computationRoomHandler.isComputing();
+    private boolean hasFinishedComputing() {
+        return !computationRoomHandler.isComputing();
     }
 
     public void addRoot(InetSocketAddress src, InetSocketAddress dst, Context context) {
@@ -228,29 +231,8 @@ public class Server {
         return routeTable.registeredAddresses();
     }
 
-    /**
-     * Launch a root Server on the given port.
-     * @param port port of the server
-     * @throws IOException if an I/O error occurs
-     */
-    public static void launchRoot(int port) throws IOException {
-        new Server(port).launch();
-    }
-
     public Optional<ComputationEntity> findComputationById(ComputationIdentifier id) {
         return computationRoomHandler.findById(id);
-    }
-
-    /**
-     * Launch a server on the given hostPort, connected to another server.
-     * @param hostPort port of the current server
-     * @param IP IP of the server to connect to
-     * @param connectPort port of the server to connect to
-     * @throws IOException if an I/O error occurs
-     */
-    public static void launchConnected(int hostPort, String IP, int connectPort) throws IOException {
-        Objects.requireNonNull(IP, "IP can't be null");
-        new Server(hostPort, IP, connectPort).connect();
     }
 
     private void printInfo() {
@@ -278,29 +260,42 @@ public class Server {
                     state = (state == ServerState.ON_GOING) ? ServerState.STOPPED : ServerState.ON_GOING;
                 }
                 case SHUTDOWN -> {
-                    if (isRoot) {
-                        logger.warning("You can't shutdown a root server manually");
-                        continue;
-                    }
                     logger.info("Command SHUTDOWN received");
-                    state = ServerState.SHUTDOWN;
-                    if((logoutInformation == null || logoutInformation.allConnected()) && !isComputing()) {
-                        sendLogout();
+                    if (isRoot) {
+                        if (routeTable.neighbors().size() == 0) {
+                            shutdown();
+                        }
+                        else {
+                            logger.warning("You can't shutdown a root server manually, you must stop all the connected servers first");
+                        }
+                    }
+                    else {
+                        state = ServerState.SHUTDOWN;
+                        if((logoutInformation == null || logoutInformation.allConnected()) && hasFinishedComputing()) {
+                            sendLogout();
+                        }
                     }
                 }
                 case COMPUTE -> {
-                    logger.info("Command COMPUTE received");
+                    logger.info("Start computing...");
                     parseAndCompute(command.args());
                 }
             }
         }
     }
 
+    public static Application root(int port) throws IOException {
+        return new Application(port);
+    }
+    public static Application child(int selfPort, String remoteIp, int remotePort) throws IOException {
+        return new Application(selfPort, remoteIp, remotePort);
+    }
+
     private void parseAndCompute(String[] args) {
         var line = Arrays.stream(args).reduce("", (s, s2) -> s + " " + s2);
         var parser = new ComputeCommandParser(line.trim());
         if(!parser.check()){
-            System.out.println("The computation command is not valid");
+            logger.severe("The computation command is not valid");
             return;
         }
         processComputeCommand(parser.get());
@@ -315,7 +310,7 @@ public class Server {
                 computationRoomHandler.prepare(entity, routeTable.size());
                 var httpClient = NonBlockingHTTPJarProvider.fromURL(new URL(entity.info().url()));
                 httpClient.onDone(body -> {
-                    Checker checker = retrieveChecker(httpClient, entity.info().className());
+                    var checker = retrieveChecker(httpClient, entity.info().className());
                     for(var i = info.start(); i < info.end(); i++) {
                         addTask(new TaskComputation(new WorkAssignmentFrame(null, null, LongComponent.of(id.id()), null), checker, entity.id(), i));
                     }
@@ -390,7 +385,15 @@ public class Server {
         initConnection();
     }
 
-    private void launch() throws IOException {
+    public void launch() throws IOException {
+        if(isRoot){
+            start();
+        } else {
+            connect();
+        }
+    }
+
+    private void start() throws IOException {
         if(!isRoot) {
             throw new IllegalStateException("This server is not a root server");
         }
@@ -522,6 +525,7 @@ public class Server {
             silentlyClose(serverKey);
             if(!isRoot) silentlyClose(parentKey);
             state = ServerState.STOPPED;
+            Thread.currentThread().interrupt();
         } catch (IOException ignored) {
         }
     }
@@ -539,7 +543,6 @@ public class Server {
             for(;;) {
                 try {
                     var response = computation.takeResponse();
-
                     if(response.packet().src() != null) {
                         transfer(response.packet().src().getSocket(), new WorkResponseFrame(
                                 response.packet().dst(),
@@ -547,19 +550,15 @@ public class Server {
                                 response.packet().requestId(),
                                 new ResponseComponent(response.value(), response.response(), response.code())
                         ));
-
                         incrementComputation(response.id());
                     }
                     else {
                         var id = new ComputationIdentifier(response.packet().requestId().get(), getAddress());
-
                         treatComputationResult(id, response.response());
                     }
-
-                    if(isShutdown() && !isComputing()) {
+                    if(isShutdown() && hasFinishedComputing()) {
                         sendLogout();
                     }
-
                     selector.wakeup();
                 } catch (InterruptedException e) {
                     return;
