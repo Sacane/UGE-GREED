@@ -213,7 +213,7 @@ public class Application {
         return state == ServerState.SHUTDOWN;
     }
 
-    public boolean hasFinishedComputing() {
+    private boolean hasFinishedComputing() {
         return !computationRoomHandler.isComputing();
     }
 
@@ -266,17 +266,18 @@ public class Application {
                             shutdown();
                         }
                         else {
-                            logger.warning("You can't shutdown a root server manually");
+                            logger.warning("You can't shutdown a root server manually, you must stop all the connected servers first");
                         }
                     }
-                    logger.info("Command SHUTDOWN received");
-                    state = ServerState.SHUTDOWN;
-                    if((logoutInformation == null || logoutInformation.allConnected()) && hasFinishedComputing()) {
-                        sendLogout();
+                    else {
+                        state = ServerState.SHUTDOWN;
+                        if((logoutInformation == null || logoutInformation.allConnected()) && hasFinishedComputing()) {
+                            sendLogout();
+                        }
                     }
                 }
                 case COMPUTE -> {
-                    logger.info("Command COMPUTE received");
+                    logger.info("Start computing...");
                     parseAndCompute(command.args());
                 }
             }
