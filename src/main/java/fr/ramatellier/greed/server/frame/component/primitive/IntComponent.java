@@ -1,6 +1,6 @@
 package fr.ramatellier.greed.server.frame.component.primitive;
 
-import fr.ramatellier.greed.server.reader.component.IntComponentReader;
+import fr.ramatellier.greed.server.reader.component.primitive.IntComponentReader;
 
 public class IntComponent extends PrimitiveComponent<Integer>{
     public IntComponent(int value) {

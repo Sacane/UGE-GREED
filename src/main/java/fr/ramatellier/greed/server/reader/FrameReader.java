@@ -1,9 +1,9 @@
 package fr.ramatellier.greed.server.reader;
 
-import fr.ramatellier.greed.server.frame.model.Frame;
-import fr.ramatellier.greed.server.reader.primitive.ByteReader;
-import fr.ramatellier.greed.server.frame.OpCode;
 import fr.ramatellier.greed.server.frame.FrameKind;
+import fr.ramatellier.greed.server.frame.OpCode;
+import fr.ramatellier.greed.server.frame.model.Frame;
+import fr.ramatellier.greed.server.reader.component.primitive.ByteComponentReader;
 
 import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
@@ -14,8 +14,8 @@ public class FrameReader implements Reader<Frame> {
     }
     private final FrameReaderDecoder frameDecoder = new FrameReaderDecoder();
     private State state = State.WAITING_LOCATION;
-    private final ByteReader tramKindReader = new ByteReader();
-    private final ByteReader opCodeReader = new ByteReader();
+    private final ByteComponentReader tramKindReader = new ByteComponentReader();
+    private final ByteComponentReader opCodeReader = new ByteComponentReader();
 
     private Frame value;
 
@@ -38,9 +38,9 @@ public class FrameReader implements Reader<Frame> {
                     () -> state = State.ERROR);
         }
         if(state == State.WAITING_PACKET) {
-            var tramKind = FrameKind.of(tramKindReader.get());
+            var tramKind = FrameKind.of(tramKindReader.get().get());
             if (tramKind == null) return ProcessStatus.ERROR;
-            var opcode = OpCode.of(opCodeReader.get());
+            var opcode = OpCode.of(opCodeReader.get().get());
             if (opcode == null) return ProcessStatus.ERROR;
             try {
                 var status = frameDecoder.process(buffer, opcode);

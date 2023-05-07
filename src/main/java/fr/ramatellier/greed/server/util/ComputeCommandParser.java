@@ -1,13 +1,14 @@
 package fr.ramatellier.greed.server.util;
 
 import fr.ramatellier.greed.server.compute.ComputeInfo;
+import fr.ramatellier.greed.server.compute.Range;
 
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Objects;
 
 /**
- * Parse the given command and check if it's valid.
+ * Parse the computation command and check if it's valid.
  */
 public final class ComputeCommandParser {
     private final String computeCommand;
@@ -36,12 +37,11 @@ public final class ComputeCommandParser {
         var className = split[1];
         var startAsString = split[2];
         var endAsString = split[3];
-        if(!checkUrl(url) || !checkRange(startAsString, endAsString)){
+        var range = checkRange(startAsString, endAsString);
+        if(!checkUrl(url) || range == null){
             return false;
         }
-        var start = Long.parseLong(startAsString);
-        var end = Long.parseLong(endAsString);
-        computeInfo = new ComputeInfo(url, className, start, end);
+        computeInfo = new ComputeInfo(url, className, range.start(), range.end());
         return true;
     }
 
@@ -67,13 +67,14 @@ public final class ComputeCommandParser {
         return true;
     }
 
-    private boolean checkRange(String startAsString, String endAsString){
+    private Range checkRange(String startAsString, String endAsString){
         try{
             var start = Long.parseLong(startAsString);
             var end = Long.parseLong(endAsString);
-            return end > start;
+            if(start >= end) return null;
+            return new Range(start, end);
         }catch(NumberFormatException e){
-            return false;
+            return null;
         }
     }
 }

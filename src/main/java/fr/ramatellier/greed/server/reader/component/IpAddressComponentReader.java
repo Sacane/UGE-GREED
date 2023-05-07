@@ -1,9 +1,9 @@
 package fr.ramatellier.greed.server.reader.component;
 
 import fr.ramatellier.greed.server.frame.component.IpAddressComponent;
-import fr.ramatellier.greed.server.reader.Reader;
-import fr.ramatellier.greed.server.reader.primitive.ByteReader;
 import fr.ramatellier.greed.server.reader.Buffers;
+import fr.ramatellier.greed.server.reader.Reader;
+import fr.ramatellier.greed.server.reader.component.primitive.ByteComponentReader;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -14,7 +14,7 @@ public class IpAddressComponentReader implements Reader<IpAddressComponent> {
         DONE, WAITING_SIZE, WAITING_ADDRESS, ERROR
     }
     private State state = State.WAITING_SIZE;
-    private final ByteReader sizeReader = new ByteReader();
+    private final ByteComponentReader sizeReader = new ByteComponentReader();
     private ByteBuffer addressBuffer;
     private IpAddressComponent value;
 
@@ -28,7 +28,7 @@ public class IpAddressComponentReader implements Reader<IpAddressComponent> {
             Buffers.runOnProcess(buffer, sizeReader,
                     result -> {
                         state = State.WAITING_ADDRESS;
-                        addressBuffer = ByteBuffer.allocate(result == 4 ? 4 : 16);
+                        addressBuffer = ByteBuffer.allocate(result.get() == 4 ? 4 : 16);
                     },
                     () -> state = State.ERROR);
         }

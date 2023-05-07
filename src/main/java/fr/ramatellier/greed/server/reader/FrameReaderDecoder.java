@@ -7,6 +7,9 @@ import fr.ramatellier.greed.server.frame.component.primitive.LongComponent;
 import fr.ramatellier.greed.server.frame.model.Frame;
 import fr.ramatellier.greed.server.reader.component.*;
 import fr.ramatellier.greed.server.frame.OpCode;
+import fr.ramatellier.greed.server.reader.component.primitive.ByteComponentReader;
+import fr.ramatellier.greed.server.reader.component.primitive.IntComponentReader;
+import fr.ramatellier.greed.server.reader.component.primitive.LongComponentReader;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.RecordComponent;
@@ -20,7 +23,6 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * Thread-safe class used to decode any kind of {@link Frame} from a ByteBuffer.
  * It uses the {@link OpCode} to know which Packet to create.
- * TODO Johan
  */
 public class FrameReaderDecoder {
     private record PacketComponents(Class<? extends Frame> packet, Class<?>[] components){}
@@ -67,6 +69,12 @@ public class FrameReaderDecoder {
         return component.getType();
     }
 
+    /**
+     * Process the given buffer to create a {@link Frame}.
+     * @param buffer the buffer to process
+     * @param opcode the opcode of the frame to create
+     * @return the status of the process
+     */
     public Reader.ProcessStatus process(ByteBuffer buffer, OpCode opcode) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
         lock.lock();
         try {
@@ -99,6 +107,10 @@ public class FrameReaderDecoder {
         }
     }
 
+    /**
+     * Get the value of the frame reader.
+     * @return the value of the reader
+     */
     public Frame get() {
         lock.lock();
         try {
@@ -110,6 +122,9 @@ public class FrameReaderDecoder {
         }
     }
 
+    /**
+     * Reset the reader to its initial state.
+     */
     public void reset(){
         lock.lock();
         try {

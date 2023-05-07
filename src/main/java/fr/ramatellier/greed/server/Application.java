@@ -11,7 +11,7 @@ import fr.ramatellier.greed.server.util.ComputeCommandParser;
 import fr.ramatellier.greed.server.frame.FrameKind;
 import fr.ramatellier.greed.server.util.LogoutInformation;
 import fr.ramatellier.greed.server.util.RouteTable;
-import fr.ramatellier.greed.server.util.file.ResultFormatHandler;
+import fr.ramatellier.greed.server.compute.ResultFormatter;
 import fr.ramatellier.greed.server.util.http.NonBlockingHTTPJarProvider;
 import fr.uge.ugegreed.Checker;
 import fr.uge.ugegreed.Client;
@@ -48,7 +48,7 @@ public class Application {
     private final ComputationRoomHandler computationRoomHandler = new ComputationRoomHandler();
     public static final long MAXIMUM_COMPUTATION = 1_000_000_000;
     private LogoutInformation logoutInformation;
-    private final ResultFormatHandler resultFormatHandler = new ResultFormatHandler();
+    private final ResultFormatter resultFormatHandler = new ResultFormatter();
     // Parent information
     private SocketChannel parentSocketChannel;
     private InetSocketAddress parentSocketAddress;
@@ -178,7 +178,7 @@ public class Application {
                         case "STOP" -> sendCommand(new CommandArgs(Command.STOP, null));
                         case "SHUTDOWN" -> sendCommand(new CommandArgs(Command.SHUTDOWN, null));
                         case "START" -> sendComputeCommand(line);
-                        default -> System.out.println("Unknown command");
+                        default -> logger.severe("Unknown command");
                     }
                 }
             }
