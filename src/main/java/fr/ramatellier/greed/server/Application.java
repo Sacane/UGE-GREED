@@ -65,25 +65,23 @@ public class Application {
     private record CommandArgs(Command command, String[] args) {}
     private record SendInformation(InetSocketAddress address, Frame packet) {}
 
-    private Application(int port) throws IOException {
-        address = new InetSocketAddress(port);
+    private Application(InetSocketAddress selfAddress, InetSocketAddress remoteAddress) throws IOException {
+        address = selfAddress;
+        parentSocketAddress = remoteAddress;
+        if(parentSocketAddress != null) {
+            parentSocketChannel = SocketChannel.open();
+            this.isRoot = false;
+        } else {
+            this.isRoot = true;
+        }
         serverSocketChannel = ServerSocketChannel.open();
         serverSocketChannel.bind(address);
-        parentSocketChannel = null;
-        parentSocketAddress = null;
         selector = Selector.open();
-        this.isRoot = true;
         sendResponseThread();
     }
 
-    private Application(int hostPort, String IP, int connectPort) throws IOException {
-        address = new InetSocketAddress(hostPort);
-        serverSocketChannel = ServerSocketChannel.open();
-        serverSocketChannel.bind(address);
-        parentSocketChannel = SocketChannel.open();
-        parentSocketAddress = new InetSocketAddress(IP, connectPort);
-        selector = Selector.open();
-        this.isRoot = false;
+    private Application(InetSocketAddress selfAddress) throws IOException {
+        this(selfAddress, null);
         sendResponseThread();
     }
 
@@ -288,10 +286,22 @@ public class Application {
     }
 
     public static Application root(int port) throws IOException {
-        return new Application(port);
+        checkPort(port);
+        var address = new InetSocketAddress(port);
+        return new Application(address);
     }
     public static Application child(int selfPort, String remoteIp, int remotePort) throws IOException {
-        return new Application(selfPort, remoteIp, remotePort);
+        checkPort(selfPort, remotePort);
+        var selfAddress = new InetSocketAddress(selfPort);
+        var remoteAddress = new InetSocketAddress(remoteIp, remotePort);
+        return new Application(selfAddress, remoteAddress);
+    }
+    private static void checkPort(int... ports){
+        for(var port : ports){
+            if(port < 0 || port > 65535){
+                throw new IllegalArgumentException("Port must be between 0 and 65535");
+            }
+        }
     }
 
     private void parseAndCompute(String[] args) {
