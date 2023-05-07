@@ -40,9 +40,9 @@ public abstract class Context {
     private final Logger logger = Logger.getLogger(Context.class.getName());
 
     public Context(Application server, SelectionKey key) {
+        this.server = Objects.requireNonNull(server);
         this.key = Objects.requireNonNull(key);
         this.sc = (SocketChannel) key.channel();
-        this.server = server;
     }
 
     public void setVisitor(ReceiveFrameVisitor visitor) {
@@ -68,6 +68,7 @@ public abstract class Context {
     }
 
     public void handleConnection(InetSocketAddress address) {
+        Objects.requireNonNull(address);
         if(server.isRunning()) {
             logger.info("Connection accepted");
             var list = new IDListComponent(server.registeredAddresses().stream().map(IDComponent::new).toList());
@@ -104,8 +105,8 @@ public abstract class Context {
     }
 
     public void queuePacket(Frame packet) {
+        Objects.requireNonNull(packet);
         queue.offer(packet);
-
         processOut();
         updateInterestOps();
     }
@@ -115,30 +116,14 @@ public abstract class Context {
             var packet = queue.peek();
             if (Frames.size(packet) <= bufferOut.remaining()) {
                 queue.poll();
-                Frames.put(packet, bufferOut);
+                Frames.encode(packet, bufferOut);
             } else {
                 break;
             }
         }
     }
 
-    public void updateInterestOps() {
-        var op = 0;
 
-        if (bufferOut.position() > 0) {
-            op |= SelectionKey.OP_WRITE;
-        }
-        if (!closed && bufferIn.hasRemaining()) {
-            op |= SelectionKey.OP_READ;
-        }
-        if (op == 0) {
-            silentlyClose();
-
-            return;
-        }
-
-        key.interestOps(op);
-    }
 
     private void silentlyClose() {
         try {
@@ -146,6 +131,31 @@ public abstract class Context {
         } catch (IOException e) {
             // ignore exception
         }
+    }
+
+    public static void silentlyClose(SocketChannel sc) {
+        try {
+            sc.close();
+        } catch (IOException e) {
+            // ignore exception
+        }
+    }
+    public static void updateInterestOps(SelectionKey key, ByteBuffer bufferIn, ByteBuffer bufferOut, boolean closed, SocketChannel sc) {
+        var op = 0;
+        if (bufferOut.position() > 0) {
+            op |= SelectionKey.OP_WRITE;
+        }
+        if (!closed && bufferIn.hasRemaining()) {
+            op |= SelectionKey.OP_READ;
+        }
+        if (op == 0) {
+            silentlyClose(sc);
+            return;
+        }
+        key.interestOps(op);
+    }
+    protected void updateInterestOps() {
+        updateInterestOps(key, bufferIn, bufferOut, closed, sc);
     }
 
     public void doRead() throws IOException {
@@ -156,7 +166,7 @@ public abstract class Context {
         }
 
         processIn();
-        updateInterestOps();
+        updateInterestOps(key, bufferIn, bufferOut, closed, sc);
     }
 
     public void doWrite() throws IOException {
@@ -171,6 +181,7 @@ public abstract class Context {
 
 
     public void processWorking(WorkRequestFrame packet) {
+        Objects.requireNonNull(packet);
         if(server.isRunning()) {
             var deltaComputingPossibility = Application.MAXIMUM_COMPUTATION - server.currentOnWorkingComputationsValue();
             if(deltaComputingPossibility > 0) { //He is accepting the computation
@@ -195,6 +206,7 @@ public abstract class Context {
     }
 
     public void compute(WorkAssignmentFrame packet){
+        Objects.requireNonNull(packet);
         System.out.println("Start computation...");
         var idContext = new ComputationIdentifier(packet.requestId().get(), packet.src().getSocket());
         server.updateRoom(idContext, packet.range().start(), packet.range().end());
@@ -231,7 +243,9 @@ public abstract class Context {
     }
 
     public void handleRequestResponse(long nbUC, LongComponent requestID, InetSocketAddress socket) {
-        if(nbUC == 0){
+        Objects.requireNonNull(requestID);
+        Objects.requireNonNull(socket);
+        if(nbUC <= 0){
             return;
         }
         var computeId = new ComputationIdentifier(requestID.get(), server.getAddress());
@@ -259,7 +273,10 @@ public abstract class Context {
         }
     }
 
-    public void handleResponse(ResponseComponent responseComponent, Long requestID, String result) {
+    public void handleResponse(ResponseComponent responseComponent, long requestID, String result) {
+        Objects.requireNonNull(responseComponent);
+        Objects.requireNonNull(result);
+        if(requestID < 0) throw new IllegalArgumentException("Request ID cannot be negative");
         switch(responseComponent.getResponseCode()) {
             case 0x00 -> logger.info(responseComponent.getResponse().value());
             case 0x01 -> logger.info("An exception has occur while computing the value : " + responseComponent.getValue());
@@ -277,6 +294,9 @@ public abstract class Context {
     }
 
     public void updateRouteTable(InetSocketAddress src, InetSocketAddress dst, Context context) {
+        Objects.requireNonNull(src);
+        Objects.requireNonNull(dst);
+        Objects.requireNonNull(context);
         server.updateRouteTable(src, dst, context);
     }
 }

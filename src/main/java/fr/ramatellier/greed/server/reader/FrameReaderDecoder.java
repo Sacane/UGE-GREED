@@ -60,6 +60,7 @@ public class FrameReaderDecoder {
         }
     }
     private static Class<?> ensureAndGet(RecordComponent component){
+        Objects.requireNonNull(component);
         if(!GreedComponent.class.isAssignableFrom(component.getType())){
             throw new IllegalArgumentException("Record component " + component + " is not a greed component");
         }

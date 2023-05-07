@@ -9,6 +9,7 @@ import fr.ramatellier.greed.server.visitor.ChildReceiveVisitor;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
+import java.util.Objects;
 
 public class ClientApplicationContext extends Context {
     public ClientApplicationContext(Application server, SelectionKey key) {
@@ -25,6 +26,8 @@ public class ClientApplicationContext extends Context {
     }
 
     public void link(IDComponent addressMother, IDListComponent neighbours) {
+        Objects.requireNonNull(addressMother);
+        Objects.requireNonNull(neighbours);
         server.updateParentAddress(addressMother.getSocket());
         for(var neighbor: neighbours.idPacketList()) {
             System.out.println("Add neighbor " + neighbor.getSocket() + " to root table");
@@ -44,6 +47,7 @@ public class ClientApplicationContext extends Context {
     }
 
     public void handleLogout(InetSocketAddress socket) {
+        Objects.requireNonNull(socket);
         if(server.getAddress().equals(socket)) {
             shutdownServer();
         }
@@ -56,6 +60,7 @@ public class ClientApplicationContext extends Context {
     }
 
     public void reconnect(IDComponent id) {
+        Objects.requireNonNull(id);
         try {
             server.connectToNewParent(id);
         } catch (IOException e) {

@@ -8,13 +8,13 @@ public class UGEGreedApplication {
             usage();
             return;
         }
-        var port = Integer.parseInt(args[0]);
+        var applicationPort = Integer.parseInt(args[0]);
         if (args.length == 1) {
-            Application.root(port).launch();
+            Application.root(applicationPort).launch();
         } else {
             var ip = args[1];
             var remotePort = Integer.parseInt(args[2]);
-            Application.child(port, ip, remotePort).launch();
+            Application.child(applicationPort, ip, remotePort).launch();
         }
     }
 

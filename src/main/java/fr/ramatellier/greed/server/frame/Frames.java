@@ -9,6 +9,10 @@ import java.lang.reflect.UndeclaredThrowableException;
 import java.nio.ByteBuffer;
 import java.util.function.Consumer;
 
+/**
+ * This class is a utility class for {@link Frame} and {@link GreedComponent}.
+ * It provides encoding and size methods for a frame.
+ */
 public final class Frames {
 
     @FunctionalInterface
@@ -36,7 +40,7 @@ public final class Frames {
         return sizes[0] + sizes[1];
     }
 
-    public static <T extends Frame> void put(T frame, ByteBuffer buffer) {
+    public static <T extends Frame> void encode(T frame, ByteBuffer buffer) {
         var opCode = OpCode.of(frame);
         buffer.put(frame.kind().BYTES).put(opCode.BYTES);
         CACHE.get(frame.getClass()).accept(frame, packet -> packet.putInBuffer(buffer));

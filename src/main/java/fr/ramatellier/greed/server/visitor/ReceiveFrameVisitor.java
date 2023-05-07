@@ -3,6 +3,7 @@ package fr.ramatellier.greed.server.visitor;
 import fr.ramatellier.greed.server.context.Context;
 import fr.ramatellier.greed.server.frame.model.*;
 
+import java.util.Objects;
 import java.util.logging.Logger;
 
 public abstract class ReceiveFrameVisitor {
@@ -11,6 +12,7 @@ public abstract class ReceiveFrameVisitor {
 
     public abstract Context context();
     public void visit(Frame packet) {
+        Objects.requireNonNull(packet);
         switch(packet) {
             case ConnectFrame p -> visit(p);
             case ConnectOKFrame p -> visit(p);

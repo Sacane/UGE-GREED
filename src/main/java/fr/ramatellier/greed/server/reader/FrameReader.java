@@ -7,6 +7,7 @@ import fr.ramatellier.greed.server.reader.component.primitive.ByteComponentReade
 
 import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 
 public class FrameReader implements Reader<Frame> {
     private enum State {
@@ -21,6 +22,7 @@ public class FrameReader implements Reader<Frame> {
 
     @Override
     public ProcessStatus process(ByteBuffer buffer) {
+        Objects.requireNonNull(buffer);
         if (state == State.DONE || state == State.ERROR) {
             throw new IllegalStateException();
         }

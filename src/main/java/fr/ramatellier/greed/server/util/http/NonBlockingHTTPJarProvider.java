@@ -39,7 +39,6 @@ public final class NonBlockingHTTPJarProvider {
     public static NonBlockingHTTPJarProvider fromURL(URL url) throws IOException {
         Objects.requireNonNull(url);
         var request = urlToRequest(url);
-        System.out.println(request);
         return new NonBlockingHTTPJarProvider(request.host(), request.request(), request.file());
     }
     private static HostRequestFile urlToRequest(URL request){

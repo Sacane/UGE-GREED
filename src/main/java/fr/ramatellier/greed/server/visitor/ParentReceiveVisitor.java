@@ -21,11 +21,11 @@ public class ParentReceiveVisitor extends ReceiveFrameVisitor {
         return context;
     }
     @Override
-    public void visit(LogoutRequestFrame packet) {
+    protected void visit(LogoutRequestFrame packet) {
         context.confirmLogout(packet.id(), packet.daughters());
     }
     @Override
-    public void visit(ReconnectFrame packet) {
+    protected void visit(ReconnectFrame packet) {
         context.reconnectServer(packet.id().getSocket(), packet.ancestors());
     }
 }
