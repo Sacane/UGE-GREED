@@ -14,10 +14,7 @@ import fr.ramatellier.greed.server.reader.component.primitive.LongComponentReade
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.RecordComponent;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -76,6 +73,8 @@ public class FrameReaderDecoder {
      * @return the status of the process
      */
     public Reader.ProcessStatus process(ByteBuffer buffer, OpCode opcode) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+        Objects.requireNonNull(buffer);
+        Objects.requireNonNull(opcode);
         lock.lock();
         try {
             if (state == State.DONE)

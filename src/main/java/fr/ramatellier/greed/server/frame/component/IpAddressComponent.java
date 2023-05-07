@@ -1,8 +1,5 @@
 package fr.ramatellier.greed.server.frame.component;
 
-import fr.ramatellier.greed.server.reader.Reader;
-import fr.ramatellier.greed.server.reader.component.IpAddressComponentReader;
-
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
@@ -28,18 +25,13 @@ public final class IpAddressComponent implements GreedComponent {
     }
 
     public void putInBuffer(ByteBuffer buffer) {
+        Objects.requireNonNull(buffer);
         buffer.put(size);
         buffer.put(ipAddress);
-
     }
 
     @Override
     public int size() {
         return Byte.BYTES + ipAddress.length;
-    }
-
-    @Override
-    public Reader<? extends GreedComponent> reader() {
-        return new IpAddressComponentReader();
     }
 }
