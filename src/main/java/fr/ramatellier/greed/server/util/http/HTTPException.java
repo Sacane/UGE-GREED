@@ -2,7 +2,9 @@ package fr.ramatellier.greed.server.util.http;
 
 import java.io.IOException;
 import java.io.Serial;
-
+/**
+ * Property of Gustave eiffel University.
+ */
 public class HTTPException extends IOException {
 
     @Serial

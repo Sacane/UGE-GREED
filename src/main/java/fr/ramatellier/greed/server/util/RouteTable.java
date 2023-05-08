@@ -112,13 +112,11 @@ public class RouteTable {
      */
     public List<InetSocketAddress> neighbors() {
         var neighbors = new ArrayList<InetSocketAddress>();
-
         for(var entry: table.entrySet()) {
             if(entry.getKey().equals(entry.getValue().address())) {
                 neighbors.add(entry.getKey());
             }
         }
-
         return neighbors;
     }
 
@@ -130,22 +128,12 @@ public class RouteTable {
      */
     public List<Context> daughtersContext(InetSocketAddress parentAddress) {
         var daughters = new ArrayList<Context>();
-
         for(var entry: table.entrySet()) {
             if(entry.getKey().equals(entry.getValue().address()) && !parentAddress.equals(entry.getKey())) {
                 daughters.add(entry.getValue().context());
             }
         }
-
         return daughters;
-    }
-
-    public void onDaughtersDo(InetSocketAddress parentAddress, Consumer<Context> action) {
-        for(var entry: table.entrySet()) {
-            if(entry.getKey().equals(entry.getValue().address()) && !parentAddress.equals(entry.getKey())) {
-                action.accept(entry.getValue().context());
-            }
-        }
     }
 
     /**

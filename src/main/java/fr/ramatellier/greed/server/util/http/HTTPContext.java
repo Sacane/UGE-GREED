@@ -18,13 +18,13 @@ final class HTTPContext {
     private boolean closed = false;
     private final SelectionKey key;
     private final SocketChannel sc;
-    private final NonBlockingHTTPJarProvider client;
+    private final NonBlockingHTTPClient client;
     private final String request;
     private boolean isRequestSent;
     private final HTTPReader reader = new HTTPReader();
     private static final Logger LOGGER = Logger.getLogger(HTTPContext.class.getName());
 
-    HTTPContext(NonBlockingHTTPJarProvider client, SelectionKey key, String request) {
+    HTTPContext(NonBlockingHTTPClient client, SelectionKey key, String request) {
         Objects.requireNonNull(key);
         this.client = Objects.requireNonNull(client);
         this.key = key;
@@ -77,7 +77,6 @@ final class HTTPContext {
     }
 
     private void processOut() {
-        System.out.println(request.getBytes().length);
         bufferOut.put(request.getBytes());
         isRequestSent = true;
     }

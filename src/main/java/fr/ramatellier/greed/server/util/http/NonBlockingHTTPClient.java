@@ -15,15 +15,15 @@ import java.util.logging.Logger;
 /**
  * This class aims to be a simple HTTP client but in non-blocking mode and only to perform request to get jar file from a server.
  */
-public final class NonBlockingHTTPJarProvider {
+public final class NonBlockingHTTPClient {
     private final SocketChannel sc;
     private final Selector selector;
     private boolean isDone = false;
     private final String filePath;
     private Consumer<byte[]> onDone;
-    private final Logger LOGGER = Logger.getLogger(NonBlockingHTTPJarProvider.class.getName());
+    private final Logger LOGGER = Logger.getLogger(NonBlockingHTTPClient.class.getName());
 
-    private NonBlockingHTTPJarProvider(String host, String request, String filePath) throws IOException {
+    private NonBlockingHTTPClient(String host, String request, String filePath) throws IOException {
         this.filePath = Objects.requireNonNullElse(filePath, "result.jar");
         Objects.requireNonNull(host);
         Objects.requireNonNull(request);
@@ -36,10 +36,10 @@ public final class NonBlockingHTTPJarProvider {
     }
     private record HostRequestFile(String host, String request, String file) {}
 
-    public static NonBlockingHTTPJarProvider fromURL(URL url) throws IOException {
+    public static NonBlockingHTTPClient fromURL(URL url) throws IOException {
         Objects.requireNonNull(url);
         var request = urlToRequest(url);
-        return new NonBlockingHTTPJarProvider(request.host(), request.request(), request.file());
+        return new NonBlockingHTTPClient(request.host(), request.request(), request.file());
     }
     private static HostRequestFile urlToRequest(URL request){
         var path = request.getPath();

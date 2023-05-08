@@ -11,6 +11,9 @@ import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.util.Objects;
 
+/**
+ * Represent a context for the client's side of the application
+ */
 public class ClientApplicationContext extends Context {
     public ClientApplicationContext(Application server, SelectionKey key) {
         super(server, key);

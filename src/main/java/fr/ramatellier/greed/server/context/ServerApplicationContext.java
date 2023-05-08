@@ -13,6 +13,9 @@ import java.nio.channels.SelectionKey;
 import java.util.Objects;
 import java.util.logging.Logger;
 
+/**
+ * Represent a context for the server's side of the application
+ */
 public class ServerApplicationContext extends Context {
 
     public ServerApplicationContext(Application server, SelectionKey key) {

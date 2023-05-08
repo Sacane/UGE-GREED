@@ -13,7 +13,6 @@ public final class ThreadComputationHandler {
                 for(;;) {
                     try {
                         var computation = task.take();
-
                         if(computation.checker() == null) {
                             responses.put(new ResponseTaskComputation(computation.packet(), computation.id(), computation.value(), "Value: " + computation.value() + " -> " + "Cannot get the checker\n", (byte) 0x03));
                         }

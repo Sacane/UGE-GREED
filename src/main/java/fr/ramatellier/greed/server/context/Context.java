@@ -10,7 +10,7 @@ import fr.ramatellier.greed.server.frame.component.ResponseComponent;
 import fr.ramatellier.greed.server.frame.component.primitive.LongComponent;
 import fr.ramatellier.greed.server.frame.model.*;
 import fr.ramatellier.greed.server.reader.FrameReader;
-import fr.ramatellier.greed.server.util.http.NonBlockingHTTPJarProvider;
+import fr.ramatellier.greed.server.util.http.NonBlockingHTTPClient;
 import fr.ramatellier.greed.server.visitor.ReceiveFrameVisitor;
 import fr.uge.ugegreed.Checker;
 
@@ -219,7 +219,7 @@ public abstract class Context {
 
         // HTTP non-blocking
         try {
-            var httpClient = NonBlockingHTTPJarProvider.fromURL(new URL(entity.info().url()));
+            var httpClient = NonBlockingHTTPClient.fromURL(new URL(entity.info().url()));
             httpClient.onDone(body -> {
                 Checker checker = Application.retrieveChecker(httpClient, entity.info().className());
                 for(var i = targetRange.start(); i < targetRange.end(); i++) {

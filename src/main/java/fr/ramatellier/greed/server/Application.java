@@ -13,7 +13,7 @@ import fr.ramatellier.greed.server.util.LogoutInformation;
 import fr.ramatellier.greed.server.util.RouteTable;
 import fr.ramatellier.greed.server.compute.ResultFormatter;
 import fr.ramatellier.greed.server.util.Strings;
-import fr.ramatellier.greed.server.util.http.NonBlockingHTTPJarProvider;
+import fr.ramatellier.greed.server.util.http.NonBlockingHTTPClient;
 import fr.uge.ugegreed.Checker;
 import fr.uge.ugegreed.Client;
 
@@ -436,9 +436,8 @@ public class Application {
         var entity = new ComputationEntity(id, info);
         if(routeTable.neighbors().size() == 0) {
             try {
-                System.out.println(entity.info().url());
                 computationRoomHandler.prepare(entity, routeTable.size());
-                var httpClient = NonBlockingHTTPJarProvider.fromURL(new URL(entity.info().url()));
+                var httpClient = NonBlockingHTTPClient.fromURL(new URL(entity.info().url()));
                 httpClient.onDone(body -> {
                     var checker = retrieveChecker(httpClient, entity.info().className());
                     for(var i = info.start(); i < info.end(); i++) {
@@ -470,7 +469,7 @@ public class Application {
      * @param className The class name where the checker is
      * @return The Checker if it exists else null
      */
-    public static Checker retrieveChecker(NonBlockingHTTPJarProvider provider, String className){
+    public static Checker retrieveChecker(NonBlockingHTTPClient provider, String className){
         var path = Path.of(provider.getFilePath());
         System.out.println(path);
         var checkerResult = Client.checkerFromDisk(path, className);

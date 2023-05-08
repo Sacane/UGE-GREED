@@ -72,7 +72,6 @@ public class SharingProcessExecutorTest {
         );
         var sharingProcessExecutor = new SharingProcessExecutor(availableSocketList, 50);
         var result = sharingProcessExecutor.shareAndGet(0);
-        System.out.println(result);
         assertEquals(50,
                 result.stream().
                         mapToLong(socketRange -> socketRange.range().delta(false)).sum()
