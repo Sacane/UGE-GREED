@@ -20,16 +20,6 @@ public final class ComputationRoomHandler {
         }
     }
 
-    public void incrementComputation(ComputationIdentifier id) {
-        synchronized (lock) {
-            var target = computations.stream()
-                    .filter(computation -> computation.id().equals(id))
-                    .findFirst()
-                    .orElseThrow();
-            target.incrementUc();
-        }
-    }
-
     /**
      * Prepare a computation that is not yet ready to be computed.
      * @param entity the computation to prepare
@@ -39,6 +29,16 @@ public final class ComputationRoomHandler {
         synchronized (lock) {
             prepareWaitingRoom.put(entity.id(), new CounterIntend(intendValue));
             computations.add(entity);
+        }
+    }
+
+    public Range delta(ComputationIdentifier id){
+        synchronized (lock){
+            return computations.stream()
+                    .filter(computation -> computation.id().equals(id))
+                    .map(ComputationEntity::deltaOkResponse)
+                    .findFirst()
+                    .orElse(Range.empty());
         }
     }
 
@@ -87,13 +87,13 @@ public final class ComputationRoomHandler {
         }
     }
 
-    public void incrementUc(ComputationIdentifier id){
+    public void incrementUc(ComputationIdentifier id, boolean isOk){
         synchronized (lock) {
             computations
                     .stream()
                     .filter(computation -> computation.id().equals(id))
                     .findFirst()
-                    .ifPresent(ComputationEntity::incrementUc);
+                    .ifPresent(compute -> compute.incrementUc(isOk));
         }
     }
 

@@ -12,6 +12,7 @@ import fr.ramatellier.greed.server.frame.FrameKind;
 import fr.ramatellier.greed.server.util.LogoutInformation;
 import fr.ramatellier.greed.server.util.RouteTable;
 import fr.ramatellier.greed.server.compute.ResultFormatter;
+import fr.ramatellier.greed.server.util.Strings;
 import fr.ramatellier.greed.server.util.http.NonBlockingHTTPJarProvider;
 import fr.uge.ugegreed.Checker;
 import fr.uge.ugegreed.Client;
@@ -487,10 +488,16 @@ public class Application {
      * @param result The result that we get from the Checker
      * @throws IOException If the build of the file failed
      */
-    public void treatComputationResult(ComputationIdentifier id, String result) throws IOException {
-        computationRoomHandler.incrementUc(id);
+    public void treatComputationResult(ComputationIdentifier id, String result, byte code) throws IOException {
+        computationRoomHandler.incrementUc(id, code == (byte) 0);
         resultFormatHandler.append(id, result);
         if(computationRoomHandler.isComputationDone(id)){
+            var delta = computationRoomHandler.delta(id);
+            if(delta.isFull()){
+                Strings.printInGreed(delta.start() + " out of " + delta.end() + " computations has been perform correctly for the id " + id);
+            } else {
+                Strings.printInRed(delta.start() + " out of " + delta.end() + " computations has been perform correctly : " + delta.delta(false) + " failed for the id \" + id");
+            }
             resultFormatHandler.build(id);
         }
     }
@@ -720,11 +727,11 @@ public class Application {
                                 response.packet().requestId(),
                                 new ResponseComponent(response.value(), response.response(), response.code())
                         ));
-                        computationRoomHandler.incrementComputation(response.id());
+                        computationRoomHandler.incrementUc(response.id(), response.code() == (byte) 0);
                     }
                     else {
                         var id = new ComputationIdentifier(response.packet().requestId().get(), getAddress());
-                        treatComputationResult(id, response.response());
+                        treatComputationResult(id, response.response(), response.code());
                     }
                     if(isShutdown() && hasFinishedComputing()) {
                         sendLogout();

@@ -287,7 +287,7 @@ public abstract class Context {
 
         var id = new ComputationIdentifier(requestID, server.getAddress());
         try {
-            server.treatComputationResult(id, result);
+            server.treatComputationResult(id, result, responseComponent.getResponseCode());
         } catch (IOException e) {
             logger.log(Level.SEVERE, "The file cannot be written : ", e);
         }
