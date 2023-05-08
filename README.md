@@ -43,6 +43,8 @@ SHUTDOWN
 
 Attention, vous ne pouvez shutdown une application root que si tous les serveurs filles sont déconnectés.
 
+Un jar exécutable est disponible à la racine du projet.
+
 Auteurs:
 
 - RAMAROSON RAKOTOMIHAMINA Johan
