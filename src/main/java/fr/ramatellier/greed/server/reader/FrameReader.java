@@ -1,12 +1,13 @@
 package fr.ramatellier.greed.server.reader;
 
-import fr.ramatellier.greed.server.frame.model.Frame;
-import fr.ramatellier.greed.server.reader.primitive.ByteReader;
-import fr.ramatellier.greed.server.frame.OpCode;
 import fr.ramatellier.greed.server.frame.FrameKind;
+import fr.ramatellier.greed.server.frame.OpCode;
+import fr.ramatellier.greed.server.frame.model.Frame;
+import fr.ramatellier.greed.server.reader.component.primitive.ByteComponentReader;
 
 import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 
 public class FrameReader implements Reader<Frame> {
     private enum State {
@@ -14,33 +15,34 @@ public class FrameReader implements Reader<Frame> {
     }
     private final FrameReaderDecoder frameDecoder = new FrameReaderDecoder();
     private State state = State.WAITING_LOCATION;
-    private final ByteReader locationReader = new ByteReader();
-    private final ByteReader codeReader = new ByteReader();
+    private final ByteComponentReader tramKindReader = new ByteComponentReader();
+    private final ByteComponentReader opCodeReader = new ByteComponentReader();
 
     private Frame value;
 
     @Override
     public ProcessStatus process(ByteBuffer buffer) {
+        Objects.requireNonNull(buffer);
         if (state == State.DONE || state == State.ERROR) {
             throw new IllegalStateException();
         }
 
         if(state == State.WAITING_LOCATION) {
             Buffers.runOnProcess(buffer,
-                    locationReader,
+                    tramKindReader,
                     __ -> state = State.WAITING_CODE,
                     () -> state = State.ERROR);
         }
         if(state == State.WAITING_CODE) {
             Buffers.runOnProcess(buffer,
-                    codeReader,
+                    opCodeReader,
                     __ -> state = State.WAITING_PACKET,
                     () -> state = State.ERROR);
         }
         if(state == State.WAITING_PACKET) {
-            var tramKind = FrameKind.toTramKind(locationReader.get());
+            var tramKind = FrameKind.of(tramKindReader.get().get());
             if (tramKind == null) return ProcessStatus.ERROR;
-            var opcode = OpCode.of(codeReader.get());
+            var opcode = OpCode.of(opCodeReader.get().get());
             if (opcode == null) return ProcessStatus.ERROR;
             try {
                 var status = frameDecoder.process(buffer, opcode);
@@ -69,8 +71,8 @@ public class FrameReader implements Reader<Frame> {
     @Override
     public void reset() {
         state = State.WAITING_LOCATION;
-        locationReader.reset();
-        codeReader.reset();
+        tramKindReader.reset();
+        opCodeReader.reset();
         frameDecoder.reset();
     }
 }

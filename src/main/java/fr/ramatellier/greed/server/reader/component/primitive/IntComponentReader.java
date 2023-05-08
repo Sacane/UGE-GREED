@@ -1,4 +1,4 @@
-package fr.ramatellier.greed.server.reader.component;
+package fr.ramatellier.greed.server.reader.component.primitive;
 
 import fr.ramatellier.greed.server.frame.component.primitive.IntComponent;
 

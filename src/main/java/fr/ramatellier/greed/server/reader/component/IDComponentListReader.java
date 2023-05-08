@@ -2,9 +2,9 @@ package fr.ramatellier.greed.server.reader.component;
 
 import fr.ramatellier.greed.server.frame.component.IDComponent;
 import fr.ramatellier.greed.server.frame.component.IDListComponent;
-import fr.ramatellier.greed.server.reader.Reader;
-import fr.ramatellier.greed.server.reader.primitive.IntReader;
 import fr.ramatellier.greed.server.reader.Buffers;
+import fr.ramatellier.greed.server.reader.Reader;
+import fr.ramatellier.greed.server.reader.component.primitive.IntComponentReader;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -14,7 +14,7 @@ public class IDComponentListReader implements Reader<IDListComponent> {
     private enum State {
         DONE, WAITING_SIZE, WAITING_ID, ERROR
     }
-    private final IntReader sizeReader = new IntReader();
+    private final IntComponentReader sizeReader = new IntComponentReader();
     private final IDComponentReader idReader = new IDComponentReader();
     private final ArrayList<IDComponent> packetList = new ArrayList<>();
     private State state = State.WAITING_SIZE;
@@ -27,7 +27,7 @@ public class IDComponentListReader implements Reader<IDListComponent> {
             Buffers.runOnProcess(buffer, sizeReader, __ -> state = State.WAITING_ID, () -> state = State.ERROR);
         }
         if(state == State.WAITING_ID) {
-            for(int i = 0; i < sizeReader.get(); i++) {
+            for(int i = 0; i < sizeReader.get().get(); i++) {
                 var status = idReader.process(buffer);
                 if(status == ProcessStatus.DONE) {
                     packetList.add(idReader.get());

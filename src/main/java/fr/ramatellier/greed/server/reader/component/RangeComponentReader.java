@@ -1,9 +1,9 @@
 package fr.ramatellier.greed.server.reader.component;
 
 import fr.ramatellier.greed.server.frame.component.RangeComponent;
-import fr.ramatellier.greed.server.reader.Reader;
-import fr.ramatellier.greed.server.reader.primitive.LongReader;
 import fr.ramatellier.greed.server.reader.Buffers;
+import fr.ramatellier.greed.server.reader.Reader;
+import fr.ramatellier.greed.server.reader.component.primitive.LongComponentReader;
 
 import java.nio.ByteBuffer;
 
@@ -12,8 +12,8 @@ public class RangeComponentReader implements Reader<RangeComponent> {
         DONE, WAITING_START, WAITING_END, ERROR
     }
     private State state = State.WAITING_START;
-    private final LongReader startReader = new LongReader();
-    private final LongReader endReader = new LongReader();
+    private final LongComponentReader startReader = new LongComponentReader();
+    private final LongComponentReader endReader = new LongComponentReader();
     private RangeComponent value;
 
     @Override
@@ -31,7 +31,7 @@ public class RangeComponentReader implements Reader<RangeComponent> {
             Buffers.runOnProcess(buffer, endReader,
                     result -> {
                         state = State.DONE;
-                        value = new RangeComponent(startReader.get(), result);
+                        value = new RangeComponent(startReader.get().get(), result.get());
                     },
                     () -> state = State.ERROR);
         }

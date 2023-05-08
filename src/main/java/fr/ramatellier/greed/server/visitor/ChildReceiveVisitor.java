@@ -21,7 +21,7 @@ public class ChildReceiveVisitor extends ReceiveFrameVisitor {
     }
 
     @Override
-    public void visit(ConnectKOFrame packet) {
+    protected void visit(ConnectKOFrame packet) {
         context.shutdownServer();
     }
 
@@ -31,29 +31,27 @@ public class ChildReceiveVisitor extends ReceiveFrameVisitor {
     }
 
     @Override
-    public void visit(ConnectOKFrame packet){
+    protected void visit(ConnectOKFrame packet){
         context.link(packet.idMother(), packet.neighbours());
     }
 
 
     @Override
-    public void visit(LogoutDeniedFrame packet) {
-        System.out.println(packet.getClass() + " " + context.getClass().getName());
-        System.out.println("LOGOUT DENIED");
+    protected void visit(LogoutDeniedFrame packet) {
+        logger.warning("LOGOUT DENIED");
     }
     @Override
-    public void visit(LogoutGrantedFrame packet) {
-        System.out.println(packet.getClass() + " " + context.getClass().getName());
-        System.out.println("LOGOUT GRANTED");
+    protected void visit(LogoutGrantedFrame packet) {
+       logger.info("LOGOUT GRANTED");
         context.reconnectDaughters();
     }
 
     @Override
-    public void visit(PleaseReconnectFrame packet) {
+    protected void visit(PleaseReconnectFrame packet) {
         context.reconnect(packet.id());
     }
     @Override
-    public void visit(DisconnectedFrame packet) {
+    protected void visit(DisconnectedFrame packet) {
         context.handleLogout(packet.id().getSocket());
     }
 }

@@ -7,14 +7,14 @@ import fr.ramatellier.greed.server.frame.component.primitive.LongComponent;
 import fr.ramatellier.greed.server.frame.model.Frame;
 import fr.ramatellier.greed.server.reader.component.*;
 import fr.ramatellier.greed.server.frame.OpCode;
+import fr.ramatellier.greed.server.reader.component.primitive.ByteComponentReader;
+import fr.ramatellier.greed.server.reader.component.primitive.IntComponentReader;
+import fr.ramatellier.greed.server.reader.component.primitive.LongComponentReader;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.RecordComponent;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -24,17 +24,17 @@ import java.util.concurrent.locks.ReentrantLock;
 public class FrameReaderDecoder {
     private record PacketComponents(Class<? extends Frame> packet, Class<?>[] components){}
     private static final Map<OpCode, PacketComponents> opCodeToConstructors = new HashMap<>();
-    private static final Map<Class<?>, Reader<?>> packetToReader = initPacketReader();
+    private static final Map<Class<? extends GreedComponent>, Reader<? extends GreedComponent>> packetToReader = initPacketReader();
     private final ReentrantLock lock = new ReentrantLock();
     private Frame value;
     private int currentPosition;
-    private final ArrayList<Object> currentValues = new ArrayList<>();
+    private final ArrayList<Object> currentReadingComponents = new ArrayList<>();
     private enum State{
         DONE, WAITING_PAYLOAD, ERROR
     }
     private State state = State.WAITING_PAYLOAD;
-    private static Map<Class<?>, Reader<?>> initPacketReader(){
-        var packetToReader = new HashMap<Class<?>, Reader<?>>();
+    private static Map<Class<? extends GreedComponent>, Reader<? extends GreedComponent>> initPacketReader(){
+        var packetToReader = new HashMap<Class<? extends GreedComponent>, Reader<? extends GreedComponent>>();
         packetToReader.put(StringComponent.class, new StringReader());
         packetToReader.put(IDComponent.class, new IDComponentReader());
         packetToReader.put(IpAddressComponent.class, new IpAddressComponentReader());
@@ -60,13 +60,22 @@ public class FrameReaderDecoder {
         }
     }
     private static Class<?> ensureAndGet(RecordComponent component){
+        Objects.requireNonNull(component);
         if(!GreedComponent.class.isAssignableFrom(component.getType())){
             throw new IllegalArgumentException("Record component " + component + " is not a greed component");
         }
         return component.getType();
     }
 
+    /**
+     * Process the given buffer to create a {@link Frame}.
+     * @param buffer the buffer to process
+     * @param opcode the opcode of the frame to create
+     * @return the status of the process
+     */
     public Reader.ProcessStatus process(ByteBuffer buffer, OpCode opcode) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+        Objects.requireNonNull(buffer);
+        Objects.requireNonNull(opcode);
         lock.lock();
         try {
             if (state == State.DONE)
@@ -79,7 +88,7 @@ public class FrameReaderDecoder {
                 var reader = packetToReader.get(component);
                 var status = reader.process(buffer);
                 if (status == Reader.ProcessStatus.DONE) {
-                    currentValues.add(reader.get());
+                    currentReadingComponents.add(reader.get());
                     reader.reset();
                     currentPosition = 0;
                 } else if (status == Reader.ProcessStatus.REFILL) {
@@ -91,24 +100,31 @@ public class FrameReaderDecoder {
                 }
             }
             state = State.DONE;
-            value = packet.packet.getDeclaredConstructor(packet.components).newInstance(currentValues.toArray());
+            value = packet.packet.getDeclaredConstructor(packet.components)
+                    .newInstance(currentReadingComponents.toArray());
             return Reader.ProcessStatus.DONE;
         }finally {
             lock.unlock();
         }
     }
 
+    /**
+     * Get the value of the frame reader.
+     * @return the value of the reader
+     */
     public Frame get() {
         lock.lock();
         try {
-            if (state != State.DONE)
-                throw new IllegalStateException("Reader not done");
+            if (state != State.DONE) throw new IllegalStateException("Reader not done");
             return value;
         }finally {
             lock.unlock();
         }
     }
 
+    /**
+     * Reset the reader to its initial state.
+     */
     public void reset(){
         lock.lock();
         try {
@@ -117,7 +133,7 @@ public class FrameReaderDecoder {
             }
             state = State.WAITING_PAYLOAD;
             currentPosition = 0;
-            currentValues.clear();
+            currentReadingComponents.clear();
         }finally {
             lock.unlock();
         }

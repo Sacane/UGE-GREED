@@ -3,6 +3,7 @@ package fr.ramatellier.greed.server.visitor;
 import fr.ramatellier.greed.server.context.Context;
 import fr.ramatellier.greed.server.frame.model.*;
 
+import java.util.Objects;
 import java.util.logging.Logger;
 
 public abstract class ReceiveFrameVisitor {
@@ -11,6 +12,7 @@ public abstract class ReceiveFrameVisitor {
 
     public abstract Context context();
     public void visit(Frame packet) {
+        Objects.requireNonNull(packet);
         switch(packet) {
             case ConnectFrame p -> visit(p);
             case ConnectOKFrame p -> visit(p);
@@ -35,7 +37,7 @@ public abstract class ReceiveFrameVisitor {
     }
     protected void visit(AddNodeFrame packet) {
         logger.info("AddNodePacket received from " + packet.src().getSocket());
-        context().updateRoot(packet.daughter().getSocket(), packet.src().getSocket(), context());
+        context().updateRouteTable(packet.daughter().getSocket(), packet.src().getSocket(), context());
         logger.info("update root table and send broadcast to neighbours");
     }
     protected void visit(WorkRequestFrame packet) {
@@ -58,14 +60,32 @@ public abstract class ReceiveFrameVisitor {
     protected void visit(WorkRequestResponseFrame packet) {
         context().handleRequestResponse(packet.nb_uc().get(), packet.requestID(), packet.src().getSocket());
     }
-    protected void visit(LogoutRequestFrame packet){}
-    protected void visit(LogoutDeniedFrame packet){}
-    protected void visit(LogoutGrantedFrame packet){}
-    protected void visit(PleaseReconnectFrame packet){}
-    protected void visit(ReconnectFrame packet){}
-    protected void visit(DisconnectedFrame packet){}
-    protected void visit(ConnectOKFrame packet){}
-    protected void visit(ConnectKOFrame packet){}
-
+    protected void visit(LogoutRequestFrame packet){
+        warn(packet);
+    }
+    protected void visit(LogoutDeniedFrame packet){
+        warn(packet);
+    }
+    protected void visit(LogoutGrantedFrame packet){
+        warn(packet);
+    }
+    protected void visit(PleaseReconnectFrame packet){
+        warn(packet);
+    }
+    protected void visit(ReconnectFrame packet){
+        warn(packet);
+    }
+    protected void visit(DisconnectedFrame packet){
+        warn(packet);
+    }
+    protected void visit(ConnectOKFrame packet){
+        warn(packet);
+    }
+    protected void visit(ConnectKOFrame packet){
+        warn(packet);
+    }
+    private void warn(Frame frame){
+        logger.warning("This packet should not be received by this context : " + frame.getClass().getName());
+    }
 
 }

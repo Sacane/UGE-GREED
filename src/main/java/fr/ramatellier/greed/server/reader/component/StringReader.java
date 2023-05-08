@@ -1,9 +1,9 @@
 package fr.ramatellier.greed.server.reader.component;
 
 import fr.ramatellier.greed.server.frame.component.StringComponent;
-import fr.ramatellier.greed.server.reader.Reader;
-import fr.ramatellier.greed.server.reader.primitive.IntReader;
 import fr.ramatellier.greed.server.reader.Buffers;
+import fr.ramatellier.greed.server.reader.Reader;
+import fr.ramatellier.greed.server.reader.component.primitive.IntComponentReader;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
@@ -15,7 +15,7 @@ public class StringReader implements Reader<StringComponent> {
     }
     private State state = State.WAITING_INT;
     private static final Charset UTF8 = StandardCharsets.UTF_8;
-    private final IntReader intReader = new IntReader();
+    private final IntComponentReader intReader = new IntComponentReader();
     private ByteBuffer stringBuffer;
     private StringComponent value;
 
@@ -30,10 +30,10 @@ public class StringReader implements Reader<StringComponent> {
                     buffer,
                     intReader,
                     size -> {
-                        if(size < 0 || size > 1024) {
+                        if(size.get() < 0 || size.get() > 1024) {
                             state = State.ERROR;
                         } else {
-                            stringBuffer = ByteBuffer.allocate(size);
+                            stringBuffer = ByteBuffer.allocate(size.get());
                             state = State.WAITING_STRING;
                         }
                     },

@@ -24,7 +24,7 @@ public class FullPacketReaderTest {
         var size = Frames.size(okPacket);
         System.out.println("size : " + size);
         var buffer = ByteBuffer.allocate(size);
-        Frames.put(okPacket, buffer);
+        Frames.encode(okPacket, buffer);
         readerFactory.process(buffer, OpCode.OK);
         assertEquals(7777, okPacket.idMother().getPort());
         assertEquals(2, okPacket.neighbours().idPacketList().size());
@@ -36,7 +36,7 @@ public class FullPacketReaderTest {
     public void simpleReadPacketTest2() throws InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
         var okPacket = new ConnectKOFrame();
         var buffer = ByteBuffer.allocate(Frames.size(okPacket));
-        Frames.put(okPacket, buffer);
+        Frames.encode(okPacket, buffer);
         var status = readerFactory.process(buffer, OpCode.KO);
         assertEquals(Reader.ProcessStatus.DONE, status);
         var packet = readerFactory.get();

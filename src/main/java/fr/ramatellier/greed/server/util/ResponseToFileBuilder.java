@@ -1,4 +1,4 @@
-package fr.ramatellier.greed.server.util.file;
+package fr.ramatellier.greed.server.util;
 
 import fr.ramatellier.greed.server.Application;
 
