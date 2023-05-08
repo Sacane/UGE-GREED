@@ -1,6 +1,23 @@
-﻿Ce document décrit le protocole UGEGreed. Le protocole permet à des applications de se connecter à une machine d'un réseau et de répartir des tâches de calculs sur les différentes applications du réseau. 
+﻿Gustave Eiffel University - Network Programming Project
+Request for Comments: 9384
+Category: Informational
+February 2023
 
-Le protocole permet à une application de se connecter au réseau, d'avoir accès à l'identité de toutes les machines du réseau, d'envoyer des données à une machine du réseau ou à toutes les machines du réseau et à une machine de se déconnecter du réseau. Il fournit de plus un mécanisme pour proposer, accepter et renvoyer le résultat de tâches de calculs aux différentes applications du réseau.
+Ramaroson Rakotomihamina Johan
+Tellier Quentin
+
+                        UGEGreed-Transport Protocol Specification
+
+Status of This Memo
+
+Ce document décrit le protocole UGEGreed.
+Le protocole permet à des applications de se connecter à une machine d'un réseau et de répartir
+des tâches de calculs sur les différentes applications du réseau.
+Le protocole permet à une application de se connecter au réseau,
+d'avoir accès à l'identité de toutes les machines du réseau,
+d'envoyer des données à une machine du réseau ou à toutes les machines du réseau
+et à une machine de se déconnecter du réseau. Il fournit de plus un mécanisme pour proposer,
+accepter et renvoyer le résultat de tâches de calculs aux différentes applications du réseau.
 
 
 La présentation du protocole est structurée comme suit:
@@ -12,11 +29,11 @@ La partie 5 présente les trames liées à la répartition des calculs;
 La partie 6 présente la déconnexion du réseau.
 
 
-
 1) Représentation des données :
    ============================
 
-Les entiers (INT) sur 4 octets signés et les longs (LONG) sur 8 octets signés sont tous transmis en BigEndian. Les octets signés seront désignés par (BYTE) et les suites d'octets par (BYTES)
+Les entiers (INT) sur 4 octets signés et les longs (LONG) sur 8 octets signés sont tous transmis en BigEndian.
+Les octets signés seront désignés par (BYTE) et les suites d'octets par (BYTES)
 
 Les chaînes de caractères (STRING) sont encodées en UTF-8 et précédées de la taille de leur représentation en octets sur un INT.
 
@@ -277,7 +294,7 @@ WORK_RESPONSE = TRANSFERT(1) (BYTE) 7 (BYTE) id_src (ID) id_dst (ID) request_id 
    ===============================
 
 Le protocole ne gère que la déconnexion planifiée des applications CONNECTED. Nous allons donc considérer la situation d'une application D qui a une application mère M
-et des applications filles F1,\ldots,F_k.
+et des applications filles F1,...,F_k.
 
           M 
           |

@@ -61,7 +61,7 @@ public abstract class Context {
                 case DONE:
                     var packet = packetReader.get();
                     packetReader.reset();
-                    processPacket(packet);
+                    processFrame(packet);
                     break;
             }
         }
@@ -86,7 +86,7 @@ public abstract class Context {
         }
     }
 
-    private void processPacket(Frame packet) {
+    private void processFrame(Frame packet) {
         switch(packet) {
             case BroadcastFrame b -> {
                 b.accept(visitor);
@@ -94,7 +94,7 @@ public abstract class Context {
                 server.broadcast(b.withNewSource(new IDComponent(server.getAddress())), oldSrc);
             }
             case TransferFrame t -> {
-                if(t.dst().getSocket().equals(server.getAddress())){
+                if(t.hasReachedDestination(server.getAddress())){
                     t.accept(visitor);
                 } else {
                     server.transfer(t.dst().getSocket(), t);

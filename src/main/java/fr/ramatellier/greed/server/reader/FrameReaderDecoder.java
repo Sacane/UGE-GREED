@@ -28,7 +28,7 @@ public class FrameReaderDecoder {
     private final ReentrantLock lock = new ReentrantLock();
     private Frame value;
     private int currentPosition;
-    private final ArrayList<Object> currentValues = new ArrayList<>();
+    private final ArrayList<Object> currentReadingComponents = new ArrayList<>();
     private enum State{
         DONE, WAITING_PAYLOAD, ERROR
     }
@@ -88,7 +88,7 @@ public class FrameReaderDecoder {
                 var reader = packetToReader.get(component);
                 var status = reader.process(buffer);
                 if (status == Reader.ProcessStatus.DONE) {
-                    currentValues.add(reader.get());
+                    currentReadingComponents.add(reader.get());
                     reader.reset();
                     currentPosition = 0;
                 } else if (status == Reader.ProcessStatus.REFILL) {
@@ -100,7 +100,8 @@ public class FrameReaderDecoder {
                 }
             }
             state = State.DONE;
-            value = packet.packet.getDeclaredConstructor(packet.components).newInstance(currentValues.toArray());
+            value = packet.packet.getDeclaredConstructor(packet.components)
+                    .newInstance(currentReadingComponents.toArray());
             return Reader.ProcessStatus.DONE;
         }finally {
             lock.unlock();
@@ -114,8 +115,7 @@ public class FrameReaderDecoder {
     public Frame get() {
         lock.lock();
         try {
-            if (state != State.DONE)
-                throw new IllegalStateException("Reader not done");
+            if (state != State.DONE) throw new IllegalStateException("Reader not done");
             return value;
         }finally {
             lock.unlock();
@@ -133,7 +133,7 @@ public class FrameReaderDecoder {
             }
             state = State.WAITING_PAYLOAD;
             currentPosition = 0;
-            currentValues.clear();
+            currentReadingComponents.clear();
         }finally {
             lock.unlock();
         }
