@@ -5,7 +5,8 @@ import java.util.Objects;
 /**
  * Represent a computation entity.
  * A computation entity is identified by a {@link ComputationIdentifier}.
- * An entity keep track on its possibility to be computed or not.
+ * An entity keep track on its possibility to be computed or not. It also knows how many unit of computation it has to do and
+ * how many of them are successfully done.
  */
 public final class ComputationEntity {
     private final ComputationIdentifier id;

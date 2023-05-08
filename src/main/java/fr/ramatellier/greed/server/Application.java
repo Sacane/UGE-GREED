@@ -496,7 +496,7 @@ public class Application {
             if(delta.isFull()){
                 Strings.printInGreed(delta.start() + " out of " + delta.end() + " computations has been perform correctly for the id " + id);
             } else {
-                Strings.printInRed(delta.start() + " out of " + delta.end() + " computations has been perform correctly : " + delta.delta(false) + " failed for the id \" + id");
+                Strings.printInRed(delta.start() + " out of " + delta.end() + " computations has been perform correctly : " + delta.delta(false) + " failed for the id " + id);
             }
             resultFormatHandler.build(id);
         }
