@@ -1,9 +1,9 @@
 package fr.ramatellier.greed.server.reader.component;
 
 import fr.ramatellier.greed.server.frame.component.IDComponent;
-import fr.ramatellier.greed.server.reader.Reader;
-import fr.ramatellier.greed.server.reader.primitive.IntReader;
 import fr.ramatellier.greed.server.reader.Buffers;
+import fr.ramatellier.greed.server.reader.Reader;
+import fr.ramatellier.greed.server.reader.component.primitive.IntComponentReader;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -14,7 +14,7 @@ public class IDComponentReader implements Reader<IDComponent> {
     }
     private State state = State.WAITING_IP;
     private final IpAddressComponentReader ipReader = new IpAddressComponentReader();
-    private final IntReader portReader = new IntReader();
+    private final IntComponentReader portReader = new IntComponentReader();
     private IDComponent value;
 
     @Override
@@ -32,7 +32,7 @@ public class IDComponentReader implements Reader<IDComponent> {
             Buffers.runOnProcess(buffer, portReader,
                     result -> {
                         state = State.DONE;
-                        value = new IDComponent(new InetSocketAddress(ipReader.get().getAddress(), result));
+                        value = new IDComponent(new InetSocketAddress(ipReader.get().getAddress(), result.get()));
                     },
                     () -> state = State.ERROR);
         }

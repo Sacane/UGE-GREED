@@ -1,10 +1,10 @@
 package fr.ramatellier.greed.server.reader.component;
 
 import fr.ramatellier.greed.server.frame.component.ResponseComponent;
-import fr.ramatellier.greed.server.reader.Reader;
-import fr.ramatellier.greed.server.reader.primitive.ByteReader;
-import fr.ramatellier.greed.server.reader.primitive.LongReader;
 import fr.ramatellier.greed.server.reader.Buffers;
+import fr.ramatellier.greed.server.reader.Reader;
+import fr.ramatellier.greed.server.reader.component.primitive.ByteComponentReader;
+import fr.ramatellier.greed.server.reader.component.primitive.LongComponentReader;
 
 import java.nio.ByteBuffer;
 
@@ -13,8 +13,8 @@ public class ResponseComponentReader implements Reader<ResponseComponent> {
         DONE, WAITING_VALUE, WAITING_RESPONSE_CODE, WAITING_RESPONSE, ERROR
     }
     private State state = State.WAITING_VALUE;
-    private final LongReader valueReader = new LongReader();
-    private final ByteReader codeReader = new ByteReader();
+    private final LongComponentReader valueReader = new LongComponentReader();
+    private final ByteComponentReader codeReader = new ByteComponentReader();
     private final StringReader responseReader = new StringReader();
     private ResponseComponent value;
 
@@ -46,7 +46,7 @@ public class ResponseComponentReader implements Reader<ResponseComponent> {
                     responseReader,
                     response -> {
                         state = State.DONE;
-                        value = new ResponseComponent(valueReader.get(), response.value(), codeReader.get());
+                        value = new ResponseComponent(valueReader.get().get(), response.value(), codeReader.get().get());
                     },
                     () -> state = State.ERROR
             );

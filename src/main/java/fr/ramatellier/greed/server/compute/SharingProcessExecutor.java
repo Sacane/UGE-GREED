@@ -22,10 +22,6 @@ public class SharingProcessExecutor {
         }
     }
 
-    private void incrementUc(SocketUcIdentifier socketUcIdentifier){
-        availableSocketMap.merge(socketUcIdentifier, 0L, (old, newOne) -> old + 1);
-    }
-
     /**
      * This method will share the computation and return the range of computation for each socket that has been assigned.
      * @param start the start of the range
@@ -37,7 +33,7 @@ public class SharingProcessExecutor {
         while(computingLeft > 0){
             for (var socketUcIdentifier : availableSocketMap.keySet()) {
                 if(computingLeft > 0 && socketUcIdentifier.uc() > availableSocketMap.get(socketUcIdentifier)){
-                    incrementUc(socketUcIdentifier);
+                    availableSocketMap.merge(socketUcIdentifier, 0L, (old, newOne) -> old + 1);
                     computingLeft--;
                 }
             }

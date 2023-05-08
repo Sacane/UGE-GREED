@@ -18,12 +18,12 @@ Ceci vous génèrera un fichier .jar dans le dossier target.
 Vous avez maintenant deux possibilités pour lancer le projet :
 
 ```bash
-java -jar target/uge-greed-1.0-SNAPSHOT.jar <port>
+java --enable-preview -jar <path/to/jar> <port>
 ```
 Qui vous permettra d'initialiser une application Root sur le port que vous aurez choisi.
 
 ```bash
-java -jar target/uge-greed-1.0-SNAPSHOT.jar <port self> <ip target> <port target>
+java --enable-preview -jar <path/to/jar> <port self> <ip target> <port target>
 ```
 Qui vous permettra d'initialiser une application fille sur le port que vous aurez choisi, qui se connectera à l'application dont vous aurez spécifié l'ip et le port.
 A noter que l'application courante tentera d'abord de se connecter à l'application parent avant de s'initialiser lui-même en tant que serveur et accepter d'autres connexion.
@@ -42,6 +42,8 @@ SHUTDOWN
 ```
 
 Attention, vous ne pouvez shutdown une application root que si tous les serveurs filles sont déconnectés.
+
+Un jar exécutable est disponible à la racine du projet.
 
 Auteurs:
 

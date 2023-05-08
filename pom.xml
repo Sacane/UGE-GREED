@@ -3,9 +3,9 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>fr.ramatellier.greed</groupId>
-    <artifactId>greed</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
-    <name>greed</name>
+    <artifactId>UGE-greed</artifactId>
+    <version>1.0</version>
+    <name>UGE-greed</name>
     <description>greed application</description>
     <properties>
         <maven.compiler.source>19</maven.compiler.source>

@@ -17,6 +17,7 @@ public class RouteTable {
 
     /**
      * Put a new destination address in the table or update the value of an existing one.
+     *
      * @param destination the destination to registered or update
      * @param value the value of the entry
      * @param context the context of the entry
@@ -25,6 +26,13 @@ public class RouteTable {
         table.merge(destination, new AddressContext(value, context), (old, newValue) -> newValue);
     }
 
+    /**
+     * This method update the context of an address that already exist
+     *
+     * @param oldAddress The old InetSocketAddress
+     * @param newAddress The new InetSocketAddress
+     * @param context The new context
+     */
     public void updateToContext(InetSocketAddress oldAddress, InetSocketAddress newAddress, Context context) {
         for(var entry: table.entrySet()) {
             if(oldAddress.equals(entry.getValue().address())) {
@@ -33,12 +41,18 @@ public class RouteTable {
         }
     }
 
+    /**
+     * This method an InetSocketAddress from the table
+     *
+     * @param address The InetSocketAddress we want to remove
+     */
     public void delete(InetSocketAddress address) {
         table.remove(address);
     }
 
     /**
      * Transfer the given packet to the closest neighbour of the destination.
+     *
      * @param dst the destination of the packet
      * @param packet the packet to transfer
      */
@@ -54,12 +68,19 @@ public class RouteTable {
 
     /**
      * Get all the registered address in the table.
+     *
      * @return the set of address
      */
     public Set<InetSocketAddress> registeredAddresses() {
         return table.keySet();
     }
 
+    /**
+     * This method will get all the ancestors of an InetSocketAddress
+     *
+     * @param parentAddress The InetSocketAddress of the parent
+     * @return The list of the InetSocketAddress of all the ancestors
+     */
     public List<InetSocketAddress> ancestors(InetSocketAddress parentAddress) {
         var ancestorsList = new ArrayList<InetSocketAddress>();
 
@@ -84,39 +105,40 @@ public class RouteTable {
         return ancestors;
     }
 
+    /**
+     * This method get the neighbors
+     *
+     * @return The list of the InetSocketAddress of the neighbors
+     */
     public List<InetSocketAddress> neighbors() {
         var neighbors = new ArrayList<InetSocketAddress>();
-
         for(var entry: table.entrySet()) {
             if(entry.getKey().equals(entry.getValue().address())) {
                 neighbors.add(entry.getKey());
             }
         }
-
         return neighbors;
     }
 
+    /**
+     * This method get the context of all the daughters
+     *
+     * @param parentAddress The InetSocketAddress of the parent
+     * @return The list of the Context of the daughters
+     */
     public List<Context> daughtersContext(InetSocketAddress parentAddress) {
         var daughters = new ArrayList<Context>();
-
         for(var entry: table.entrySet()) {
             if(entry.getKey().equals(entry.getValue().address()) && !parentAddress.equals(entry.getKey())) {
                 daughters.add(entry.getValue().context());
             }
         }
-
         return daughters;
-    }
-    public void onDaughtersDo(InetSocketAddress parentAddress, Consumer<Context> action) {
-        for(var entry: table.entrySet()) {
-            if(entry.getKey().equals(entry.getValue().address()) && !parentAddress.equals(entry.getKey())) {
-                action.accept(entry.getValue().context());
-            }
-        }
     }
 
     /**
      * Perform an action on all neighbours information except the one with the given address.
+     *
      * @param address the address to exclude, if the address is null then no neighbours will be ignored
      * @param action the action to perform on neighbours
      */
@@ -130,10 +152,20 @@ public class RouteTable {
         }
     }
 
+    /**
+     * This method return the size of the route table
+     *
+     * @return The size of the route table
+     */
     public int size() {
         return table.size();
     }
 
+    /**
+     * This method allows to apply a Consumer to all the route table
+     *
+     * @param action The consumer we want to apply to everybody
+     */
     public void performOnAllAddress(Consumer<AddressContext> action) {
         Objects.requireNonNull(action);
         table.keySet().stream().map(k -> new AddressContext(k, table.get(k).context())).forEach(action);

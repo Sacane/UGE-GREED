@@ -5,13 +5,15 @@ import java.util.Objects;
 /**
  * Represent a computation entity.
  * A computation entity is identified by a {@link ComputationIdentifier}.
- * An entity keep track on its possibility to be computed or not.
+ * An entity keep track on its possibility to be computed or not. It also knows how many unit of computation it has to do and
+ * how many of them are successfully done.
  */
 public final class ComputationEntity {
     private final ComputationIdentifier id;
     private final ComputeInfo info;
     private long intendedUc;
     private long currentUcDone;
+    private long nbUcOk;
 
     public ComputationEntity(ComputationIdentifier id, ComputeInfo info) {
         this.id = Objects.requireNonNull(id);
@@ -34,12 +36,14 @@ public final class ComputationEntity {
     /**
      * Increment the number of unit of computation that has been done.
      */
-    public void incrementUc() {
+    public void incrementUc(boolean isOk) {
         if(currentUcDone >= intendedUc) {
             throw new IllegalStateException("Computation already done");
         }
-
         currentUcDone++;
+        if(isOk) {
+            nbUcOk++;
+        }
     }
 
     /**
@@ -56,11 +60,13 @@ public final class ComputationEntity {
     public ComputationIdentifier id() {
         return id;
     }
-
     /**
      * @return the information about this computation entity.
      */
     public ComputeInfo info() {
         return info;
+    }
+    public Range deltaOkResponse(){
+        return new Range(nbUcOk, currentUcDone);
     }
 }
