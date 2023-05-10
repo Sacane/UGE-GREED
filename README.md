@@ -12,8 +12,17 @@ Pour installer le projet, il vous suffit d'avoir maven d'installer sur votre mac
 ```bash
 mvn clean install
 ```
-Assurez-vous bien d'être situé à la racine de ce projet.
+## Génération du jar
+
+Pour générer le jar, il vous suffit de lancer la commande suivante :
+
+```bash
+mvn package
+```
 Ceci vous génèrera un fichier .jar dans le dossier target.
+
+Pour les deux commandes précédentes assurez-vous bien d'être situé à la racine de ce projet.
+
 
 Vous avez maintenant deux possibilités pour lancer le projet :
 
